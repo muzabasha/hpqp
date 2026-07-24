@@ -1,35 +1,57 @@
 <!doctype html>
 <html lang="en">
-  <head>
+
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="B24EHS522 High Performance and Quantum Computing - an interactive learning platform." />
+    <meta name="description"
+        content="B24EHS522 High Performance and Quantum Computing - an interactive learning platform." />
     <meta name="theme-color" content="#102a43" />
     <title>HPQC | High Performance and Quantum Computing</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <script>window.MathJax = { tex: { inlineMath: [['\\(', '\\)']] }, svg: { fontCache: 'global' } };</script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="stylesheet" href="./styles.css" />
-  </head>
-  <body>
+</head>
+
+<body>
     <a class="skip-link" href="#app">Skip to content</a>
     <div class="app-shell">
-      <header class="topbar">
-        <a class="brand" href="#/" aria-label="HPQC home"><span class="brand-mark" aria-hidden="true">H</span><span><strong>HPQC</strong><small>B24EHS522</small></span></a>
-        <nav class="topnav" aria-label="Primary navigation"><a href="#/roadmap">Roadmap</a><a href="#/syllabus">Syllabus</a><a href="#/resources">Resources</a><a class="faculty-link" href="https://scholar-sparkle-web.lovable.app/" target="_blank" rel="noreferrer">Faculty ↗</a></nav>
-        <button class="icon-button" type="button" data-action="toggle-theme" aria-label="Toggle color theme">◐</button>
-      </header>
-      <div class="page-grid">
-        <aside class="sidebar" aria-label="Course navigation">
-          <div class="sidebar-label">Course map</div><a class="side-link" href="#/">Overview <span>⌂</span></a><a class="side-link" href="#/roadmap">Learning roadmap <span>→</span></a>
-          <div class="sidebar-label">Units</div><a class="side-link" href="#/unit/1"><span><b class="unit-dot dot-cyan">01</b> Foundations of HPC</span><span>›</span></a><a class="side-link muted" href="#/unit/2"><span><b class="unit-dot dot-lime">02</b> Parallel models</span><span>›</span></a><a class="side-link muted" href="#/unit/3"><span><b class="unit-dot dot-orange">03</b> GPU computing</span><span>›</span></a><a class="side-link muted" href="#/unit/4"><span><b class="unit-dot dot-pink">04</b> Quantum computing</span><span>›</span></a>
-          <div class="sidebar-label">Workspace</div><a class="side-link" href="#/lab/speedup">Virtual lab <span>↗</span></a><a class="side-link" href="#/assessment">Assessment <span>→</span></a>
-          <div class="sidebar-progress"><span>Your progress</span><strong data-progress-label>0%</strong><div class="progress-track"><i data-progress-bar></i></div></div>
-        </aside>
-        <main id="app" tabindex="-1"></main>
-      </div>
+        <header class="topbar">
+            <a class="brand" href="#/" aria-label="HPQC home"><span class="brand-mark"
+                    aria-hidden="true">H</span><span><strong>HPQC</strong><small>B24EHS522</small></span></a>
+            <nav class="topnav" aria-label="Primary navigation"><a href="#/roadmap">Roadmap</a><a
+                    href="#/syllabus">Syllabus</a><a href="#/resources">Resources</a><a class="faculty-link"
+                    href="https://scholar-sparkle-web.lovable.app/" target="_blank" rel="noreferrer">Faculty ↗</a></nav>
+            <button class="icon-button" type="button" data-action="toggle-theme"
+                aria-label="Toggle color theme">◐</button>
+        </header>
+        <div class="page-grid">
+            <aside class="sidebar" aria-label="Course navigation">
+                <div class="sidebar-label">Course map</div><a class="side-link" href="#/">Overview <span>⌂</span></a><a
+                    class="side-link" href="#/roadmap">Learning roadmap <span>→</span></a>
+                <div class="sidebar-label">Units</div><a class="side-link" href="#/unit/1"><span><b
+                            class="unit-dot dot-cyan">01</b> Foundations of HPC</span><span>›</span></a><a
+                    class="side-link muted" href="#/unit/2"><span><b class="unit-dot dot-lime">02</b> Parallel
+                        models</span><span>›</span></a><a class="side-link muted" href="#/unit/3"><span><b
+                            class="unit-dot dot-orange">03</b> GPU computing</span><span>›</span></a><a
+                    class="side-link muted" href="#/unit/4"><span><b class="unit-dot dot-pink">04</b> Quantum
+                        computing</span><span>›</span></a>
+                <div class="sidebar-label">Workspace</div><a class="side-link" href="#/lab/speedup">Virtual lab
+                    <span>↗</span></a><a class="side-link" href="#/assessment">Assessment <span>→</span></a>
+                <div class="sidebar-progress"><span>Your progress</span><strong data-progress-label>0%</strong>
+                    <div class="progress-track"><i data-progress-bar></i></div>
+                </div>
+            </aside>
+            <main id="app" tabindex="-1"></main>
+        </div>
     </div>
     <div class="toast" role="status" aria-live="polite" data-toast></div>
     <script type="module" src="./src/app.js"></script>
-  </body>
+</body>
+
 </html>

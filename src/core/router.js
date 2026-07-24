@@ -7,6 +7,7 @@ export function startRouter() {
     const app = document.querySelector('#app');
     if (!match) { window.location.hash = '#/'; return; }
     match.render(path, app);
+    globalThis.MathJax?.typesetPromise?.([app]);
     app.focus({ preventScroll: true });
     document.querySelectorAll('.side-link').forEach((link) => link.classList.toggle('active', link.getAttribute('href') === `#${path}`));
   };
