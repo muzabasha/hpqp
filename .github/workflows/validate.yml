@@ -3,11 +3,30 @@ on: [push, pull_request]
 permissions:
   contents: read
 jobs:
-  build:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20 }
-      - run: npm run check
-      - run: npm run build
+        with:
+          node-version: 20
+      - name: Syntax check
+        run: npm run check
+      - name: Build validation
+        run: npm run build
+      - name: Verify critical files exist
+        run: |
+          test -f index.html || (echo "Missing index.html" && exit 1)
+          test -f styles.css || (echo "Missing styles.css" && exit 1)
+          test -f src/app.js || (echo "Missing src/app.js" && exit 1)
+          echo "All critical files present"
+      - name: Check for broken hash links
+        run: node -e "
+          const fs = require('fs');
+          const html = fs.readFileSync('index.html','utf8');
+          const src = fs.readFileSync('src/app.js','utf8');
+          const all = html + src;
+          const routes = ['/', '/roadmap', '/syllabus', '/resources', '/assessment', '/unit/1', '/unit/2', '/unit/3', '/unit/4'];
+          routes.forEach(r => { if (!all.includes('#' + r)) console.warn('Warning: route ' + r + ' not found in source'); });
+          console.log('Route check complete');
+        "

@@ -3,5 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "scripts": { "check": "node --check src/app.js && node --check src/core/router.js && node --check src/data/course.js", "build": "node scripts/build-check.mjs", "test": "node scripts/build-check.mjs" }
+  "scripts": {
+    "check": "node --check src/app.js && node --check src/core/router.js && node --check src/data/course.js && node --check src/data/units.js && node --check src/components/labs.js && node --check src/components/topicLesson.js",
+    "validate": "node scripts/build-check.mjs",
+    "build": "node scripts/build-check.mjs",
+    "test": "node scripts/build-check.mjs"
+  }
 }
