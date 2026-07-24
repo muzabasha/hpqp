@@ -1,0 +1,11 @@
+export const course = {
+  code: 'B24EHS522', title: 'High Performance and Quantum Computing', semester: 'Semester V', category: 'Professional Elective',
+  prerequisites: ['Data Structures and Algorithms', 'Computer Organization and Architecture', 'Operating Systems', 'Basic Linear Algebra and Probability', 'C/C++ or Python proficiency'],
+  outcomes: ['Describe HPC foundations, memory hierarchy, performance metrics, and scalability laws.', 'Explain OpenMP, MPI, and quantum fundamentals.', 'Implement shared-memory, distributed-memory, and GPU solutions.', 'Analyze bottlenecks, synchronization, and scalability.', 'Evaluate classical HPC and quantum approaches.', 'Design a hybrid classical-quantum or optimized HPC prototype.'],
+  units: [
+    { id: 1, title: 'Foundations of high performance computing', status: 'active', description: 'Build the mental model for computation at scale: architectures, memory, performance, and energy.', topics: ['Why high performance computing?', 'Flynn’s taxonomy and parallel architectures', 'Memory hierarchy and cache coherence', 'Speedup, efficiency, and scalability laws', 'TOP500, Green500, and cluster basics'] },
+    { id: 2, title: 'Parallel programming models', status: 'next', description: 'Move from architecture to action with threads, processes, communication, and synchronization.', topics: ['OpenMP and loop parallelization', 'MPI and collective communication', 'Races, deadlocks, and synchronization', 'Load balancing and Python multiprocessing'] },
+    { id: 3, title: 'GPU computing and optimization', status: 'next', description: 'Understand GPU execution, memory behavior, profiling, and cloud-native acceleration.', topics: ['GPU architecture and CUDA basics', 'Memory coalescing and occupancy', 'Profiling and bottleneck analysis', 'Cloud HPC, containers, and AI accelerators'] },
+    { id: 4, title: 'Quantum computing', status: 'next', description: 'Explore qubits, circuits, algorithms, and hybrid classical-quantum problem solving.', topics: ['Qubits, gates, and measurement', 'Superposition and entanglement', 'Deutsch-Jozsa, Grover, and Shor', 'VQE, QAOA, and hybrid systems'] }
+  ]
+};

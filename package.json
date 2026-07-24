@@ -1,0 +1,7 @@
+{
+  "name": "hpqc-learning-platform",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "check": "node --check src/app.js && node --check src/core/router.js && node --check src/data/course.js", "build": "node scripts/build-check.mjs", "test": "node scripts/build-check.mjs" }
+}
