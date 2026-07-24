@@ -9,7 +9,12 @@ const REQUIRED = [
   'src/data/course.js',
   'src/data/units.js',
   'src/components/labs.js',
-  'src/components/topicLesson.js'
+  'src/components/topicLesson.js',
+  'src/data/topics/index.js',
+  'src/data/topics/unit1.js',
+  'src/data/topics/unit2.js',
+  'src/data/topics/unit3.js',
+  'src/data/topics/unit4.js'
 ];
 
 const errors = [];
