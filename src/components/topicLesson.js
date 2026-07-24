@@ -1,8 +1,25 @@
 import { getTopic, getUnitTopics } from '../data/topics/index.js';
 import { renderLab } from './labs.js';
+import { DIAGRAM_REGISTRY } from './interactiveDiagrams.js';
 
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 const list = (items) => items && items.length ? `<ul>${items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>` : '';
+
+// Get diagram for a topic based on unitId and topicId
+function getDiagramForTopic(unitId, topicId) {
+  const diagramMap = {
+    '1-1': 'parallel-processing',
+    '1-2': 'flynn-taxonomy',
+    '1-3': 'memory-hierarchy',
+    '1-4': 'amdahl-law'
+  };
+  const key = `${unitId}-${topicId}`;
+  const diagramId = diagramMap[key];
+  if (diagramId && DIAGRAM_REGISTRY[diagramId]) {
+    return DIAGRAM_REGISTRY[diagramId]();
+  }
+  return '';
+}
 
 function renderSection1(t, unitId, topicId) {
   const next = topicId < (getUnitTopics(unitId).length) ? topicId + 1 : null;
@@ -16,6 +33,12 @@ function renderSection2(t) {
   <div class="story-questions"><h4>Reflect on the story</h4><div class="checklist">${t.storyQuestions.map((q) => `<div class="story-q"><span class="story-q-icon">?</span><span>${esc(q)}</span></div>`).join('')}</div></div>
   <div class="callout"><strong>What did we just learn?</strong> ${esc(t.storyBridge)}</div>
   <details><summary>Technical vocabulary</summary>${list(t.terminology)}</details></section>`;
+}
+
+function renderInteractiveDiagram(unitId, topicId) {
+  const diagram = getDiagramForTopic(unitId, topicId);
+  if (!diagram) return '';
+  return `<section class="lesson-section"><div class="section-heading"><div><div class="eyebrow">Interactive Visual</div><h2>Explore the concept visually</h2></div><p>Interactive diagram with animations and real-time controls</p></div>${diagram}</section>`;
 }
 
 function renderSection3(t) {
@@ -71,6 +94,7 @@ export function renderTopicLesson(unitId, topicId) {
   <div class="lesson-nav"><a class="button" href="#/unit/${unitId}">← Unit map</a><span>Topic ${topicId} of ${total}</span><a class="button" href="#/unit/${unitId}/topic/${Math.min(topicId + 1, total)}">Next topic →</a></div>
   ${renderSection1(t, unitId, topicId)}
   ${renderSection2(t)}
+  ${renderInteractiveDiagram(unitId, topicId)}
   ${renderSection3(t)}
   ${renderSection4(t)}
   ${renderSection5(t)}

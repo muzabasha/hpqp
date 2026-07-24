@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check src/app.js && node --check src/core/router.js && node --check src/data/course.js && node --check src/data/units.js && node --check src/components/labs.js && node --check src/components/topicLesson.js && node --check src/data/topics/index.js && node --check src/data/topics/unit1.js && node --check src/data/topics/unit2.js && node --check src/data/topics/unit3.js && node --check src/data/topics/unit4.js",
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "serve": "node server.mjs",
+    "check": "node --check src/app.js && node --check src/core/router.js && node --check src/data/course.js && node --check src/data/units.js && node --check src/data/criticalQuestions.js && node --check src/data/projects.js && node --check src/components/labs.js && node --check src/components/topicLesson.js && node --check src/data/topics/index.js && node --check src/data/topics/unit1.js && node --check src/data/topics/unit2.js && node --check src/data/topics/unit3.js && node --check src/data/topics/unit4.js",
     "validate": "node scripts/build-check.mjs && node scripts/integrity-check.mjs",
     "build": "node scripts/build-check.mjs && node scripts/integrity-check.mjs",
     "test": "node scripts/build-check.mjs && node scripts/integrity-check.mjs"

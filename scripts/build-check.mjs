@@ -55,11 +55,17 @@ function walkDir(dir, ext, found = []) {
   return found;
 }
 
+import { execSync } from 'node:child_process';
+
 const jsFiles = walkDir('src', '.js');
 jsFiles.forEach((file) => {
+  try {
+    execSync(`node --check "${file}"`, { stdio: 'pipe' });
+  } catch (err) {
+    errors.push(`Syntax check failed for ${file}: ${err.message}`);
+  }
   const content = readFileSync(file, 'utf8');
   if (content.includes('var ')) warnings.push(`${file}: use const/let instead of var`);
-  if (content.includes('innerHTML') && file.includes('components')) {}
 });
 
 const htmlFiles = walkDir('.', '.html');

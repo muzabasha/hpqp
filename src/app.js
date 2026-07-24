@@ -138,6 +138,22 @@ document.addEventListener('click', (e) => {
       document.documentElement.dataset.theme = state.theme;
       save();
     }
+    if (action.dataset.action === 'toggle-presentation') {
+      const isPresentationMode = document.body.classList.toggle('presentation-mode');
+      document.documentElement.dataset.presentation = isPresentationMode;
+      
+      // Store presentation mode preference
+      state.presentationMode = isPresentationMode;
+      save();
+      
+      // Show toast notification
+      toast(isPresentationMode ? 'Presentation Mode Enabled - Press F to toggle' : 'Presentation Mode Disabled');
+      
+      // Scroll to top for better view
+      if (isPresentationMode) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
     if (action.dataset.action === 'mark-topic') {
       const key = `topic-${action.dataset.topic}`;
       if (!state.completed.includes(key)) state.completed.push(key);
@@ -203,6 +219,16 @@ document.addEventListener('click', (e) => {
   // Quantum Gate Buttons
   const gateBtn = e.target.closest('[data-gate]');
   if (gateBtn) updateQuantum(gateBtn.dataset.gate);
+
+  // Interactive Diagram Controls
+  const diagramAction = e.target.closest('[data-diagram-action]');
+  if (diagramAction) handleDiagramAction(diagramAction.dataset.diagramAction, e.target.closest('[data-diagram]'));
+
+  const flynnSelect = e.target.closest('[data-flynn-select]');
+  if (flynnSelect) handleFlynnSelect(flynnSelect.dataset.flynnSelect);
+
+  const memLayer = e.target.closest('[data-layer]');
+  if (memLayer) handleMemoryLayer(memLayer.dataset.layer);
 });
 
 const setText = (sel, val) => { const el = document.querySelector(sel); if (el) el.textContent = String(val); };
@@ -399,6 +425,141 @@ function handleInput(e) {
 document.addEventListener('input', handleInput);
 document.addEventListener('change', handleInput);
 
+// Interactive Diagram Handlers
+function handleDiagramAction(action, diagram) {
+  if (!diagram) return;
+  const type = diagram.dataset.diagram;
+  
+  if (type === 'parallel-processing') {
+    if (action === 'play') {
+      // Animate sequential tasks
+      const seqTasks = diagram.querySelectorAll('.sequential-tasks .task-block');
+      seqTasks.forEach((task, i) => {
+        setTimeout(() => {
+          task.style.opacity = '1';
+          task.classList.add('animating');
+          setTimeout(() => task.classList.remove('animating'), 1000);
+        }, i * 1000);
+      });
+      
+      // Animate parallel tasks (all at once)
+      const parTasks = diagram.querySelectorAll('.parallel-tasks .task-block');
+      setTimeout(() => {
+        parTasks.forEach(task => {
+          task.style.opacity = '1';
+          task.classList.add('animating');
+          setTimeout(() => task.classList.remove('animating'), 1000);
+        });
+      }, 4000);
+    } else if (action === 'reset') {
+      diagram.querySelectorAll('.task-block').forEach((task, i) => {
+        task.style.opacity = i === 0 ? '1' : '0.3';
+        task.classList.remove('animating');
+      });
+    }
+  } else if (type === 'amdahl') {
+    // Handled by input slider
+  }
+}
+
+function handleFlynnSelect(category) {
+  document.querySelectorAll('[data-flynn-select]').forEach(btn => btn.classList.remove('primary'));
+  document.querySelector(`[data-flynn-select="${category}"]`)?.classList.add('primary');
+  
+  document.querySelectorAll('.flynn-quad').forEach(quad => {
+    quad.classList.toggle('active', quad.dataset.quad === category);
+  });
+  
+  const insights = {
+    'SISD': '<strong>SISD:</strong> Traditional single-core execution. One instruction processes one data element at a time. Example: Classic von Neumann architecture.',
+    'SIMD': '<strong>SIMD:</strong> Single instruction broadcast to multiple data elements in parallel. Example: GPU vector processing, CPU SIMD extensions (AVX, SSE).',
+    'MISD': '<strong>MISD:</strong> Multiple different instructions process the same data stream (rare). Example: Fault-tolerant aerospace systems with redundant processing.',
+    'MIMD': '<strong>MIMD:</strong> Multiple independent instruction streams on independent data. Example: Multi-core CPUs, distributed HPC clusters.'
+  };
+  
+  const insightEl = document.querySelector('[data-flynn-insight]');
+  if (insightEl) insightEl.innerHTML = insights[category] || '';
+}
+
+function handleMemoryLayer(layer) {
+  const insights = {
+    'registers': '<strong>Registers:</strong> Fastest memory (~1 ns access), smallest capacity (< 1 KB). Located inside CPU core. Stores immediate operands and computation results.',
+    'l1': '<strong>L1 Cache:</strong> First-level cache (~1-2 ns), 32-64 KB per core. Split into instruction cache (I$) and data cache (D$). Directly feeds CPU pipeline.',
+    'l2': '<strong>L2 Cache:</strong> Second-level cache (~5-10 ns), 256 KB - 1 MB per core. Unified cache for both instructions and data. Handles L1 cache misses.',
+    'l3': '<strong>L3 Cache:</strong> Last-level cache (~20-40 ns), 8-32 MB shared across all cores. Reduces main memory access. Critical for multi-core coherence.',
+    'ram': '<strong>Main Memory (RAM):</strong> DRAM modules (~100 ns), 8-128 GB capacity. Persistent program state and data. Handles cache hierarchy misses.',
+    'storage': '<strong>Storage (SSD/HDD):</strong> Non-volatile storage (~1 ms for SSD), terabytes to petabytes. Permanent data persistence. Slowest tier.'
+  };
+  
+  const insightEl = document.querySelector('[data-mem-insight]');
+  if (insightEl) insightEl.innerHTML = insights[layer] || insights['registers'];
+}
+
+function updateAmdahlCurve() {
+  const slider = document.querySelector('[data-amdahl-slider]');
+  if (!slider) return;
+  
+  const serialPct = Number(slider.value);
+  const serialFrac = serialPct / 100;
+  const parallelFrac = 1 - serialFrac;
+  
+  // Update label
+  const fracLabel = document.querySelector('[data-amdahl-frac]');
+  if (fracLabel) fracLabel.textContent = `${serialPct}%`;
+  
+  // Calculate max speedup
+  const maxSpeedup = 1 / serialFrac;
+  const maxLabel = document.querySelector('[data-max-label]');
+  if (maxLabel) maxLabel.textContent = `Max: ${maxSpeedup.toFixed(1)}×`;
+  
+  const maxSpeedupText = document.querySelector('[data-max-speedup-text]');
+  if (maxSpeedupText) maxSpeedupText.textContent = `Max Speedup: ${maxSpeedup.toFixed(1)}×`;
+  
+  // Update ceiling line position (scale: 50px per 5 speedup units)
+  const maxY = 380 - Math.min(maxSpeedup * 10, 300);
+  const maxLine = document.querySelector('[data-max-line]');
+  if (maxLine) {
+    maxLine.setAttribute('y1', maxY);
+    maxLine.setAttribute('y2', maxY);
+  }
+  
+  const ceilingRect = document.querySelector('[data-ceiling-rect]');
+  if (ceilingRect) {
+    ceilingRect.setAttribute('y', 50);
+    ceilingRect.setAttribute('height', maxY - 50);
+  }
+  
+  // Generate Amdahl curve path
+  const processors = [1, 2, 4, 8, 16, 32, 64];
+  const xPositions = [80, 147, 215, 350, 485, 620, 750];
+  
+  let pathData = '';
+  processors.forEach((p, i) => {
+    const speedup = 1 / (serialFrac + parallelFrac / p);
+    const y = 380 - (speedup * 10); // Scale: 10px per speedup unit
+    if (i === 0) {
+      pathData = `M ${xPositions[i]},${y}`;
+    } else {
+      pathData += ` L ${xPositions[i]},${y}`;
+    }
+  });
+  
+  const curvePath = document.querySelector('[data-curve-path]');
+  if (curvePath) curvePath.setAttribute('d', pathData);
+}
+
+// Listen for Amdahl slider changes
+document.addEventListener('input', (e) => {
+  if (e.target.matches('[data-amdahl-slider]')) {
+    updateAmdahlCurve();
+  }
+});
+
+// Initialize diagrams on page load
+setTimeout(() => {
+  updateAmdahlCurve();
+}, 100);
+
 function updateFlynn(cat) {
   const inst = document.querySelector('[data-flynn-inst]');
   const data = document.querySelector('[data-flynn-data]');
@@ -486,6 +647,32 @@ function updateQuantum(gate) {
     if (fb) fb.textContent = 'Reset register back to ground state |0⟩.';
     if (wireA) wireA.classList.remove('active'); if (wireB) wireB.classList.remove('active');
   }
+}
+
+// Keyboard Shortcuts
+document.addEventListener('keydown', (e) => {
+  // F key for presentation mode toggle
+  if (e.key === 'f' || e.key === 'F') {
+    if (!e.target.matches('input, textarea')) {
+      e.preventDefault();
+      const btn = document.querySelector('[data-action="toggle-presentation"]');
+      if (btn) btn.click();
+    }
+  }
+  
+  // Escape key to exit presentation mode
+  if (e.key === 'Escape') {
+    if (document.body.classList.contains('presentation-mode')) {
+      const btn = document.querySelector('[data-action="toggle-presentation"]');
+      if (btn) btn.click();
+    }
+  }
+});
+
+// Restore presentation mode on page load
+if (state.presentationMode) {
+  document.body.classList.add('presentation-mode');
+  document.documentElement.dataset.presentation = 'true';
 }
 
 document.documentElement.dataset.theme = state.theme;

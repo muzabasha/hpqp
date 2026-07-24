@@ -60,19 +60,19 @@ Stage B is MIMD (Multiple Instruction Multiple Data). Individual voxels follow d
         { points: 4, criteria: 'MESI state transitions diagram/explanation: Modified [M] -> Invalid [I] ping-ponging over the interconnect.' },
         { points: 3, criteria: 'Two solutions (Thread-local accumulators, cache line padding `alignas(64)`) with speedup rationale.' }
       ],
-      modelAnswer: `(a) The phenomenon is False Sharing. A `double` occupies 8 bytes, so all 16 elements of `thread_results[16]` fit inside a single 64-byte cache line (16 x 8 = 128 bytes, spanning just 2 cache lines). Even though threads access distinct array indices, updating adjacent bytes forces constant cache line invalidations across cores.
+      modelAnswer: `(a) The phenomenon is False Sharing. A \`double\` occupies 8 bytes, so all 16 elements of \`thread_results[16]\` fit inside a single 64-byte cache line (16 x 8 = 128 bytes, spanning just 2 cache lines). Even though threads access distinct array indices, updating adjacent bytes forces constant cache line invalidations across cores.
 
 (b) MESI Protocol Transitions:
-1. Core 0 reads `thread_results[0]` into L1 cache -> Cache Line State = Exclusive [E] or Shared [S].
-2. Core 0 writes `thread_results[0]` -> Line transitions to Modified [M] in Core 0's L1.
-3. Core 1 writes `thread_results[1]` (same cache line) -> Interconnect sends Bus Invalidate signal.
+1. Core 0 reads \`thread_results[0]\` into L1 cache -> Cache Line State = Exclusive [E] or Shared [S].
+2. Core 0 writes \`thread_results[0]\` -> Line transitions to Modified [M] in Core 0's L1.
+3. Core 1 writes \`thread_results[1]\` (same cache line) -> Interconnect sends Bus Invalidate signal.
 4. Core 0's cache line transitions from Modified [M] to Invalid [I]. Core 0 must write back to L3/RAM.
 5. Core 1 acquires line -> State = [M] in Core 1.
 6. This continuous [M] <-> [I] ping-pong thrashes the cache interconnect, generating millions of stall cycles.
 
 (c) Solutions:
-1. Use Thread-Local Variables: Accumulate sum in a local register/variable inside the loop, and write to `thread_results[i]` once at completion.
-2. Cache Line Padding: Declare array with alignment: `struct alignas(64) PaddedDouble { double val; }; PaddedDouble thread_results[16];`
+1. Use Thread-Local Variables: Accumulate sum in a local register/variable inside the loop, and write to \`thread_results[i]\` once at completion.
+2. Cache Line Padding: Declare array with alignment: \`struct alignas(64) PaddedDouble { double val; }; PaddedDouble thread_results[16];\`
 Predict Speedup: Eliminating false sharing recovers linear scaling (~12x to 15x speedup on 16 cores).`
     },
     {
@@ -141,10 +141,10 @@ Vendor B saves $21.68 Million in operational electricity over 5 years. Even thou
       modelAnswer: `(a) Static scheduling divides the 100,000 iterations into 16 equal contiguous blocks (~6,250 iterations per thread) at compile/launch time. Threads assigned blocks in the collision center handle thousands of 500ms cells (taking ~32s), while peripheral threads finish their 1ms cells in under 1 second and sit idle. The barrier waits for the slowest thread.
 
 (b) Comparison:
-- `schedule(dynamic, chunk)`: Threads request a fixed `chunk` of iterations from a dynamic queue whenever they become idle. Reduces load imbalance but incurs lock synchronization overhead on every chunk fetch.
-- `schedule(guided, chunk)`: Iteration chunks start large and decrease exponentially (proportional to unassigned iterations / thread count) down to `chunk`. Minimizes synchronization overhead early while preserving fine-grained balancing at the end.
+- \`schedule(dynamic, chunk)\`: Threads request a fixed \`chunk\` of iterations from a dynamic queue whenever they become idle. Reduces load imbalance but incurs lock synchronization overhead on every chunk fetch.
+- \`schedule(guided, chunk)\`: Iteration chunks start large and decrease exponentially (proportional to unassigned iterations / thread count) down to \`chunk\`. Minimizes synchronization overhead early while preserving fine-grained balancing at the end.
 
-(c) Recommendation: Use `#pragma omp parallel for schedule(guided, 16)` or `schedule(dynamic, 32)`.
+(c) Recommendation: Use \`#pragma omp parallel for schedule(guided, 16)\` or \`schedule(dynamic, 32)\`.
 Expected Improvement: Load balancing distributes the 500ms heavy iterations evenly across all 16 threads. Total runtime drops from 32s toward the theoretical ideal (~2.2 seconds), achieving ~14x speedup over static scheduling.`
     },
     {
@@ -163,11 +163,11 @@ Expected Improvement: Load balancing distributes the 500ms heavy iterations even
 
 (b) Complexity Comparison:
 - Naive Point-to-Point Hub: Takes 2 * (p - 1) sequential communication steps = 2,046 steps for p = 1,024.
-- `MPI_Allreduce` (Recursive Doubling / Ring): Takes 2 * log2(p) steps = 2 * 10 = 20 steps for p = 1,024. Ring allreduce additionally splits the message payload into p segments, making transfer time independent of p for large messages.
+- \`MPI_Allreduce\` (Recursive Doubling / Ring): Takes 2 * log2(p) steps = 2 * 10 = 20 steps for p = 1,024. Ring allreduce additionally splits the message payload into p segments, making transfer time independent of p for large messages.
 
 (c) Refactored Solution:
 Replace the custom send/receive loops with a single collective call:
-`MPI_Allreduce(local_forces, global_forces, count, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);`
+\`MPI_Allreduce(local_forces, global_forces, count, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);\`
 Quantified Speedup: Reduces communication steps from 2,046 to 20 (a ~100x reduction in latency), reducing communication overhead from 78% to under 5% of total runtime.`
     },
     {
@@ -183,8 +183,8 @@ Quantified Speedup: Reduces communication steps from 2,046 to 20 (a ~100x reduct
         { points: 4, criteria: 'Redesigned protocol: Enforce global lock hierarchy (e.g. lock account with smaller memory address first) or use `std::lock(from.mtx, to.mtx)`.' }
       ],
       modelAnswer: `(a) Concurrency Failure: Deadlock due to Circular Wait (Lock Order Inversion).
-- Thread 1 (`transfer(A, B, 100)`): Locks `A.mtx`, then attempts to acquire `B.mtx`.
-- Thread 2 (`transfer(B, A, 50)`): Locks `B.mtx`, then attempts to acquire `A.mtx`.
+- Thread 1 (\`transfer(A, B, 100)\`): Locks \`A.mtx\`, then attempts to acquire \`B.mtx\`.
+- Thread 2 (\`transfer(B, A, 50)\`): Locks \`B.mtx\`, then attempts to acquire \`A.mtx\`.
 Both threads hold one lock and wait indefinitely for the other, stalling progress.
 
 (b) Four Coffman Conditions for Deadlock:
@@ -206,7 +206,7 @@ void transfer(Account& from, Account& to, double amount) {
     to.balance += amount;
 }
 \`\`\`
-Method 2: Use `std::lock(from.mtx, to.mtx)` which uses a deadlock-avoidance algorithm (like Havender's scheme) to lock all arguments without risk of deadlock.`
+Method 2: Use \`std::lock(from.mtx, to.mtx)\` which uses a deadlock-avoidance algorithm (like Havender's scheme) to lock all arguments without risk of deadlock.`
     },
     {
       id: 'u2-q04',
@@ -221,8 +221,8 @@ Method 2: Use `std::lock(from.mtx, to.mtx)` which uses a deadlock-avoidance algo
         { points: 3, criteria: 'GIL analysis: Web crawling is I/O-bound (network wait), so Python `threading` or `asyncio` outperforms heavyweight `multiprocessing` by eliminating process spawn & IPC overhead.' }
       ],
       modelAnswer: `(a) Primary Bottlenecks:
-1. Central Queue Lock Contention: 32 workers simultaneously acquire and release the internal lock of a single `multiprocessing.Queue`, causing worker threads to spend 88% of their time waiting in lock queues.
-2. IPC Serialization Overhead: `multiprocessing.Queue` pickles and unpickles every URL object across process boundaries, consuming massive CPU overhead for 500,000 items.
+1. Central Queue Lock Contention: 32 workers simultaneously acquire and release the internal lock of a single \`multiprocessing.Queue\`, causing worker threads to spend 88% of their time waiting in lock queues.
+2. IPC Serialization Overhead: \`multiprocessing.Queue\` pickles and unpickles every URL object across process boundaries, consuming massive CPU overhead for 500,000 items.
 
 (b) Work-Stealing Deque Architecture:
 - Each worker process maintains its own private double-ended queue (Deque).
@@ -232,7 +232,7 @@ Method 2: Use `std::lock(from.mtx, to.mtx)` which uses a deadlock-avoidance algo
 
 (c) Python Threading vs Multiprocessing:
 Web crawling is an I/O-bound workload (threads spend most time waiting for network HTTP responses).
-The Python GIL (Global Interpreter Lock) is released during socket I/O operations. Therefore, Python `threading` (or `asyncio`) is far superior to `multiprocessing` here: it eliminates process creation overhead and pickle serialization while allowing thousands of concurrent web requests within a single process.`
+The Python GIL (Global Interpreter Lock) is released during socket I/O operations. Therefore, Python \`threading\` (or \`asyncio\`) is far superior to \`multiprocessing\` here: it eliminates process creation overhead and pickle serialization while allowing thousands of concurrent web requests within a single process.`
     }
   ],
   3: [
@@ -258,9 +258,9 @@ The Python GIL (Global Interpreter Lock) is released during socket I/O operation
 If the compiler allocates 64 registers per thread, only 65,536 / 64 = 1,024 threads can run simultaneously (50% occupancy).
 
 (c) Optimization Techniques:
-1. Use `__launch_bounds__(512, 4)` qualifier on the kernel to instruct the nvcc compiler to cap register usage to allow 4 blocks of 512 threads per SM.
-2. Compile with `-maxrregcount=32` flag to force register spilling to local memory/cache.
-3. Move large local arrays to Shared Memory (`__shared__`) or structure code to reduce variable lifespan so the compiler reuses registers.`
+1. Use \`__launch_bounds__(512, 4)\` qualifier on the kernel to instruct the nvcc compiler to cap register usage to allow 4 blocks of 512 threads per SM.
+2. Compile with \`-maxrregcount=32\` flag to force register spilling to local memory/cache.
+3. Move large local arrays to Shared Memory (\`__shared__\`) or structure code to reduce variable lifespan so the compiler reuses registers.`
     },
     {
       id: 'u3-q02',
@@ -275,8 +275,8 @@ If the compiler allocates 64 registers per thread, only 65,536 / 64 = 1,024 thre
         { points: 3, criteria: 'Correct CUDA kernel code with `__shared__ tile[32][33]` (+1 padding) for coalesced read and write.' }
       ],
       modelAnswer: `(a) Global Memory Coalescing Diagnosis:
-- Read access `A[row * N + col]`: Adjacent threads in a warp have adjacent `col` indices (`col, col+1, col+2...`). Memory accesses fall into consecutive addresses within the same 128-byte cache line -> PERFECTLY COALESCED.
-- Write access `B[col * N + row]`: Adjacent threads in a warp have the same `col` but different `row` values, writing to addresses separated by `N * 4 bytes` (16 KB stride) -> UNCOALESCED.
+- Read access \`A[row * N + col]\`: Adjacent threads in a warp have adjacent \`col\` indices (\`col, col+1, col+2...\`). Memory accesses fall into consecutive addresses within the same 128-byte cache line -> PERFECTLY COALESCED.
+- Write access \`B[col * N + row]\`: Adjacent threads in a warp have the same \`col\` but different \`row\` values, writing to addresses separated by \`N * 4 bytes\` (16 KB stride) -> UNCOALESCED.
 
 (b) Warp Memory Transaction Breakdown:
 When 32 threads in a warp issue a coalesced read (stride 1 float32), the hardware combines the 32 x 4-byte requests into a single 128-byte DRAM transaction.
@@ -349,7 +349,7 @@ Optimizing raw FP32 arithmetic instructions will provide 0% speedup because the 
         { points: 3, criteria: 'Kubernetes configuration solutions (NCCL_DEBUG=INFO, hostNetwork, SR-IOV network attachment, IPC host sharing).' }
       ],
       modelAnswer: `(a) Diagnosis: Inter-Node Network Interconnect Bottleneck.
-Intra-node communication uses NVLink (900 GB/s per GPU). Inter-node gradient synchronization (`NCCL AllReduce`) is falling back to standard TCP/IP over a shared virtual network bridge, routing GPU memory through host CPU RAM and OS kernel network stacks. Without GPUDirect RDMA and dedicated InfiniBand interfaces inside the Kubernetes containers, network latency increases by 50x.
+Intra-node communication uses NVLink (900 GB/s per GPU). Inter-node gradient synchronization (\`NCCL AllReduce\`) is falling back to standard TCP/IP over a shared virtual network bridge, routing GPU memory through host CPU RAM and OS kernel network stacks. Without GPUDirect RDMA and dedicated InfiniBand interfaces inside the Kubernetes containers, network latency increases by 50x.
 
 (b) Interconnect Bandwidth Comparison:
 - NVLink 4.0: 900 GB/s bidirectional bandwidth per GPU. Designed for intra-node ultra-fast GPU-to-GPU memory sharing.
@@ -357,12 +357,12 @@ Intra-node communication uses NVLink (900 GB/s per GPU). Inter-node gradient syn
 - InfiniBand NDR (400 Gbps): 50 GB/s per port. Enables inter-node GPUDirect RDMA, allowing a remote GPU to write directly to another node's GPU memory without touching CPU RAM or OS network buffers.
 
 (c) Kubernetes Container Solution Specification:
-1. Enable `hostNetwork: true` and `hostIPC: true` in the K8s Pod spec to bypass container network bridges and share IPC sockets.
+1. Enable \`hostNetwork: true\` and \`hostIPC: true\` in the K8s Pod spec to bypass container network bridges and share IPC sockets.
 2. Inject InfiniBand SR-IOV network interfaces using Multus CNI.
 3. Configure environment variables in the container:
-   - `export NCCL_IB_DISABLE=0` (Enables InfiniBand)
-   - `export NCCL_NET_GDR_LEVEL=5` (Enables GPUDirect RDMA across PCIe switches)
-   - `export NCCL_BUFFSIZE=8388608` (Increases NCCL ring buffer size to 8MB)
+   - \`export NCCL_IB_DISABLE=0\` (Enables InfiniBand)
+   - \`export NCCL_NET_GDR_LEVEL=5\` (Enables GPUDirect RDMA across PCIe switches)
+   - \`export NCCL_BUFFSIZE=8388608\` (Increases NCCL ring buffer size to 8MB)
 Result: Inter-node scaling recovers from 1.8x to ~7.4x across 8 nodes.`
     }
   ],
