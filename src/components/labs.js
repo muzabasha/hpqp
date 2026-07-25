@@ -49,6 +49,12 @@ const LAB_CHALLENGES = {
     },
     hint: 'Try around 16-20 nodes with 6000-8000 GFLOPs'
   },
+  'flynn-taxonomy': {
+    title: 'Challenge: Maximize Parallelism',
+    description: 'Find the architecture that achieves 16× speedup for vector operations',
+    check: (arch) => arch === 'SIMD',
+    hint: 'SIMD processes 16 data items with a single instruction broadcast'
+  },
   'speedup-laws': {
     title: 'Challenge: Amdahl\'s Ceiling',
     description: 'Find the serial fraction that limits speedup to exactly 10× with 64 processors',
@@ -357,9 +363,169 @@ function labHpcThroughput() {
   </div>`;
 }
 
-// 2. Flynn's Taxonomy Simulator
+// 2. Flynn's Taxonomy Simulator (ENHANCED)
 function labFlynnTaxonomy() {
-  return `<div class="lab-layout"><div class="lab-panel"><div class="eyebrow">Unit 01 · Topic 02 Lab</div><h2>Flynn's Taxonomy Execution Pipeline</h2><p class="lede">Select an architectural class (SISD, SIMD, MISD, MIMD) and observe how instruction and data streams flow through processing units.</p><div class="chip-row"><button class="button active" data-flynn="SISD">SISD · Serial</button><button class="button" data-flynn="SIMD">SIMD · Vector/GPU</button><button class="button" data-flynn="MISD">MISD · Redundant</button><button class="button" data-flynn="MIMD">MIMD · Multi-Core</button></div><div class="flynn-canvas-box"><div class="flynn-diagram" data-flynn-diagram><div class="stream-box inst">Instruction Stream: <strong data-flynn-inst>Single (PC)</strong></div><div class="stream-box data">Data Stream: <strong data-flynn-data>Single (Scalar)</strong></div><div class="proc-grid" data-flynn-procs><span class="proc-unit active">ALU 0</span></div></div></div><div class="result"><div><strong data-flynn-cycles>100 cycles</strong><span>total cycles</span></div><div><strong data-flynn-lanes>1 lane</strong><span>active execution</span></div><div><strong data-flynn-speedup>1.00×</strong><span>vector speedup</span></div></div></div><aside class="lab-panel"><div class="eyebrow">Architecture Insight</div><h2>What makes SIMD special?</h2><p class="callout" data-flynn-feedback>SISD executes 1 instruction on 1 data item per cycle. Switch to SIMD to see 1 instruction broadcast across 16 data lanes simultaneously!</p><button class="button primary" data-action="mark-lab" data-lab="flynn-taxonomy">Mark lab explored ✓</button></aside></div>`;
+  const tutorialSteps = TUTORIAL_STEPS['flynn-taxonomy'] || [];
+  const challenge = LAB_CHALLENGES['flynn-taxonomy'] || {
+    title: 'Challenge: Maximize Parallelism',
+    description: 'Find the architecture that achieves 16× speedup for vector operations',
+    hint: 'SIMD processes 16 data items with a single instruction broadcast',
+    check: (arch) => arch === 'SIMD'
+  };
+  
+  return `<div class="lab-layout">
+    <!-- Tutorial Progress Bar -->
+    <div class="lab-tutorial-bar">
+      <div class="tutorial-controls">
+        <button class="tutorial-btn" data-tutorial-action="start" data-lab-id="flynn-taxonomy">
+          <span>📚 Start Tutorial</span>
+        </button>
+        <div class="tutorial-progress" data-tutorial-progress style="display:none;">
+          <span class="tutorial-step-indicator">Step <strong data-step-current>1</strong> of ${tutorialSteps.length}</span>
+          <div class="tutorial-progress-bar">
+            <div class="tutorial-progress-fill" data-progress-fill style="width:25%"></div>
+          </div>
+          <button class="tutorial-nav-btn" data-tutorial-action="next">Next →</button>
+          <button class="tutorial-nav-btn secondary" data-tutorial-action="skip">Skip Tutorial</button>
+        </div>
+      </div>
+      <div class="tutorial-hint" data-tutorial-hint style="display:none;">
+        <span class="hint-icon">💡</span>
+        <span data-hint-text>Begin with SISD to understand serial execution</span>
+      </div>
+    </div>
+    
+    <div class="lab-panel">
+      <div class="eyebrow">Unit 01 · Topic 02 Lab</div>
+      <h2>Flynn's Taxonomy Execution Pipeline</h2>
+      <p class="lede">Select an architectural class (SISD, SIMD, MISD, MIMD) and observe how instruction and data streams flow through processing units.</p>
+      
+      <!-- Challenge Card -->
+      <div class="lab-challenge-card" data-challenge-card>
+        <div class="challenge-header">
+          <span class="challenge-badge">🏆 Challenge</span>
+          <h3>${challenge.title}</h3>
+        </div>
+        <p class="challenge-desc">${challenge.description}</p>
+        <div class="challenge-status" data-challenge-status>
+          <span class="status-indicator pending">⏳ Not Completed</span>
+          <button class="hint-toggle-btn" data-action="toggle-hint">Show Hint</button>
+        </div>
+        <p class="challenge-hint" data-challenge-hint style="display:none;">💡 ${challenge.hint}</p>
+      </div>
+      
+      <div class="chip-row">
+        <button class="button active" data-flynn="SISD">SISD · Serial</button>
+        <button class="button" data-flynn="SIMD">SIMD · Vector/GPU</button>
+        <button class="button" data-flynn="MISD">MISD · Redundant</button>
+        <button class="button" data-flynn="MIMD">MIMD · Multi-Core</button>
+      </div>
+      
+      <div class="flynn-canvas-box">
+        <div class="flynn-diagram" data-flynn-diagram>
+          <div class="stream-box inst">Instruction Stream: <strong data-flynn-inst>Single (PC)</strong></div>
+          <div class="stream-box data">Data Stream: <strong data-flynn-data>Single (Scalar)</strong></div>
+          <div class="proc-grid" data-flynn-procs><span class="proc-unit active">ALU 0</span></div>
+        </div>
+      </div>
+      
+      <div class="result-enhanced">
+        <div class="result-card">
+          <div class="result-icon">⏱️</div>
+          <strong data-flynn-cycles>100 cycles</strong>
+          <span>total cycles</span>
+          <div class="result-comparison">Serial baseline</div>
+        </div>
+        <div class="result-card highlight">
+          <div class="result-icon">🔢</div>
+          <strong data-flynn-lanes>1 lane</strong>
+          <span>active execution</span>
+          <div class="result-comparison">Processing units</div>
+        </div>
+        <div class="result-card">
+          <div class="result-icon">⚡</div>
+          <strong data-flynn-speedup>1.00×</strong>
+          <span>vector speedup</span>
+          <div class="result-comparison">vs SISD baseline</div>
+        </div>
+      </div>
+      
+      <!-- Architecture Comparison Table -->
+      <div class="lab-insights-panel">
+        <h4>📊 Architecture Characteristics</h4>
+        <table class="ref-table architecture-table">
+          <tr>
+            <td><strong>SISD</strong></td>
+            <td>Single-core CPU, 1 instruction/cycle</td>
+          </tr>
+          <tr>
+            <td><strong>SIMD</strong></td>
+            <td>GPU/Vector units, 16 data lanes</td>
+          </tr>
+          <tr>
+            <td><strong>MISD</strong></td>
+            <td>Fault-tolerant, redundant computation</td>
+          </tr>
+          <tr>
+            <td><strong>MIMD</strong></td>
+            <td>Multi-core, independent instructions</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    
+    <aside class="lab-panel">
+      <div class="eyebrow">Architecture Insight</div>
+      <h2>What makes SIMD special?</h2>
+      
+      <!-- Real-time Feedback -->
+      <div class="feedback-box" data-feedback-box>
+        <p class="callout" data-flynn-feedback>SISD executes 1 instruction on 1 data item per cycle. Switch to SIMD to see 1 instruction broadcast across 16 data lanes simultaneously!</p>
+      </div>
+      
+      <!-- Use Cases Panel -->
+      <div class="metrics-tracking">
+        <h4>Real-World Applications</h4>
+        <div class="metric-row">
+          <span>SISD:</span>
+          <strong>Traditional CPUs</strong>
+        </div>
+        <div class="metric-row">
+          <span>SIMD:</span>
+          <strong>GPUs, AVX/SSE</strong>
+        </div>
+        <div class="metric-row">
+          <span>MISD:</span>
+          <strong>Space Shuttle</strong>
+        </div>
+        <div class="metric-row">
+          <span>MIMD:</span>
+          <strong>Server Clusters</strong>
+        </div>
+      </div>
+      
+      <!-- Quick Reference -->
+      <div class="quick-reference">
+        <h4>Key Metrics</h4>
+        <table class="ref-table">
+          <tr>
+            <td>SIMD Speedup</td>
+            <td>Up to 16×</td>
+          </tr>
+          <tr>
+            <td>GPU Cores</td>
+            <td>1000s of ALUs</td>
+          </tr>
+          <tr>
+            <td>Modern CPU</td>
+            <td>4-64 cores</td>
+          </tr>
+        </table>
+      </div>
+      
+      <button class="button primary" data-action="mark-lab" data-lab="flynn-taxonomy">Mark lab explored ✓</button>
+    </aside>
+  </div>`;
 }
 
 // 3. Cache Coherence & MESI Simulator
@@ -367,9 +533,169 @@ function labCacheCoherence() {
   return `<div class="lab-layout"><div class="lab-panel"><div class="eyebrow">Unit 01 · Topic 03 Lab</div><h2>Memory Hierarchy & MESI Cache Coherence</h2><p class="lede">Simulate read and write operations across multi-core L1/L2 caches to observe MESI protocol state transitions (Modified, Exclusive, Shared, Invalid).</p><div class="control"><label for="cache-pattern">Access Pattern</label><select id="cache-pattern" data-cache-pattern><option value="seq">Sequential Access (High Spatial Locality)</option><option value="stride">Strided Access (Medium Locality)</option><option value="rand">Random Access (Poor Locality)</option><option value="sharing">False Sharing (Thread Collision)</option></select></div><div class="control"><label for="cache-cores">Cores Sharing Memory <output data-cache-cores-val>4</output></label><input id="cache-cores" data-cache-cores type="range" min="1" max="8" value="4" /></div><div class="mesi-status-grid"><div class="mesi-core"><span>Core 0 Cache Line</span><strong data-mesi-c0 class="mesi-badge m-mod">Modified [M]</strong></div><div class="mesi-core"><span>Core 1 Cache Line</span><strong data-mesi-c1 class="mesi-badge m-inv">Invalid [I]</strong></div><div class="mesi-core"><span>Core 2 Cache Line</span><strong data-mesi-c2 class="mesi-badge m-inv">Invalid [I]</strong></div><div class="mesi-core"><span>Core 3 Cache Line</span><strong data-mesi-c3 class="mesi-badge m-inv">Invalid [I]</strong></div></div><div class="result"><div><strong data-cache-hit>93.8%</strong><span>L1 hit rate</span></div><div><strong data-cache-eat>2.4 ns</strong><span>effective access time</span></div><div><strong data-cache-bus>Low</strong><span>coherence bus traffic</span></div></div></div><aside class="lab-panel"><div class="eyebrow">Cache Protocol</div><h2>Read the MESI State</h2><p class="callout" data-cache-feedback>Sequential access maximizes cache line utilization (64 bytes = 8 doubles). False sharing causes constant cache line invalidations ([I] state) across cores!</p><button class="button primary" data-action="mark-lab" data-lab="cache-coherence">Mark lab explored ✓</button></aside></div>`;
 }
 
-// 4. Speedup & Scalability Laws (Amdahl vs Gustafson)
+// 4. Speedup & Scalability Laws (Amdahl vs Gustafson) - ENHANCED
 function labSpeedupLaws() {
-  return `<div class="lab-layout"><div class="lab-panel"><div class="eyebrow">Unit 01 · Topic 04 Lab</div><h2>Amdahl vs Gustafson Scalability Simulator</h2><p class="lede">Compare Strong Scaling (fixed problem size) vs Weak Scaling (problem scales with processors). Sweep processors and serial fraction to visualize theoretical ceilings.</p><div class="control"><label for="serial-frac">Serial Fraction (1 - f) <output data-serial-frac-val>5%</output></label><input id="serial-frac" data-serial-frac type="range" min="1" max="40" value="5" /></div><div class="control"><label for="law-procs">Processors (p) <output data-law-procs-val>64</output></label><input id="law-procs" data-law-procs type="range" min="1" max="256" value="64" /></div><div class="formula">Amdahl: S = 1 / ((1-f) + f/p) &nbsp; | &nbsp; Gustafson: S = p - (1-f)(p-1)</div><div class="result"><div><strong data-amdahl-speedup>15.61×</strong><span>Amdahl speedup</span></div><div><strong data-gustafson-speedup>60.85×</strong><span>Gustafson speedup</span></div><div><strong data-law-efficiency>24.4%</strong><span>Amdahl efficiency</span></div></div><div class="model-chart"><i data-chart-amdahl style="height:24%" title="Amdahl"></i><i data-chart-gustafson style="height:95%" title="Gustafson"></i></div><div class="chart-labels"><span>Amdahl (Strong)</span><span>Gustafson (Weak)</span></div></div><aside class="lab-panel"><div class="eyebrow">Scalability Ceiling</div><h2>Amdahl vs Gustafson</h2><p class="callout" data-law-feedback>With a 5% serial fraction, Amdahl caps maximum possible speedup at 20× even with infinite cores. Gustafson shows weak scaling achieves 60.85× on 64 cores!</p><button class="button primary" data-action="mark-lab" data-lab="speedup-laws">Mark lab explored ✓</button></aside></div>`;
+  const tutorialSteps = TUTORIAL_STEPS['speedup-laws'] || [];
+  const challenge = LAB_CHALLENGES['speedup-laws'];
+  
+  return `<div class="lab-layout">
+    <!-- Tutorial Progress Bar -->
+    <div class="lab-tutorial-bar">
+      <div class="tutorial-controls">
+        <button class="tutorial-btn" data-tutorial-action="start" data-lab-id="speedup-laws">
+          <span>📚 Start Tutorial</span>
+        </button>
+        <div class="tutorial-progress" data-tutorial-progress style="display:none;">
+          <span class="tutorial-step-indicator">Step <strong data-step-current>1</strong> of ${tutorialSteps.length}</span>
+          <div class="tutorial-progress-bar">
+            <div class="tutorial-progress-fill" data-progress-fill style="width:25%"></div>
+          </div>
+          <button class="tutorial-nav-btn" data-tutorial-action="next">Next →</button>
+          <button class="tutorial-nav-btn secondary" data-tutorial-action="skip">Skip Tutorial</button>
+        </div>
+      </div>
+      <div class="tutorial-hint" data-tutorial-hint style="display:none;">
+        <span class="hint-icon">💡</span>
+        <span data-hint-text>Set serial fraction to 5% and 16 processors</span>
+      </div>
+    </div>
+    
+    <div class="lab-panel">
+      <div class="eyebrow">Unit 01 · Topic 04 Lab</div>
+      <h2>Amdahl vs Gustafson Scalability Simulator</h2>
+      <p class="lede">Compare Strong Scaling (fixed problem size) vs Weak Scaling (problem scales with processors). Sweep processors and serial fraction to visualize theoretical ceilings.</p>
+      
+      <!-- Challenge Card -->
+      <div class="lab-challenge-card" data-challenge-card>
+        <div class="challenge-header">
+          <span class="challenge-badge">🏆 Challenge</span>
+          <h3>${challenge.title}</h3>
+        </div>
+        <p class="challenge-desc">${challenge.description}</p>
+        <div class="challenge-status" data-challenge-status>
+          <span class="status-indicator pending">⏳ Not Completed</span>
+          <button class="hint-toggle-btn" data-action="toggle-hint">Show Hint</button>
+        </div>
+        <p class="challenge-hint" data-challenge-hint style="display:none;">💡 ${challenge.hint}</p>
+      </div>
+      
+      <div class="control">
+        <label for="serial-frac">Serial Fraction (1 - f) <output data-serial-frac-val>5%</output></label>
+        <input id="serial-frac" data-serial-frac type="range" min="1" max="40" value="5" />
+        <div class="control-tips">
+          <span class="tip-badge">Lower = more parallelizable code</span>
+        </div>
+      </div>
+      
+      <div class="control">
+        <label for="law-procs">Processors (p) <output data-law-procs-val>64</output></label>
+        <input id="law-procs" data-law-procs type="range" min="1" max="256" value="64" />
+        <div class="control-tips">
+          <span class="tip-badge">More processors ≠ always better (see Amdahl's Law)</span>
+        </div>
+      </div>
+      
+      <div class="formula">Amdahl: S = 1 / ((1-f) + f/p) &nbsp; | &nbsp; Gustafson: S = p - (1-f)(p-1)</div>
+      
+      <div class="result-enhanced">
+        <div class="result-card highlight">
+          <div class="result-icon">🔴</div>
+          <strong data-amdahl-speedup>15.61×</strong>
+          <span>Amdahl speedup</span>
+          <div class="result-comparison">Strong Scaling (Fixed Size)</div>
+        </div>
+        <div class="result-card highlight">
+          <div class="result-icon">🟢</div>
+          <strong data-gustafson-speedup>60.85×</strong>
+          <span>Gustafson speedup</span>
+          <div class="result-comparison">Weak Scaling (Scaled Size)</div>
+        </div>
+        <div class="result-card">
+          <div class="result-icon">📊</div>
+          <strong data-law-efficiency>24.4%</strong>
+          <span>parallel efficiency</span>
+          <div class="result-comparison">Amdahl efficiency</div>
+        </div>
+      </div>
+      
+      <div class="model-chart">
+        <i data-chart-amdahl style="height:24%" title="Amdahl"></i>
+        <i data-chart-gustafson style="height:95%" title="Gustafson"></i>
+      </div>
+      <div class="chart-labels">
+        <span>Amdahl (Strong)</span>
+        <span>Gustafson (Weak)</span>
+      </div>
+      
+      <!-- Theoretical Ceiling Info -->
+      <div class="lab-insights-panel">
+        <h4>📊 Key Insights</h4>
+        <ul class="insights-list" data-insights-list>
+          <li>🔹 Amdahl's Law: Serial code limits maximum speedup (ceiling = 1/(1-f))</li>
+          <li>🔹 Gustafson's Law: Scaling problem size with processors achieves better speedup</li>
+          <li>🔹 Efficiency drops as we add more processors due to serial bottleneck</li>
+          <li>🔹 Real-world: Use Amdahl for fixed workloads, Gustafson for scalable problems</li>
+        </ul>
+      </div>
+    </div>
+    
+    <aside class="lab-panel">
+      <div class="eyebrow">Scalability Ceiling</div>
+      <h2>Amdahl vs Gustafson</h2>
+      
+      <!-- Real-time Feedback -->
+      <div class="feedback-box" data-feedback-box>
+        <p class="callout" data-law-feedback>With a 5% serial fraction, Amdahl caps maximum possible speedup at 20× even with infinite cores. Gustafson shows weak scaling achieves 60.85× on 64 cores!</p>
+      </div>
+      
+      <!-- Scalability Comparison -->
+      <div class="metrics-tracking">
+        <h4>Theoretical Limits</h4>
+        <div class="metric-row">
+          <span>Amdahl Ceiling:</span>
+          <strong data-amdahl-ceiling>20×</strong>
+        </div>
+        <div class="metric-row">
+          <span>Current Efficiency:</span>
+          <strong data-current-eff>78%</strong>
+        </div>
+        <div class="metric-row">
+          <span>Gustafson Advantage:</span>
+          <strong data-gustafson-adv>3.9×</strong>
+        </div>
+      </div>
+      
+      <!-- Quick Reference -->
+      <div class="quick-reference">
+        <h4>Scalability Models</h4>
+        <table class="ref-table">
+          <tr>
+            <td><strong>Strong Scaling</strong></td>
+            <td>Fixed problem, more processors</td>
+          </tr>
+          <tr>
+            <td><strong>Weak Scaling</strong></td>
+            <td>Problem grows with processors</td>
+          </tr>
+          <tr>
+            <td><strong>Efficiency</strong></td>
+            <td>E = Speedup / Processors</td>
+          </tr>
+          <tr>
+            <td><strong>Perfect</strong></td>
+            <td>E = 100% (never achieved)</td>
+          </tr>
+        </table>
+      </div>
+      
+      <button class="button primary" data-action="mark-lab" data-lab="speedup-laws">Mark lab explored ✓</button>
+      
+      <!-- Scenario Selector -->
+      <button class="button secondary" data-action="toggle-scenario" style="margin-top:0.5rem;">
+        🔬 Load Real-World Scenarios
+      </button>
+    </aside>
+  </div>`;
 }
 
 // 5. TOP500 & Green500 Cluster Builder
@@ -377,9 +703,188 @@ function labTop500Cluster() {
   return `<div class="lab-layout"><div class="lab-panel"><div class="eyebrow">Unit 01 · Topic 05 Lab</div><h2>TOP500 & Green500 Supercomputer Builder</h2><p class="lede">Configure a high-performance cluster node architecture. Balance CPU cores, GPU accelerators, interconnect, and liquid cooling to maximize GFLOPS/Watt.</p><div class="control"><label for="cluster-racks">Rack Count <output data-cluster-racks-val>32</output></label><input id="cluster-racks" data-cluster-racks type="range" min="1" max="100" value="32" /></div><div class="control"><label for="cluster-gpus">GPUs per Node <output data-cluster-gpus-val>4</output></label><input id="cluster-gpus" data-cluster-gpus type="range" min="0" max="8" value="4" /></div><div class="control"><label for="cluster-pue">Cooling PUE <output data-cluster-pue-val>1.15</output></label><input id="cluster-pue" data-cluster-pue type="range" min="105" max="200" step="5" value="115" /></div><div class="result"><div><strong data-cluster-rpeak>45.2 PFLOPS</strong><span>Rpeak (Theoretical)</span></div><div><strong data-cluster-rmax>36.1 PFLOPS</strong><span>Rmax (LINPACK)</span></div><div><strong data-cluster-efficiency>48.5 GFLOPS/W</strong><span>Green500 Score</span></div></div></div><aside class="lab-panel"><div class="eyebrow">Supercomputer Benchmark</div><h2>LINPACK & Green500 Rank</h2><p class="callout" data-cluster-feedback>Adding GPU accelerators drastically boosts Rmax and GFLOPS/Watt. Lowering PUE towards 1.05 reduces non-computing cooling power overhead!</p><button class="button primary" data-action="mark-lab" data-lab="top500-cluster">Mark lab explored ✓</button></aside></div>`;
 }
 
-// 6. OpenMP Loop Scheduling Lab
+// 6. OpenMP Loop Scheduling Lab - ENHANCED
 function labOpenmpLoop() {
-  return `<div class="lab-layout"><div class="lab-panel"><div class="eyebrow">Unit 02 · Topic 01 Lab</div><h2>OpenMP Worksharing & Loop Scheduling</h2><p class="lede">Compare static, dynamic, and guided thread chunk allocation on uniform vs imbalanced loop iterations.</p><div class="control"><label for="omp-threads">Threads <output data-omp-threads-val>4</output></label><input id="omp-threads" data-omp-threads type="range" min="1" max="16" value="4" /></div><div class="control"><label for="omp-sched">Schedule Policy</label><select id="omp-sched" data-omp-sched><option value="static">omp schedule(static, chunk=10)</option><option value="dynamic">omp schedule(dynamic, chunk=4)</option><option value="guided">omp schedule(guided)</option></select></div><div class="control"><label for="omp-imbalance">Work Imbalance Factor <output data-omp-imbalance-val>50%</output></label><input id="omp-imbalance" data-omp-imbalance type="range" min="0" max="100" value="50" /></div><div class="result"><div><strong data-omp-time>0.28s</strong><span>relative time</span></div><div><strong data-omp-speedup>3.57×</strong><span>speedup</span></div><div><strong data-omp-eff>89.3%</strong><span>parallel efficiency</span></div></div><div class="bar-chart" aria-label="Thread load distribution"><i data-omp-t0 style="height:90%" title="Thread 0"></i><i data-omp-t1 style="height:85%" title="Thread 1"></i><i data-omp-t2 style="height:88%" title="Thread 2"></i><i data-omp-t3 style="height:82%" title="Thread 3"></i></div></div><aside class="lab-panel"><div class="eyebrow">OpenMP Code Lens</div><h2>Pragma Inspection</h2><pre class="code-block"><code>#pragma omp parallel for schedule(dynamic, 4)\nfor (int i = 0; i &lt; N; i++) {\n    compute_heavy_work(i);\n}</code></pre><p class="callout" data-omp-feedback>Dynamic scheduling prevents fast threads from idling when iteration execution times vary wildly!</p><button class="button primary" data-action="mark-lab" data-lab="openmp-loop">Mark lab explored ✓</button></aside></div>`;
+  const tutorialSteps = TUTORIAL_STEPS['openmp-loop'] || [];
+  const challenge = {
+    title: 'Challenge: Perfect Load Balance',
+    description: 'Achieve >95% parallel efficiency with high work imbalance (80%)',
+    hint: 'Dynamic or guided scheduling adapts to uneven workloads better than static',
+    check: (eff) => eff > 95
+  };
+  
+  return `<div class="lab-layout">
+    <!-- Tutorial Progress Bar -->
+    <div class="lab-tutorial-bar">
+      <div class="tutorial-controls">
+        <button class="tutorial-btn" data-tutorial-action="start" data-lab-id="openmp-loop">
+          <span>📚 Start Tutorial</span>
+        </button>
+        <div class="tutorial-progress" data-tutorial-progress style="display:none;">
+          <span class="tutorial-step-indicator">Step <strong data-step-current>1</strong> of ${tutorialSteps.length}</span>
+          <div class="tutorial-progress-bar">
+            <div class="tutorial-progress-fill" data-progress-fill style="width:25%"></div>
+          </div>
+          <button class="tutorial-nav-btn" data-tutorial-action="next">Next →</button>
+          <button class="tutorial-nav-btn secondary" data-tutorial-action="skip">Skip Tutorial</button>
+        </div>
+      </div>
+      <div class="tutorial-hint" data-tutorial-hint style="display:none;">
+        <span class="hint-icon">💡</span>
+        <span data-hint-text>Start with 4 threads and static scheduling</span>
+      </div>
+    </div>
+    
+    <div class="lab-panel">
+      <div class="eyebrow">Unit 02 · Topic 01 Lab</div>
+      <h2>OpenMP Worksharing & Loop Scheduling</h2>
+      <p class="lede">Compare static, dynamic, and guided thread chunk allocation on uniform vs imbalanced loop iterations.</p>
+      
+      <!-- Challenge Card -->
+      <div class="lab-challenge-card" data-challenge-card>
+        <div class="challenge-header">
+          <span class="challenge-badge">🏆 Challenge</span>
+          <h3>${challenge.title}</h3>
+        </div>
+        <p class="challenge-desc">${challenge.description}</p>
+        <div class="challenge-status" data-challenge-status>
+          <span class="status-indicator pending">⏳ Not Completed</span>
+          <button class="hint-toggle-btn" data-action="toggle-hint">Show Hint</button>
+        </div>
+        <p class="challenge-hint" data-challenge-hint style="display:none;">💡 ${challenge.hint}</p>
+      </div>
+      
+      <div class="control">
+        <label for="omp-threads">Threads <output data-omp-threads-val>4</output></label>
+        <input id="omp-threads" data-omp-threads type="range" min="1" max="16" value="4" />
+        <div class="control-tips">
+          <span class="tip-badge">Typically = CPU cores (avoid oversubscription)</span>
+        </div>
+      </div>
+      
+      <div class="control">
+        <label for="omp-sched">Schedule Policy</label>
+        <select id="omp-sched" data-omp-sched>
+          <option value="static">omp schedule(static, chunk=10)</option>
+          <option value="dynamic">omp schedule(dynamic, chunk=4)</option>
+          <option value="guided">omp schedule(guided)</option>
+        </select>
+        <div class="control-tips">
+          <span class="tip-badge">Static=fast, Dynamic=balanced, Guided=adaptive</span>
+        </div>
+      </div>
+      
+      <div class="control">
+        <label for="omp-imbalance">Work Imbalance Factor <output data-omp-imbalance-val>50%</output></label>
+        <input id="omp-imbalance" data-omp-imbalance type="range" min="0" max="100" value="50" />
+        <div class="control-tips">
+          <span class="tip-badge">0%=uniform, 100%=highly variable iteration times</span>
+        </div>
+      </div>
+      
+      <div class="result-enhanced">
+        <div class="result-card">
+          <div class="result-icon">⏱️</div>
+          <strong data-omp-time>0.28s</strong>
+          <span>relative time</span>
+          <div class="result-comparison">Lower is better</div>
+        </div>
+        <div class="result-card highlight">
+          <div class="result-icon">⚡</div>
+          <strong data-omp-speedup>3.57×</strong>
+          <span>speedup</span>
+          <div class="result-comparison">vs serial execution</div>
+        </div>
+        <div class="result-card">
+          <div class="result-icon">📊</div>
+          <strong data-omp-eff>89.3%</strong>
+          <span>parallel efficiency</span>
+          <div class="result-comparison">Speedup / Threads</div>
+        </div>
+      </div>
+      
+      <div class="bar-chart" aria-label="Thread load distribution">
+        <i data-omp-t0 style="height:90%" title="Thread 0"></i>
+        <i data-omp-t1 style="height:85%" title="Thread 1"></i>
+        <i data-omp-t2 style="height:88%" title="Thread 2"></i>
+        <i data-omp-t3 style="height:82%" title="Thread 3"></i>
+      </div>
+      <div class="chart-labels">
+        <span>Thread 0</span>
+        <span>Thread 1</span>
+        <span>Thread 2</span>
+        <span>Thread 3</span>
+      </div>
+      
+      <!-- Scheduling Comparison -->
+      <div class="lab-insights-panel">
+        <h4>📊 Scheduling Strategies</h4>
+        <ul class="insights-list">
+          <li>🔹 <strong>Static:</strong> Low overhead, but poor load balance with imbalanced loops</li>
+          <li>🔹 <strong>Dynamic:</strong> Adaptive chunks, good for variable workloads</li>
+          <li>🔹 <strong>Guided:</strong> Large chunks first, then smaller for fine-tuning</li>
+          <li>🔹 Imbalance causes idle threads (wasted CPU cycles)</li>
+        </ul>
+      </div>
+    </div>
+    
+    <aside class="lab-panel">
+      <div class="eyebrow">OpenMP Code Lens</div>
+      <h2>Pragma Inspection</h2>
+      
+      <pre class="code-block"><code>#pragma omp parallel for schedule(dynamic, 4)
+for (int i = 0; i &lt; N; i++) {
+    compute_heavy_work(i);
+}</code></pre>
+      
+      <!-- Real-time Feedback -->
+      <div class="feedback-box" data-feedback-box>
+        <p class="callout" data-omp-feedback>Dynamic scheduling prevents fast threads from idling when iteration execution times vary wildly!</p>
+      </div>
+      
+      <!-- Performance Metrics -->
+      <div class="metrics-tracking">
+        <h4>Load Balance Metrics</h4>
+        <div class="metric-row">
+          <span>Max Thread Time:</span>
+          <strong data-max-thread-time>--</strong>
+        </div>
+        <div class="metric-row">
+          <span>Min Thread Time:</span>
+          <strong data-min-thread-time>--</strong>
+        </div>
+        <div class="metric-row">
+          <span>Imbalance Ratio:</span>
+          <strong data-imbalance-ratio>--</strong>
+        </div>
+      </div>
+      
+      <!-- Quick Reference -->
+      <div class="quick-reference">
+        <h4>OpenMP Directives</h4>
+        <table class="ref-table">
+          <tr>
+            <td><code>parallel for</code></td>
+            <td>Fork threads + distribute loop</td>
+          </tr>
+          <tr>
+            <td><code>num_threads(n)</code></td>
+            <td>Set thread count</td>
+          </tr>
+          <tr>
+            <td><code>schedule(kind)</code></td>
+            <td>Set loop distribution policy</td>
+          </tr>
+          <tr>
+            <td><code>nowait</code></td>
+            <td>Skip barrier synchronization</td>
+          </tr>
+        </table>
+      </div>
+      
+      <button class="button primary" data-action="mark-lab" data-lab="openmp-loop">Mark lab explored ✓</button>
+    </aside>
+  </div>`;
 }
 
 // 7. MPI Collective Communication Simulator
@@ -397,9 +902,171 @@ function labLoadBalancing() {
   return `<div class="lab-layout"><div class="lab-panel"><div class="eyebrow">Unit 02 · Topic 04 Lab</div><h2>Dynamic Load Balancing & Work Stealing</h2><p class="lede">Simulate task decomposition and work-stealing queues across worker processes handling variable-length task burdens.</p><div class="control"><label for="lb-strategy">Load Strategy</label><select id="lb-strategy" data-lb-strategy><option value="static">Static Round-Robin (No Rebalancing)</option><option value="queue">Central Work Queue (Global Lock)</option><option value="stealing">Decentralized Work Stealing (Lock-Free)</option></select></div><div class="control"><label for="lb-variance">Task Size Variance <output data-lb-variance-val>High</output></label><input id="lb-variance" data-lb-variance type="range" min="1" max="3" value="3" /></div><div class="result"><div><strong data-lb-makespan>142 ms</strong><span>total makespan</span></div><div><strong data-lb-idle>4.2%</strong><span>worker idle time</span></div><div><strong data-lb-imbalance>0.05</strong><span>imbalance ratio (L)</span></div></div></div><aside class="lab-panel"><div class="eyebrow">Work Stealing Pattern</div><h2>Deque Optimization</h2><p class="callout" data-lb-feedback>Work stealing allows idle worker threads to steal tasks from the tail of busy workers' deques, eliminating central queue contention!</p><button class="button primary" data-action="mark-lab" data-lab="load-balancing">Mark lab explored ✓</button></aside></div>`;
 }
 
-// 10. CUDA Grid/Block/Thread Hierarchy
+// 10. CUDA Grid/Block/Thread Hierarchy - ENHANCED
 function labCudaBasics() {
-  return `<div class="lab-layout"><div class="lab-panel"><div class="eyebrow">Unit 03 · Topic 01 Lab</div><h2>CUDA Execution Hierarchy Visualizer</h2><p class="lede">Map a 1D/2D grid of thread blocks onto Streaming Multiprocessors (SMs). Observe thread indexing <code>blockIdx</code> and <code>threadIdx</code> hardware dispatch.</p><div class="control"><label for="cuda-blocks">Grid Dim (Blocks) <output data-cuda-blocks-val>64</output></label><input id="cuda-blocks" data-cuda-blocks type="range" min="1" max="256" value="64" /></div><div class="control"><label for="cuda-threads">Block Dim (Threads/Block) <output data-cuda-threads-val>256</output></label><input id="cuda-threads" data-cuda-threads type="range" min="32" max="1024" step="32" value="256" /></div><div class="result"><div><strong data-cuda-total-threads>16,384</strong><span>total threads</span></div><div><strong data-cuda-warps-per-block>8 warps</strong><span>warps / block</span></div><div><strong data-cuda-occupancy>100%</strong><span>theoretical SM occupancy</span></div></div></div><aside class="lab-panel"><div class="eyebrow">CUDA Code Lens</div><h2>Thread Index Formula</h2><pre class="code-block"><code>int tid = blockIdx.x * blockDim.x\n        + threadIdx.x;</code></pre><p class="callout" data-cuda-feedback>Threads execute in SIMT groups of 32 called warps. Setting 256 threads/block yields 8 full warps per block!</p><button class="button primary" data-action="mark-lab" data-lab="cuda-basics">Mark lab explored ✓</button></aside></div>`;
+  const tutorialSteps = TUTORIAL_STEPS['cuda-basics'] || [];
+  const challenge = LAB_CHALLENGES['cuda-basics'];
+  
+  return `<div class="lab-layout">
+    <!-- Tutorial Progress Bar -->
+    <div class="lab-tutorial-bar">
+      <div class="tutorial-controls">
+        <button class="tutorial-btn" data-tutorial-action="start" data-lab-id="cuda-basics">
+          <span>📚 Start Tutorial</span>
+        </button>
+        <div class="tutorial-progress" data-tutorial-progress style="display:none;">
+          <span class="tutorial-step-indicator">Step <strong data-step-current>1</strong> of ${tutorialSteps.length}</span>
+          <div class="tutorial-progress-bar">
+            <div class="tutorial-progress-fill" data-progress-fill style="width:25%"></div>
+          </div>
+          <button class="tutorial-nav-btn" data-tutorial-action="next">Next →</button>
+          <button class="tutorial-nav-btn secondary" data-tutorial-action="skip">Skip Tutorial</button>
+        </div>
+      </div>
+      <div class="tutorial-hint" data-tutorial-hint style="display:none;">
+        <span class="hint-icon">💡</span>
+        <span data-hint-text>Set blocks to 32 and threads to 256</span>
+      </div>
+    </div>
+    
+    <div class="lab-panel">
+      <div class="eyebrow">Unit 03 · Topic 01 Lab</div>
+      <h2>CUDA Execution Hierarchy Visualizer</h2>
+      <p class="lede">Map a 1D/2D grid of thread blocks onto Streaming Multiprocessors (SMs). Observe thread indexing <code>blockIdx</code> and <code>threadIdx</code> hardware dispatch.</p>
+      
+      <!-- Challenge Card -->
+      <div class="lab-challenge-card" data-challenge-card>
+        <div class="challenge-header">
+          <span class="challenge-badge">🏆 Challenge</span>
+          <h3>${challenge.title}</h3>
+        </div>
+        <p class="challenge-desc">${challenge.description}</p>
+        <div class="challenge-status" data-challenge-status>
+          <span class="status-indicator pending">⏳ Not Completed</span>
+          <button class="hint-toggle-btn" data-action="toggle-hint">Show Hint</button>
+        </div>
+        <p class="challenge-hint" data-challenge-hint style="display:none;">💡 ${challenge.hint}</p>
+      </div>
+      
+      <div class="control">
+        <label for="cuda-blocks">Grid Dim (Blocks) <output data-cuda-blocks-val>64</output></label>
+        <input id="cuda-blocks" data-cuda-blocks type="range" min="1" max="256" value="64" />
+        <div class="control-tips">
+          <span class="tip-badge">More blocks = better GPU utilization</span>
+        </div>
+      </div>
+      
+      <div class="control">
+        <label for="cuda-threads">Block Dim (Threads/Block) <output data-cuda-threads-val>256</output></label>
+        <input id="cuda-threads" data-cuda-threads type="range" min="32" max="1024" step="32" value="256" />
+        <div class="control-tips">
+          <span class="tip-badge">Must be multiple of warp size (32)</span>
+        </div>
+      </div>
+      
+      <div class="result-enhanced">
+        <div class="result-card highlight">
+          <div class="result-icon">🧵</div>
+          <strong data-cuda-total-threads>16,384</strong>
+          <span>total threads</span>
+          <div class="result-comparison">Grid × Block dimensions</div>
+        </div>
+        <div class="result-card">
+          <div class="result-icon">📦</div>
+          <strong data-cuda-warps-per-block>8 warps</strong>
+          <span>warps / block</span>
+          <div class="result-comparison">Threads / 32</div>
+        </div>
+        <div class="result-card">
+          <div class="result-icon">📊</div>
+          <strong data-cuda-occupancy>100%</strong>
+          <span>theoretical SM occupancy</span>
+          <div class="result-comparison">Utilization estimate</div>
+        </div>
+      </div>
+      
+      <!-- CUDA Hierarchy Visualization -->
+      <div class="lab-insights-panel">
+        <h4>📊 CUDA Execution Model</h4>
+        <ul class="insights-list">
+          <li>🔹 <strong>Grid:</strong> Collection of thread blocks (1D, 2D, or 3D)</li>
+          <li>🔹 <strong>Block:</strong> Group of threads (up to 1024) sharing memory</li>
+          <li>🔹 <strong>Warp:</strong> 32 threads executing in lockstep (SIMT)</li>
+          <li>🔹 <strong>SM:</strong> Streaming Multiprocessor (hardware unit)</li>
+          <li>🔹 Optimal: Threads/block = multiple of 32, blocks >> SMs</li>
+        </ul>
+      </div>
+    </div>
+    
+    <aside class="lab-panel">
+      <div class="eyebrow">CUDA Code Lens</div>
+      <h2>Thread Index Formula</h2>
+      
+      <pre class="code-block"><code>// Global thread ID
+int tid = blockIdx.x * blockDim.x
+        + threadIdx.x;
+
+// 2D indexing
+int row = blockIdx.y * blockDim.y + threadIdx.y;
+int col = blockIdx.x * blockDim.x + threadIdx.x;</code></pre>
+      
+      <!-- Real-time Feedback -->
+      <div class="feedback-box" data-feedback-box>
+        <p class="callout" data-cuda-feedback>Threads execute in SIMT groups of 32 called warps. Setting 256 threads/block yields 8 full warps per block!</p>
+      </div>
+      
+      <!-- GPU Specifications -->
+      <div class="metrics-tracking">
+        <h4>Typical GPU Specs</h4>
+        <div class="metric-row">
+          <span>NVIDIA A100:</span>
+          <strong>108 SMs</strong>
+        </div>
+        <div class="metric-row">
+          <span>Max Threads/SM:</span>
+          <strong>2048</strong>
+        </div>
+        <div class="metric-row">
+          <span>Max Blocks/SM:</span>
+          <strong>32</strong>
+        </div>
+        <div class="metric-row">
+          <span>Warp Size:</span>
+          <strong>32 threads</strong>
+        </div>
+      </div>
+      
+      <!-- Quick Reference -->
+      <div class="quick-reference">
+        <h4>CUDA Built-ins</h4>
+        <table class="ref-table">
+          <tr>
+            <td><code>blockIdx.x/y/z</code></td>
+            <td>Block index in grid</td>
+          </tr>
+          <tr>
+            <td><code>threadIdx.x/y/z</code></td>
+            <td>Thread index in block</td>
+          </tr>
+          <tr>
+            <td><code>blockDim.x/y/z</code></td>
+            <td>Threads per block</td>
+          </tr>
+          <tr>
+            <td><code>gridDim.x/y/z</code></td>
+            <td>Blocks in grid</td>
+          </tr>
+        </table>
+      </div>
+      
+      <button class="button primary" data-action="mark-lab" data-lab="cuda-basics">Mark lab explored ✓</button>
+      
+      <!-- Kernel Launch Calculator -->
+      <button class="button secondary" data-action="launch-calculator" style="margin-top:0.5rem;">
+        🧮 Kernel Launch Calculator
+      </button>
+    </aside>
+  </div>`;
 }
 
 // 11. Memory Coalescing & Bank Conflict Analyzer
