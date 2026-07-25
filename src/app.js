@@ -204,6 +204,86 @@ function home(_, app) {
     </div>
   </section>
 
+  <!-- Course Introduction Video -->
+  <div class="video-section">
+    <div class="section-heading">
+      <div>
+        <div class="eyebrow">Course Overview</div>
+        <h2>Watch the Introduction</h2>
+      </div>
+      <p>Discover what you'll learn in this comprehensive HPC & Quantum Computing course</p>
+    </div>
+    
+    <div class="video-player-container">
+      <div class="video-wrapper">
+        <video 
+          id="course-video" 
+          class="course-video"
+          poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 720'%3E%3Crect fill='%230f172a' width='1280' height='720'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%230284c7' font-size='64' font-family='sans-serif'%3EHPC %26 Quantum Computing%3C/text%3E%3C/svg%3E"
+          preload="metadata">
+          <source src="./HPC___Quantum_Computing.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        
+        <!-- Custom Video Controls -->
+        <div class="video-controls" id="video-controls">
+          <div class="progress-bar" id="progress-bar">
+            <div class="progress-filled" id="progress-filled"></div>
+          </div>
+          
+          <div class="controls-row">
+            <div class="controls-left">
+              <button class="control-btn" id="play-pause-btn" aria-label="Play/Pause">
+                <svg class="play-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+                <svg class="pause-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                </svg>
+              </button>
+              
+              <button class="control-btn" id="mute-btn" aria-label="Mute/Unmute">
+                <svg class="volume-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                </svg>
+                <svg class="muted-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+                  <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                </svg>
+              </button>
+              
+              <div class="time-display">
+                <span id="current-time">0:00</span> / <span id="duration">0:00</span>
+              </div>
+            </div>
+            
+            <div class="controls-right">
+              <button class="control-btn" id="fullscreen-btn" aria-label="Fullscreen">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Loading Spinner -->
+        <div class="video-loading" id="video-loading" style="display:none;">
+          <div class="spinner"></div>
+        </div>
+      </div>
+      
+      <div class="video-info">
+        <h3>🎥 Course Introduction</h3>
+        <p>Get an overview of High Performance Computing and Quantum Computing concepts covered in this comprehensive course.</p>
+        <div class="video-features">
+          <span class="video-feature">📚 Course Overview</span>
+          <span class="video-feature">🎯 Learning Objectives</span>
+          <span class="video-feature">🚀 Career Opportunities</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="stats">
     <div class="stat"><strong>04</strong><span>units</span></div>
     <div class="stat"><strong>17</strong><span>topics & labs</span></div>
@@ -475,6 +555,17 @@ document.addEventListener('click', (e) => {
 
   const compareToggle = e.target.closest('[data-action="toggle-compare"]');
   if (compareToggle) handleCompareMode();
+
+  // Video Player Controls
+  const playPauseBtn = e.target.closest('#play-pause-btn');
+  if (playPauseBtn) togglePlayPause();
+
+  const muteBtn = e.target.closest('#mute-btn');
+  if (muteBtn) toggleMute();
+
+  const fullscreenBtn = e.target.closest('#fullscreen-btn');
+  if (fullscreenBtn) toggleFullscreen();
+
 
 
   const mpiOp = e.target.closest('[data-mpi-op]');
@@ -1167,6 +1258,133 @@ function checkChallengeCompletion(labId, params) {
   }
 }
 
+// Video Player Functions
+function initVideoPlayer() {
+  const video = document.getElementById('course-video');
+  const progressBar = document.getElementById('progress-bar');
+  const progressFilled = document.getElementById('progress-filled');
+  const currentTimeEl = document.getElementById('current-time');
+  const durationEl = document.getElementById('duration');
+  const loading = document.getElementById('video-loading');
+
+  if (!video) return;
+
+  // Update time display
+  video.addEventListener('loadedmetadata', () => {
+    durationEl.textContent = formatTime(video.duration);
+  });
+
+  video.addEventListener('timeupdate', () => {
+    const percent = (video.currentTime / video.duration) * 100;
+    progressFilled.style.width = `${percent}%`;
+    currentTimeEl.textContent = formatTime(video.currentTime);
+  });
+
+  // Progress bar click
+  progressBar?.addEventListener('click', (e) => {
+    const rect = progressBar.getBoundingClientRect();
+    const percent = (e.clientX - rect.left) / rect.width;
+    video.currentTime = percent * video.duration;
+  });
+
+  // Show/hide loading spinner
+  video.addEventListener('waiting', () => {
+    if (loading) loading.style.display = 'flex';
+  });
+
+  video.addEventListener('canplay', () => {
+    if (loading) loading.style.display = 'none';
+  });
+
+  // Show controls on hover
+  const container = document.querySelector('.video-player-container');
+  const controls = document.getElementById('video-controls');
+  
+  container?.addEventListener('mouseenter', () => {
+    controls?.classList.add('visible');
+  });
+
+  container?.addEventListener('mouseleave', () => {
+    if (!video.paused) {
+      controls?.classList.remove('visible');
+    }
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (!video || document.activeElement.tagName === 'INPUT') return;
+    
+    if (e.code === 'Space' && e.target.closest('.video-player-container')) {
+      e.preventDefault();
+      togglePlayPause();
+    } else if (e.code === 'KeyM' && e.target.closest('.video-player-container')) {
+      toggleMute();
+    } else if (e.code === 'KeyF' && e.target.closest('.video-player-container')) {
+      toggleFullscreen();
+    }
+  });
+}
+
+function togglePlayPause() {
+  const video = document.getElementById('course-video');
+  const playIcon = document.querySelector('#play-pause-btn .play-icon');
+  const pauseIcon = document.querySelector('#play-pause-btn .pause-icon');
+
+  if (!video) return;
+
+  if (video.paused) {
+    video.play();
+    playIcon.style.display = 'none';
+    pauseIcon.style.display = 'block';
+  } else {
+    video.pause();
+    playIcon.style.display = 'block';
+    pauseIcon.style.display = 'none';
+  }
+}
+
+function toggleMute() {
+  const video = document.getElementById('course-video');
+  const volumeIcon = document.querySelector('#mute-btn .volume-icon');
+  const mutedIcon = document.querySelector('#mute-btn .muted-icon');
+
+  if (!video) return;
+
+  video.muted = !video.muted;
+  
+  if (video.muted) {
+    volumeIcon.style.display = 'none';
+    mutedIcon.style.display = 'block';
+  } else {
+    volumeIcon.style.display = 'block';
+    mutedIcon.style.display = 'none';
+  }
+}
+
+function toggleFullscreen() {
+  const container = document.querySelector('.video-wrapper');
+  
+  if (!container) return;
+
+  if (!document.fullscreenElement) {
+    container.requestFullscreen?.() || 
+    container.webkitRequestFullscreen?.() || 
+    container.msRequestFullscreen?.();
+  } else {
+    document.exitFullscreen?.() || 
+    document.webkitExitFullscreen?.() || 
+    document.msExitFullscreen?.();
+  }
+}
+
+function formatTime(seconds) {
+  if (isNaN(seconds)) return '0:00';
+  
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
 // Restore presentation mode on page load
 if (state.presentationMode) {
   document.body.classList.add('presentation-mode');
@@ -1176,6 +1394,9 @@ if (state.presentationMode) {
 document.documentElement.dataset.theme = state.theme;
 startRouter();
 updateProgress();
+
+// Initialize video player after router
+setTimeout(initVideoPlayer, 100);
 
 es
 
