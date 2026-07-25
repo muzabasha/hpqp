@@ -104,6 +104,116 @@ export function renderLabHub(currentType = 'hpc-throughput') {
     <h1>Virtual Laboratory Hub</h1>
     <p class="lede">Hands-on simulations with step-by-step tutorials, real-time feedback, and interactive challenges for faster, deeper learning.</p>
     
+    <!-- Global Lab Controls Panel -->
+    <div class="lab-global-controls">
+      <div class="control-section">
+        <h3>⚙️ Lab Controls</h3>
+        <div class="control-grid">
+          <!-- Speed Control -->
+          <div class="control-item">
+            <label for="lab-speed">Animation Speed</label>
+            <div class="speed-selector">
+              <button class="speed-btn" data-speed="0.5">0.5×</button>
+              <button class="speed-btn active" data-speed="1">1×</button>
+              <button class="speed-btn" data-speed="1.5">1.5×</button>
+              <button class="speed-btn" data-speed="2">2×</button>
+            </div>
+          </div>
+          
+          <!-- Auto-Run Toggle -->
+          <div class="control-item">
+            <label>
+              <input type="checkbox" id="auto-run-toggle" checked>
+              <span>Auto-run on parameter change</span>
+            </label>
+          </div>
+          
+          <!-- Show Hints Toggle -->
+          <div class="control-item">
+            <label>
+              <input type="checkbox" id="hints-toggle" checked>
+              <span>Show real-time hints</span>
+            </label>
+          </div>
+          
+          <!-- Show Formulas Toggle -->
+          <div class="control-item">
+            <label>
+              <input type="checkbox" id="formulas-toggle" checked>
+              <span>Display formulas</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <div class="control-section">
+        <h3>💾 Configuration</h3>
+        <div class="control-buttons">
+          <button class="control-action-btn" data-action="save-config">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M2 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H9.5a1 1 0 0 0-1 1v7.293l2.646-2.647a.5.5 0 0 1 .708.708l-3.5 3.5a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L7.5 9.293V2a2 2 0 0 1 2-2H14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h2.5a.5.5 0 0 1 0 1H2z"/>
+            </svg>
+            Save Settings
+          </button>
+          <button class="control-action-btn" data-action="load-config">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+              <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+            </svg>
+            Load Settings
+          </button>
+          <button class="control-action-btn" data-action="reset-lab">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+              <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+            </svg>
+            Reset to Default
+          </button>
+          <button class="control-action-btn" data-action="compare-mode">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 0a.5.5 0 0 1 .5.5v15a.5.5 0 0 1-1 0V.5A.5.5 0 0 1 8 0zM0 4a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1H1v10h5.5a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5V4zm9.5-.5a.5.5 0 0 0 0 1H15v10H9.5a.5.5 0 0 0 0 1h6a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5h-6z"/>
+            </svg>
+            Compare Mode
+          </button>
+        </div>
+      </div>
+      
+      <div class="control-section">
+        <h3>📚 Learning Aids</h3>
+        <div class="control-buttons">
+          <button class="control-action-btn" data-action="show-explanation">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+              <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/>
+            </svg>
+            Theory Explanation
+          </button>
+          <button class="control-action-btn" data-action="show-examples">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
+              <path d="M6.854 4.646a.5.5 0 0 1 0 .708L4.207 8l2.647 2.646a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 0 1 .708 0zm2.292 0a.5.5 0 0 0 0 .708L11.793 8l-2.647 2.646a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708 0z"/>
+            </svg>
+            Code Examples
+          </button>
+          <button class="control-action-btn" data-action="take-screenshot">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
+              <path d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z"/>
+            </svg>
+            Capture Results
+          </button>
+          <button class="control-action-btn" data-action="export-data">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+              <path d="M8.646 6.646a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1 0 .708l-2 2a.5.5 0 0 1-.708-.708L10.293 9 8.646 7.354a.5.5 0 0 1 0-.708zm-1.292 0a.5.5 0 0 0-.708 0l-2 2a.5.5 0 0 0 0 .708l2 2a.5.5 0 0 0 .708-.708L5.707 9l1.647-1.646a.5.5 0 0 0 0-.708z"/>
+            </svg>
+            Export CSV
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Existing Features Banner -->
     <div class="lab-features-banner">
       <div class="lab-feature-item">
         <span class="feature-icon">🎯</span>
@@ -120,6 +230,14 @@ export function renderLabHub(currentType = 'hpc-throughput') {
       <div class="lab-feature-item">
         <span class="feature-icon">📊</span>
         <span>Progress Tracking</span>
+      </div>
+      <div class="lab-feature-item">
+        <span class="feature-icon">💾</span>
+        <span>Save/Load Configs</span>
+      </div>
+      <div class="lab-feature-item">
+        <span class="feature-icon">📸</span>
+        <span>Capture Results</span>
       </div>
     </div>
     

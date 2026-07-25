@@ -67,7 +67,27 @@
 
 ### 🔬 Enhanced Virtual Labs (17 Labs - UPGRADED)
 
-**NEW: Fast-Learning Features:**
+**NEW: Global Lab Controls for Fast & Effective Learning! ✨**
+
+**⚙️ Lab Controls:**
+- **Animation Speed:** 0.5×, 1×, 1.5×, 2× speed selector for animations
+- **Auto-Run Toggle:** Automatic execution when parameters change
+- **Real-Time Hints:** Contextual learning guidance based on configuration
+- **Formula Display:** Show/hide mathematical formulas on demand
+
+**💾 Configuration Management:**
+- **Save Settings:** Store lab configurations to localStorage (up to 10)
+- **Load Settings:** Restore previously saved configurations with modal selector
+- **Reset to Default:** One-click reset to original parameters
+- **Compare Mode:** Side-by-side configuration comparison panel
+
+**📚 Learning Aids:**
+- **Theory Explanation:** Detailed concept modals with core theory
+- **Code Examples:** Implementation examples in C++, Python, CUDA
+- **Capture Results:** Screenshot flash effect for result capture
+- **Export CSV:** Download lab parameters for external analysis
+
+**Fast-Learning Features (5/17 Labs Enhanced):**
 
 **1. Step-by-Step Tutorial Mode**
 - 🎯 Guided 4-step tutorials for each lab

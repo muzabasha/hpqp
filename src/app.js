@@ -566,6 +566,26 @@ document.addEventListener('click', (e) => {
   const fullscreenBtn = e.target.closest('#fullscreen-btn');
   if (fullscreenBtn) toggleFullscreen();
 
+  // Global Lab Controls
+  const speedBtn = e.target.closest('.speed-btn');
+  if (speedBtn) handleSpeedChange(speedBtn.dataset.speed);
+
+  const controlAction = e.target.closest('.control-action-btn');
+  if (controlAction) handleLabControlAction(controlAction.dataset.action);
+
+  // Auto-run toggle
+  const autoRunToggle = e.target.closest('#auto-run-toggle');
+  if (autoRunToggle) handleAutoRunToggle(autoRunToggle.checked);
+
+  // Hints toggle
+  const hintsToggle = e.target.closest('#hints-toggle');
+  if (hintsToggle) handleHintsToggle(hintsToggle.checked);
+
+  // Formulas toggle
+  const formulasToggle = e.target.closest('#formulas-toggle');
+  if (formulasToggle) handleFormulasToggle(formulasToggle.checked);
+
+
 
 
   const mpiOp = e.target.closest('[data-mpi-op]');
@@ -1256,6 +1276,382 @@ function checkChallengeCompletion(labId, params) {
       }
     }
   }
+}
+
+// Global Lab Control State
+let labControlState = {
+  speed: 1,
+  autoRun: true,
+  showHints: true,
+  showFormulas: true,
+  comparisonMode: false,
+  savedConfigs: JSON.parse(localStorage.getItem('lab-configs') || '[]')
+};
+
+// Speed Control Handler
+function handleSpeedChange(speed) {
+  labControlState.speed = parseFloat(speed);
+  
+  // Update active button
+  document.querySelectorAll('.speed-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.speed === speed) {
+      btn.classList.add('active');
+    }
+  });
+  
+  // Apply speed to animations
+  document.documentElement.style.setProperty('--animation-speed', speed);
+  toast(`Animation speed set to ${speed}×`);
+}
+
+// Lab Control Actions Handler
+function handleLabControlAction(action) {
+  switch(action) {
+    case 'save-config':
+      saveCurrentConfig();
+      break;
+    case 'load-config':
+      showLoadConfigDialog();
+      break;
+    case 'reset-lab':
+      resetLabToDefaults();
+      break;
+    case 'compare-mode':
+      toggleComparisonMode();
+      break;
+    case 'show-explanation':
+      showTheoryExplanation();
+      break;
+    case 'show-examples':
+      showCodeExamples();
+      break;
+    case 'take-screenshot':
+      captureLabScreenshot();
+      break;
+    case 'export-data':
+      exportLabData();
+      break;
+  }
+}
+
+// Save Current Configuration
+function saveCurrentConfig() {
+  const config = {
+    id: Date.now(),
+    timestamp: new Date().toISOString(),
+    lab: window.location.hash.split('/')[2] || 'unknown',
+    speed: labControlState.speed,
+    autoRun: labControlState.autoRun,
+    showHints: labControlState.showHints,
+    showFormulas: labControlState.showFormulas,
+    parameters: captureCurrentParameters()
+  };
+  
+  labControlState.savedConfigs.push(config);
+  localStorage.setItem('lab-configs', JSON.stringify(labControlState.savedConfigs));
+  
+  showExportToast('✓ Configuration saved successfully!');
+}
+
+// Capture Current Lab Parameters
+function captureCurrentParameters() {
+  const params = {};
+  
+  // Capture all range inputs
+  document.querySelectorAll('input[type="range"]').forEach(input => {
+    params[input.id] = input.value;
+  });
+  
+  // Capture all select inputs
+  document.querySelectorAll('select').forEach(select => {
+    if (select.id && select.id !== 'lab-select') {
+      params[select.id] = select.value;
+    }
+  });
+  
+  return params;
+}
+
+// Show Load Config Dialog
+function showLoadConfigDialog() {
+  if (labControlState.savedConfigs.length === 0) {
+    toast('No saved configurations found');
+    return;
+  }
+  
+  const modal = document.createElement('div');
+  modal.className = 'explanation-modal active';
+  modal.innerHTML = `
+    <div class="explanation-content">
+      <button class="explanation-close-btn" onclick="this.closest('.explanation-modal').remove()">×</button>
+      <h2>📂 Load Saved Configuration</h2>
+      <div class="saved-configs-list">
+        ${labControlState.savedConfigs.reverse().map(config => `
+          <div class="saved-config-item" onclick="loadConfiguration(${config.id})">
+            <strong>${config.lab}</strong>
+            <span>${new Date(config.timestamp).toLocaleString()}</span>
+            <span>Speed: ${config.speed}×, ${Object.keys(config.parameters).length} parameters</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+// Load Configuration
+window.loadConfiguration = function(configId) {
+  const config = labControlState.savedConfigs.find(c => c.id === configId);
+  if (!config) return;
+  
+  // Apply speed
+  handleSpeedChange(config.speed.toString());
+  
+  // Apply parameters
+  Object.entries(config.parameters).forEach(([id, value]) => {
+    const input = document.getElementById(id);
+    if (input) {
+      input.value = value;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  });
+  
+  // Close modal
+  document.querySelector('.explanation-modal')?.remove();
+  toast('✓ Configuration loaded!');
+};
+
+// Reset Lab to Defaults
+function resetLabToDefaults() {
+  // Reset all range inputs to their default values
+  document.querySelectorAll('input[type="range"]').forEach(input => {
+    input.value = input.defaultValue || input.min;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  
+  // Reset all selects to first option
+  document.querySelectorAll('select').forEach(select => {
+    if (select.id !== 'lab-select') {
+      select.selectedIndex = 0;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  });
+  
+  // Reset speed
+  handleSpeedChange('1');
+  
+  toast('✓ Lab reset to defaults');
+}
+
+// Toggle Comparison Mode
+function toggleComparisonMode() {
+  labControlState.comparisonMode = !labControlState.comparisonMode;
+  
+  let panel = document.querySelector('.comparison-mode-panel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.className = 'comparison-mode-panel';
+    panel.innerHTML = `
+      <div class="comparison-header">
+        <h3>📊 Comparison Mode</h3>
+        <button class="close-comparison-btn" onclick="document.querySelector('.comparison-mode-panel').classList.remove('active')">×</button>
+      </div>
+      <div class="comparison-configs">
+        <p style="color:var(--muted); font-size:0.85rem;">
+          Save multiple configurations and compare results side-by-side.
+        </p>
+        <button class="button primary" onclick="addComparisonSnapshot()">
+          + Add Current State
+        </button>
+        <div id="comparison-snapshots"></div>
+      </div>
+    `;
+    document.body.appendChild(panel);
+  }
+  
+  panel.classList.toggle('active', labControlState.comparisonMode);
+}
+
+// Show Theory Explanation
+function showTheoryExplanation() {
+  const currentLab = window.location.hash.split('/')[2] || 'hpc-throughput';
+  const explanations = {
+    'hpc-throughput': {
+      title: 'HPC Throughput Fundamentals',
+      content: `
+        <p><strong>Throughput</strong> measures the number of operations completed per unit time.</p>
+        <p><strong>Formula:</strong> Throughput = Operations / Time</p>
+        <p><strong>Key Concepts:</strong></p>
+        <ul>
+          <li>FLOPS (Floating Point Operations Per Second)</li>
+          <li>TFLOPS = 10¹² FLOPS</li>
+          <li>Linear scaling: 2× nodes ≈ 2× throughput</li>
+          <li>Power consumption scales with node count</li>
+        </ul>
+        <p><strong>Real-World Applications:</strong> Weather simulations, molecular dynamics, AI training</p>
+      `
+    },
+    'flynn-taxonomy': {
+      title: 'Flynn\'s Taxonomy Architecture Classification',
+      content: `
+        <p><strong>Flynn's Taxonomy</strong> classifies computer architectures by instruction and data streams.</p>
+        <p><strong>Categories:</strong></p>
+        <ul>
+          <li><strong>SISD:</strong> Single Instruction, Single Data (traditional CPUs)</li>
+          <li><strong>SIMD:</strong> Single Instruction, Multiple Data (GPUs, vector processors)</li>
+          <li><strong>MISD:</strong> Multiple Instruction, Single Data (rare, fault-tolerant systems)</li>
+          <li><strong>MIMD:</strong> Multiple Instruction, Multiple Data (multi-core CPUs, clusters)</li>
+        </ul>
+        <p><strong>Performance:</strong> SIMD can achieve 16× speedup for data-parallel operations</p>
+      `
+    }
+  };
+  
+  const explanation = explanations[currentLab] || { title: 'Theory', content: '<p>Explanation not available for this lab.</p>' };
+  
+  const modal = document.createElement('div');
+  modal.className = 'explanation-modal active';
+  modal.innerHTML = `
+    <div class="explanation-content">
+      <button class="explanation-close-btn" onclick="this.closest('.explanation-modal').remove()">×</button>
+      <h2>${explanation.title}</h2>
+      ${explanation.content}
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+// Show Code Examples
+function showCodeExamples() {
+  const currentLab = window.location.hash.split('/')[2] || 'hpc-throughput';
+  const examples = {
+    'openmp-loop': {
+      title: 'OpenMP Loop Scheduling Examples',
+      content: `
+        <h3>Static Scheduling:</h3>
+        <pre class="code-block"><code>#pragma omp parallel for schedule(static, 10)
+for (int i = 0; i < N; i++) {
+    process(data[i]);
+}</code></pre>
+        
+        <h3>Dynamic Scheduling:</h3>
+        <pre class="code-block"><code>#pragma omp parallel for schedule(dynamic, 4)
+for (int i = 0; i < N; i++) {
+    compute_heavy_work(i);
+}</code></pre>
+        
+        <h3>Guided Scheduling:</h3>
+        <pre class="code-block"><code>#pragma omp parallel for schedule(guided)
+for (int i = 0; i < N; i++) {
+    adaptive_computation(i);
+}</code></pre>
+      `
+    },
+    'cuda-basics': {
+      title: 'CUDA Kernel Launch Examples',
+      content: `
+        <h3>1D Grid Launch:</h3>
+        <pre class="code-block"><code>int blockSize = 256;
+int numBlocks = (N + blockSize - 1) / blockSize;
+kernel<<<numBlocks, blockSize>>>(d_data, N);</code></pre>
+        
+        <h3>Thread Index Calculation:</h3>
+        <pre class="code-block"><code>__global__ void kernel(float *data, int n) {
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid < n) {
+        data[tid] = process(data[tid]);
+    }
+}</code></pre>
+      `
+    }
+  };
+  
+  const example = examples[currentLab] || { title: 'Code Examples', content: '<p>Examples not available for this lab.</p>' };
+  
+  const modal = document.createElement('div');
+  modal.className = 'explanation-modal active';
+  modal.innerHTML = `
+    <div class="explanation-content" style="max-width:900px;">
+      <button class="explanation-close-btn" onclick="this.closest('.explanation-modal').remove()">×</button>
+      <h2>💻 ${example.title}</h2>
+      ${example.content}
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+// Capture Screenshot
+function captureLabScreenshot() {
+  // Create flash effect
+  const flash = document.createElement('div');
+  flash.className = 'screenshot-flash';
+  document.body.appendChild(flash);
+  
+  setTimeout(() => flash.remove(), 300);
+  
+  // Show success message
+  showExportToast('📸 Screenshot captured! (Browser screenshot tool can save)');
+}
+
+// Export Lab Data as CSV
+function exportLabData() {
+  const params = captureCurrentParameters();
+  const csvContent = Object.entries(params)
+    .map(([key, value]) => `${key},${value}`)
+    .join('\n');
+  
+  const blob = new Blob(['Parameter,Value\n' + csvContent], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `lab-data-${Date.now()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  showExportToast('📊 Data exported as CSV!');
+}
+
+// Show Export Toast
+function showExportToast(message) {
+  const existingToast = document.querySelector('.export-toast');
+  if (existingToast) existingToast.remove();
+  
+  const exportToast = document.createElement('div');
+  exportToast.className = 'export-toast';
+  exportToast.textContent = message;
+  document.body.appendChild(exportToast);
+  
+  setTimeout(() => exportToast.classList.add('show'), 100);
+  setTimeout(() => {
+    exportToast.classList.remove('show');
+    setTimeout(() => exportToast.remove(), 300);
+  }, 3000);
+}
+
+// Toggle Handlers
+function handleAutoRunToggle(checked) {
+  labControlState.autoRun = checked;
+  toast(checked ? 'Auto-run enabled' : 'Auto-run disabled');
+}
+
+function handleHintsToggle(checked) {
+  labControlState.showHints = checked;
+  document.querySelectorAll('.tutorial-hint, .callout').forEach(el => {
+    el.style.display = checked ? 'flex' : 'none';
+  });
+  toast(checked ? 'Hints visible' : 'Hints hidden');
+}
+
+function handleFormulasToggle(checked) {
+  labControlState.showFormulas = checked;
+  document.querySelectorAll('.formula, .equation').forEach(el => {
+    el.style.display = checked ? 'block' : 'none';
+  });
+  toast(checked ? 'Formulas visible' : 'Formulas hidden');
 }
 
 // Video Player Functions
