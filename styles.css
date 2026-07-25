@@ -2203,7 +2203,7 @@ input[type="range"] {
   color: white;
 }
 .mcq-option.correct-answer::after {
-  content: '✓ Correct Answer';
+  content: "✓ Correct Answer";
   position: absolute;
   right: 1rem;
   top: 50%;
@@ -2217,13 +2217,25 @@ input[type="range"] {
   border: 1px solid var(--cyan);
 }
 @keyframes correctPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.02); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
 }
 @keyframes incorrectShake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-8px); }
-  75% { transform: translateX(8px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-8px);
+  }
+  75% {
+    transform: translateX(8px);
+  }
 }
 .mcq-feedback {
   margin-top: 1.25rem;
@@ -2234,8 +2246,14 @@ input[type="range"] {
   animation: fadeIn 0.4s ease;
 }
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .feedback-content {
   display: flex;
@@ -2271,7 +2289,11 @@ input[type="range"] {
 .mcq-summary {
   margin-top: 2rem;
   padding: 1.5rem;
-  background: linear-gradient(135deg, var(--cyan-soft) 0%, var(--lime-soft) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--cyan-soft) 0%,
+    var(--lime-soft) 100%
+  );
   border: 2px solid var(--cyan);
   border-radius: 12px;
   display: flex;
@@ -2714,7 +2736,6 @@ input[type="range"] {
   }
 }
 
-
 /* Roadmap Visualization Styles */
 .roadmap-container {
   margin: 2.5rem 0;
@@ -2883,17 +2904,17 @@ input[type="range"] {
   .roadmap-viewport {
     height: 500px;
   }
-  
+
   .roadmap-controls {
     gap: 0.5rem;
     padding: 0.6rem;
   }
-  
+
   .roadmap-control-btn {
     width: 36px;
     height: 36px;
   }
-  
+
   .roadmap-instructions {
     font-size: 0.7rem;
   }
@@ -2903,16 +2924,15 @@ input[type="range"] {
   .roadmap-viewport {
     height: 400px;
   }
-  
+
   .roadmap-container {
     padding: 1rem;
   }
-  
+
   .roadmap-zoom-level {
     font-size: 0.75rem;
   }
 }
-
 
 /* Enhanced Virtual Labs Styles */
 
@@ -3244,8 +3264,12 @@ input[type="range"] {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Enhanced Control Tips */
@@ -3442,16 +3466,16 @@ input[type="range"] {
   .lab-features-banner {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .result-enhanced {
     grid-template-columns: 1fr;
   }
-  
+
   .tutorial-controls {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .tutorial-progress {
     flex-direction: column;
   }
@@ -3461,12 +3485,12 @@ input[type="range"] {
   .lab-features-banner {
     grid-template-columns: 1fr;
   }
-  
+
   .challenge-status {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .lab-selector-row {
     flex-direction: column;
     align-items: stretch;
@@ -3475,7 +3499,8 @@ input[type="range"] {
 
 /* Animation for result updates */
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   50% {
@@ -3486,7 +3511,6 @@ input[type="range"] {
 .result-card.updated {
   animation: pulse 0.5s ease;
 }
-
 
 /* Video Player Styles */
 .video-section {
@@ -3530,7 +3554,7 @@ input[type="range"] {
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
   padding: 1rem;
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -3633,7 +3657,9 @@ input[type="range"] {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Video Info Panel */
@@ -3700,7 +3726,7 @@ input[type="range"] {
   .video-player-container {
     grid-template-columns: 1fr;
   }
-  
+
   .video-info {
     order: -1;
   }
@@ -3710,26 +3736,26 @@ input[type="range"] {
   .video-section {
     padding: 0 1rem;
   }
-  
+
   .video-player-container {
     padding: 1rem;
   }
-  
+
   .controls-row {
     flex-direction: column;
     gap: 0.5rem;
   }
-  
+
   .controls-left,
   .controls-right {
     width: 100%;
     justify-content: center;
   }
-  
+
   .time-display {
     font-size: 0.75rem;
   }
-  
+
   .control-btn {
     width: 36px;
     height: 36px;
@@ -3746,6 +3772,309 @@ input[type="range"] {
   aspect-ratio: 16 / 9;
 }
 
+/* Learn-by-Doing Layout Improvements (NEP 2020 Aligned) */
+.learn-by-doing-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--cyan-soft);
+  border-radius: 10px;
+  margin: 1rem 0;
+}
+
+.tutorial-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--cyan);
+  border-radius: 8px;
+  color: var(--cyan);
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tutorial-toggle-btn:hover {
+  background: var(--cyan);
+  color: var(--surface);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--cyan-glow);
+}
+
+.challenge-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  background: linear-gradient(135deg, var(--orange), var(--pink));
+  border-radius: 999px;
+  color: white;
+  font-weight: 800;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.challenge-badge:hover {
+  transform: scale(1.05);
+}
+
+/* Compact Tutorial Panel */
+.tutorial-panel {
+  margin: 1rem 0;
+  border: 2px solid var(--cyan);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+  transition: all 0.3s ease;
+}
+
+.tutorial-panel.collapsed {
+  border-color: var(--line);
+}
+
+.tutorial-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--cyan-soft);
+  border-bottom: 1px solid var(--line);
+}
+
+.tutorial-progress-compact {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex: 1;
+}
+
+.step-indicator {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.progress-bar-mini {
+  flex: 1;
+  height: 6px;
+  background: var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill-mini {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan), var(--lime));
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.tutorial-close {
+  padding: 0.3rem 0.6rem;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.tutorial-close:hover {
+  color: var(--pink);
+}
+
+.tutorial-content {
+  padding: 1rem;
+}
+
+.hint-box {
+  padding: 0.8rem 1rem;
+  background: var(--paper);
+  border-left: 3px solid var(--cyan);
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  margin-bottom: 0.8rem;
+}
+
+.tutorial-next-btn {
+  padding: 0.6rem 1.2rem;
+  background: var(--cyan);
+  color: var(--surface);
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tutorial-next-btn:hover {
+  background: color-mix(in srgb, var(--cyan) 80%, black);
+  transform: translateX(2px);
+}
+
+/* Experiment Section */
+.experiment-section {
+  margin: 1.5rem 0;
+  padding: 1.2rem;
+  background: var(--paper);
+  border: 2px solid var(--line);
+  border-radius: 12px;
+}
+
+.experiment-section h3 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.control-label {
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--ink);
+}
+
+/* Results Section */
+.results-section {
+  margin: 1.5rem 0;
+  padding: 1.2rem;
+  background: var(--paper);
+  border: 2px solid var(--cyan);
+  border-radius: 12px;
+}
+
+.results-section h3 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  color: var(--cyan);
+}
+
+/* Reflection Section (NEP 2020 - Critical Thinking) */
+.reflection-section {
+  margin: 1.5rem 0;
+  padding: 1.2rem;
+  background: color-mix(in srgb, var(--lime) 5%, var(--surface));
+  border: 2px solid var(--lime);
+  border-radius: 12px;
+}
+
+.reflection-section h3 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  color: var(--lime);
+}
+
+.reflection-question {
+  margin: 0.6rem 0;
+  padding: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reflection-question:hover {
+  border-color: var(--lime);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--lime) 20%, transparent);
+}
+
+.reflection-question summary {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--ink);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.reflection-question summary::before {
+  content: "▶";
+  color: var(--lime);
+  font-size: 0.7rem;
+  transition: transform 0.2s ease;
+}
+
+.reflection-question[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.reflection-question p {
+  margin: 0.8rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+/* Tutorial Highlight Animation */
+.tutorial-highlight {
+  position: relative;
+  animation: highlightPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes highlightPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--cyan-glow);
+  }
+  50% {
+    box-shadow:
+      0 0 0 8px var(--cyan-glow),
+      0 0 20px var(--cyan-glow);
+  }
+}
+
+/* Responsive Improvements */
+@media (max-width: 900px) {
+  .learn-by-doing-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tutorial-toggle-btn,
+  .challenge-badge {
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .tutorial-progress-compact {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+
+  .progress-bar-mini {
+    width: 100%;
+  }
+}
+
+/* Lab Challenge Card Improvements */
+.lab-challenge-card.collapsed {
+  max-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.lab-challenge-card:not(.collapsed) {
+  max-height: 500px;
+  transition: all 0.3s ease;
+}
 
 /* Global Lab Controls */
 .lab-global-controls {
@@ -4025,7 +4354,8 @@ input[type="range"] {
 
 /* Screenshot Flash Effect */
 @keyframes flashEffect {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0;
   }
   50% {
@@ -4120,11 +4450,11 @@ input[type="range"] {
   .lab-global-controls {
     grid-template-columns: 1fr;
   }
-  
+
   .control-buttons {
     grid-template-columns: 1fr;
   }
-  
+
   .comparison-mode-panel {
     width: 100%;
   }
@@ -4134,15 +4464,15 @@ input[type="range"] {
   .lab-global-controls {
     padding: 1rem;
   }
-  
+
   .control-section {
     padding: 0.8rem;
   }
-  
+
   .speed-selector {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .control-action-btn {
     font-size: 0.7rem;
     padding: 0.6rem 0.7rem;
@@ -4151,7 +4481,8 @@ input[type="range"] {
 
 /* Lab Control Animations */
 @keyframes controlPulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 0 var(--cyan-glow);
   }
   50% {

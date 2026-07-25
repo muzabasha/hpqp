@@ -4,7 +4,7 @@
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // Lab Enhancement: Tutorial Mode System
-const TUTORIAL_STEPS = {
+export const TUTORIAL_STEPS = {
   'hpc-throughput': [
     { step: 1, instruction: 'Start with 4 nodes and 1000 GFLOPs to see baseline performance', highlight: 'hpc-nodes' },
     { step: 2, instruction: 'Increase nodes to 32 to see linear speedup in action', highlight: 'hpc-nodes' },
@@ -327,34 +327,40 @@ function labHpcThroughput() {
   const challenge = LAB_CHALLENGES['hpc-throughput'];
   
   return `<div class="lab-layout">
-    <!-- Tutorial Progress Bar -->
-    <div class="lab-tutorial-bar">
-      <div class="tutorial-controls">
-        <button class="tutorial-btn" data-tutorial-action="start" data-lab-id="hpc-throughput">
-          <span>📚 Start Tutorial</span>
+    <div class="lab-panel">
+      <div class="eyebrow">Unit 01 · Topic 01 Lab · Hands-On Learning</div>
+      <h2>HPC Throughput & Benchmark Simulator</h2>
+      <p class="lede">🎯 <strong>Learn by Doing:</strong> Adjust parameters below and observe real-time results. Experiment freely to understand HPC performance scaling.</p>
+      
+      <!-- Compact Tutorial & Challenge Bar -->
+      <div class="learn-by-doing-bar">
+        <button class="tutorial-toggle-btn" data-tutorial-action="start" data-lab-id="hpc-throughput">
+          📚 Tutorial (${tutorialSteps.length} steps)
         </button>
-        <div class="tutorial-progress" data-tutorial-progress style="display:none;">
-          <span class="tutorial-step-indicator">Step <strong data-step-current>1</strong> of ${tutorialSteps.length}</span>
-          <div class="tutorial-progress-bar">
-            <div class="tutorial-progress-fill" data-progress-fill style="width:25%"></div>
-          </div>
-          <button class="tutorial-nav-btn" data-tutorial-action="next">Next →</button>
-          <button class="tutorial-nav-btn secondary" data-tutorial-action="skip">Skip Tutorial</button>
+        <div class="challenge-badge" data-challenge-badge>
+          🏆 Challenge: ${challenge.title}
         </div>
       </div>
-      <div class="tutorial-hint" data-tutorial-hint style="display:none;">
-        <span class="hint-icon">💡</span>
-        <span data-hint-text>Start with 4 nodes and 1000 GFLOPs to see baseline performance</span>
-      </div>
-    </div>
-    
-    <div class="lab-panel">
-      <div class="eyebrow">Unit 01 · Topic 01 Lab</div>
-      <h2>HPC Throughput & Benchmark Simulator</h2>
-      <p class="lede">Compare a standard PC vs a high-performance cluster. Adjust dataset size and node count to observe wall-clock speedup, achieved FLOPS, and power consumption.</p>
       
-      <!-- Challenge Card -->
-      <div class="lab-challenge-card" data-challenge-card>
+      <!-- Collapsible Tutorial Panel -->
+      <div class="tutorial-panel collapsed" data-tutorial-panel style="display:none;">
+        <div class="tutorial-header">
+          <div class="tutorial-progress-compact">
+            <span class="step-indicator">Step <strong data-step-current>1</strong>/${tutorialSteps.length}</span>
+            <div class="progress-bar-mini">
+              <div class="progress-fill-mini" data-progress-fill style="width:25%"></div>
+            </div>
+          </div>
+          <button class="tutorial-close" data-tutorial-action="skip">✕</button>
+        </div>
+        <div class="tutorial-content">
+          <div class="hint-box" data-hint-text>Start with 4 nodes and 1000 GFLOPs to see baseline performance</div>
+          <button class="tutorial-next-btn" data-tutorial-action="next">Next Step →</button>
+        </div>
+      </div>
+      
+      <!-- Challenge Card (Collapsible) -->
+      <div class="lab-challenge-card collapsed" data-challenge-card>
         <div class="challenge-header">
           <span class="challenge-badge">🏆 Challenge</span>
           <h3>${challenge.title}</h3>
@@ -367,25 +373,38 @@ function labHpcThroughput() {
         <p class="challenge-hint" data-challenge-hint style="display:none;">💡 ${challenge.hint}</p>
       </div>
       
-      <div class="control">
-        <label for="hpc-nodes">Cluster Nodes <output data-hpc-nodes-val>16</output></label>
-        <input id="hpc-nodes" data-hpc-nodes type="range" min="1" max="128" value="16" />
-        <div class="control-tips">
-          <span class="tip-badge">Typical HPC: 32-1024 nodes</span>
+      <!-- Interactive Controls Section -->
+      <div class="experiment-section">
+        <h3>🔬 Experiment Controls</h3>
+        <div class="control">
+          <label for="hpc-nodes">
+            <span class="control-label">Cluster Nodes</span>
+            <output data-hpc-nodes-val>16</output>
+          </label>
+          <input id="hpc-nodes" data-hpc-nodes type="range" min="1" max="128" value="16" />
+          <div class="control-tips">
+            <span class="tip-badge">💡 Try: Start with 4, then 16, then 64 nodes</span>
+          </div>
+        </div>
+        
+        <div class="control">
+          <label for="hpc-ops">
+            <span class="control-label">Problem Size (GFLOPs)</span>
+            <output data-hpc-ops-val>5000</output>
+          </label>
+          <input id="hpc-ops" data-hpc-ops type="range" min="100" max="50000" step="100" value="5000" />
+          <div class="control-tips">
+            <span class="tip-badge">💡 Experiment: 1000 → 5000 → 20000 GFLOPs</span>
+          </div>
         </div>
       </div>
       
-      <div class="control">
-        <label for="hpc-ops">Problem Size (GFLOPs) <output data-hpc-ops-val>5000</output></label>
-        <input id="hpc-ops" data-hpc-ops type="range" min="100" max="50000" step="100" value="5000" />
-        <div class="control-tips">
-          <span class="tip-badge">1 GFLOP = 10⁹ floating-point operations</span>
-        </div>
-      </div>
-      
-      <div class="formula">Throughput = N_ops / t_wall &nbsp; | &nbsp; Power = N_nodes × 0.35 kW</div>
-      
-      <div class="result-enhanced">
+      <!-- Results Section -->
+      <div class="results-section">
+        <h3>📊 Real-Time Results</h3>
+        <div class="formula">Throughput = N_ops / t_wall &nbsp; | &nbsp; Power = N_nodes × 0.35 kW</div>
+        
+        <div class="result-enhanced">
         <div class="result-card">
           <div class="result-icon">⏱️</div>
           <strong data-hpc-time>0.89s</strong>
@@ -414,25 +433,44 @@ function labHpcThroughput() {
         <span>Standard PC</span>
         <span>HPC Cluster</span>
       </div>
+      </div>
       
-      <!-- Key Insights Panel -->
+      <!-- Reflection Questions (NEP 2020 - Critical Thinking) -->
+      <div class="reflection-section">
+        <h3>🤔 Reflect on Your Learning</h3>
+        <details class="reflection-question">
+          <summary>What happens when you double the number of nodes?</summary>
+          <p>Observe how throughput changes. Does it exactly double? Why or why not? Consider communication overhead and Amdahl's Law.</p>
+        </details>
+        <details class="reflection-question">
+          <summary>How does power consumption scale?</summary>
+          <p>Notice the linear relationship: Power = Nodes × 0.35 kW. What are the implications for large-scale HPC centers?</p>
+        </details>
+        <details class="reflection-question">
+          <summary>When is HPC most beneficial?</summary>
+          <p>Compare small vs large problem sizes. At what point does the cluster become significantly faster than a PC?</p>
+        </details>
+      </div>
+      
+      <!-- Key Takeaways -->
       <div class="lab-insights-panel">
-        <h4>📊 Key Insights</h4>
+        <h4>🎯 Key Takeaways</h4>
         <ul class="insights-list" data-insights-list>
-          <li>🔹 Linear scaling: Doubling nodes nearly doubles throughput</li>
-          <li>🔹 Strong scaling: Fixed problem completes faster with more nodes</li>
-          <li>🔹 Power trade-off: More nodes = higher peak performance but more energy</li>
+          <li>✓ Linear scaling: Doubling nodes nearly doubles throughput</li>
+          <li>✓ Strong scaling: Fixed problem completes faster with more nodes</li>
+          <li>✓ Power trade-off: More nodes = higher peak but more energy</li>
         </ul>
       </div>
     </div>
     
     <aside class="lab-panel">
-      <div class="eyebrow">Learn by Doing</div>
-      <h2>Experimenter Notes</h2>
+      <div class="eyebrow">Learning Support</div>
+      <h2>Your Progress</h2>
       
       <!-- Real-time Feedback -->
       <div class="feedback-box" data-feedback-box>
-        <p class="callout" data-hpc-feedback>As problem size grows, standard PC time scales linearly to hours, while the cluster maintains sub-second execution. Notice how power scales with node count!</p>
+        <h4>💬 Live Feedback</h4>
+        <p class="callout" data-hpc-feedback>Adjust the controls and see instant results! Try extreme values to understand system limits.</p>
       </div>
       
       <!-- Interactive Metrics -->

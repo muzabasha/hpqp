@@ -1,6 +1,6 @@
 import { course } from './data/course.js';
 import { allTopics, getTopic, getUnitTopics, getTotalTopics } from './data/topics/index.js';
-import { renderLab, LAB_CATALOG } from './components/labs.js';
+import { renderLab, LAB_CATALOG, TUTORIAL_STEPS } from './components/labs.js';
 import { renderTopicLesson } from './components/topicLesson.js';
 import { renderProjectsView } from './components/projectsView.js';
 import { renderCriticalQuestionsView } from './components/criticalQuestionsView.js';
@@ -542,6 +542,9 @@ document.addEventListener('click', (e) => {
   // Enhanced Lab Features
   const tutorialAction = e.target.closest('[data-tutorial-action]');
   if (tutorialAction) handleTutorialAction(tutorialAction.dataset.tutorialAction, tutorialAction.dataset.labId);
+  
+  const challengeBadge = e.target.closest('[data-challenge-badge]');
+  if (challengeBadge) toggleChallengeCard();
 
   const hintToggle = e.target.closest('[data-action="toggle-hint"]');
   if (hintToggle) {
@@ -1180,8 +1183,7 @@ let tutorialState = {
 };
 
 function handleTutorialAction(action, labId) {
-  const progressEl = document.querySelector('[data-tutorial-progress]');
-  const hintEl = document.querySelector('[data-tutorial-hint]');
+  const tutorialPanel = document.querySelector('[data-tutorial-panel]');
   const startBtn = document.querySelector('[data-tutorial-action="start"]');
   
   if (action === 'start') {
@@ -1189,19 +1191,39 @@ function handleTutorialAction(action, labId) {
     tutorialState.currentStep = 0;
     tutorialState.labId = labId;
     
-    if (startBtn) startBtn.style.display = 'none';
-    if (progressEl) progressEl.style.display = 'flex';
-    if (hintEl) hintEl.style.display = 'flex';
+    // Show tutorial panel
+    if (tutorialPanel) {
+      tutorialPanel.style.display = 'block';
+      tutorialPanel.classList.remove('collapsed');
+    }
     
     updateTutorialStep();
+    toast('📚 Tutorial started! Follow the step-by-step guidance.');
   } else if (action === 'next') {
     tutorialState.currentStep++;
     updateTutorialStep();
   } else if (action === 'skip') {
     tutorialState.active = false;
-    if (progressEl) progressEl.style.display = 'none';
-    if (hintEl) hintEl.style.display = 'none';
-    if (startBtn) startBtn.style.display = 'inline-flex';
+    
+    // Hide tutorial panel
+    if (tutorialPanel) {
+      tutorialPanel.style.display = 'none';
+      tutorialPanel.classList.add('collapsed');
+    }
+    
+    // Remove all highlights
+    document.querySelectorAll('.tutorial-highlight').forEach(el => {
+      el.classList.remove('tutorial-highlight');
+    });
+    
+    toast('Tutorial closed. Explore freely!');
+  }
+}
+
+function toggleChallengeCard() {
+  const challengeCard = document.querySelector('[data-challenge-card]');
+  if (challengeCard) {
+    challengeCard.classList.toggle('collapsed');
   }
 }
 
@@ -1210,34 +1232,69 @@ function updateTutorialStep() {
   const fillEl = document.querySelector('[data-progress-fill]');
   const hintTextEl = document.querySelector('[data-hint-text]');
   
-  // Note: TUTORIAL_STEPS would need to be imported from labs.js or defined here
-  const maxSteps = 4; // Default for most labs
+  // Get tutorial steps for current lab
+  const labId = tutorialState.labId || 'hpc-throughput';
+  const steps = TUTORIAL_STEPS[labId] || [];
+  const maxSteps = steps.length || 4;
+  const currentStepData = steps[tutorialState.currentStep];
+  
   const progress = ((tutorialState.currentStep + 1) / maxSteps) * 100;
   
   if (stepEl) stepEl.textContent = tutorialState.currentStep + 1;
   if (fillEl) fillEl.style.width = `${progress}%`;
   
-  const hints = {
-    0: 'Start with default values and observe the baseline',
-    1: 'Adjust the first parameter and see the impact',
-    2: 'Try extreme values to understand limits',
-    3: 'Find the optimal configuration for best performance'
-  };
-  
-  if (hintTextEl && hints[tutorialState.currentStep]) {
-    hintTextEl.textContent = hints[tutorialState.currentStep];
+  // Use actual tutorial instruction or fallback to generic hint
+  if (hintTextEl && currentStepData) {
+    hintTextEl.textContent = currentStepData.instruction;
+    
+    // Highlight the relevant element if specified
+    if (currentStepData.highlight) {
+      // Remove previous highlights
+      document.querySelectorAll('.tutorial-highlight').forEach(el => {
+        el.classList.remove('tutorial-highlight');
+      });
+      
+      // Add highlight to current element
+      const highlightEl = document.querySelector(`[data-${currentStepData.highlight}], #${currentStepData.highlight}, [id*="${currentStepData.highlight}"]`);
+      if (highlightEl) {
+        highlightEl.classList.add('tutorial-highlight');
+        // Scroll into view
+        highlightEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  } else if (hintTextEl) {
+    // Fallback hints if no specific tutorial data
+    const fallbackHints = {
+      0: 'Start with default values and observe the baseline',
+      1: 'Adjust the first parameter and see the impact',
+      2: 'Try extreme values to understand limits',
+      3: 'Find the optimal configuration for best performance'
+    };
+    hintTextEl.textContent = fallbackHints[tutorialState.currentStep] || 'Continue exploring the lab';
   }
   
   // Auto-complete tutorial after last step
   if (tutorialState.currentStep >= maxSteps - 1) {
-    setTimeout(() => {
-      toast('🎉 Tutorial completed! Keep experimenting to master the lab.');
-      tutorialState.active = false;
-      const progressEl = document.querySelector('[data-tutorial-progress]');
-      const hintEl = document.querySelector('[data-tutorial-hint]');
-      if (progressEl) progressEl.style.display = 'none';
-      if (hintEl) hintEl.style.display = 'none';
-    }, 2000);
+    const nextBtn = document.querySelector('[data-tutorial-action="next"]');
+    if (nextBtn) {
+      nextBtn.textContent = 'Complete Tutorial ✓';
+      nextBtn.onclick = (e) => {
+        e.preventDefault();
+        toast('🎉 Tutorial completed! Keep experimenting to master the lab.');
+        tutorialState.active = false;
+        
+        const tutorialPanel = document.querySelector('[data-tutorial-panel]');
+        if (tutorialPanel) {
+          tutorialPanel.style.display = 'none';
+          tutorialPanel.classList.add('collapsed');
+        }
+        
+        // Remove all highlights
+        document.querySelectorAll('.tutorial-highlight').forEach(el => {
+          el.classList.remove('tutorial-highlight');
+        });
+      };
+    }
   }
 }
 
