@@ -1,6 +1,73 @@
 // Virtual Lab Experience Engine (17 Interactive Labs across 4 Units)
+// Enhanced with Tutorial Mode, Challenges, and Real-time Feedback
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// Lab Enhancement: Tutorial Mode System
+const TUTORIAL_STEPS = {
+  'hpc-throughput': [
+    { step: 1, instruction: 'Start with 4 nodes and 1000 GFLOPs to see baseline performance', highlight: 'hpc-nodes' },
+    { step: 2, instruction: 'Increase nodes to 32 to see linear speedup in action', highlight: 'hpc-nodes' },
+    { step: 3, instruction: 'Now increase problem size to 10,000 GFLOPs and observe scalability', highlight: 'hpc-ops' },
+    { step: 4, instruction: 'Notice how power consumption scales with node count', highlight: 'result' }
+  ],
+  'flynn-taxonomy': [
+    { step: 1, instruction: 'Begin with SISD to understand serial execution', highlight: 'SISD' },
+    { step: 2, instruction: 'Switch to SIMD and see 16x parallel lanes activate', highlight: 'SIMD' },
+    { step: 3, instruction: 'Try MIMD to see independent instruction streams', highlight: 'MIMD' },
+    { step: 4, instruction: 'Compare cycles: SISD takes 100, SIMD takes only 7!', highlight: 'result' }
+  ],
+  'speedup-laws': [
+    { step: 1, instruction: 'Set serial fraction to 5% and 16 processors', highlight: 'serial-frac' },
+    { step: 2, instruction: 'Observe Amdahl\'s law ceiling at ~13× speedup', highlight: 'amdahl-speedup' },
+    { step: 3, instruction: 'Increase to 64 processors - Amdahl caps at 16×', highlight: 'law-procs' },
+    { step: 4, instruction: 'Notice Gustafson achieves 61× with weak scaling!', highlight: 'gustafson-speedup' }
+  ],
+  'openmp-loop': [
+    { step: 1, instruction: 'Start with 4 threads and static scheduling', highlight: 'omp-threads' },
+    { step: 2, instruction: 'Set work imbalance to 80% - notice poor efficiency', highlight: 'omp-imbalance' },
+    { step: 3, instruction: 'Switch to dynamic scheduling to improve load balance', highlight: 'omp-sched' },
+    { step: 4, instruction: 'Efficiency jumps from ~60% to ~89%!', highlight: 'omp-eff' }
+  ],
+  'cuda-basics': [
+    { step: 1, instruction: 'Set blocks to 32 and threads to 256', highlight: 'cuda-blocks' },
+    { step: 2, instruction: 'Observe 8 warps per block (256/32 = 8)', highlight: 'cuda-warps-per-block' },
+    { step: 3, instruction: 'Increase threads to 1024 for maximum occupancy', highlight: 'cuda-threads' },
+    { step: 4, instruction: 'Total threads = blocks × threads/block', highlight: 'cuda-total-threads' }
+  ]
+};
+
+// Lab Challenges for Better Learning
+const LAB_CHALLENGES = {
+  'hpc-throughput': {
+    title: 'Challenge: Find the Sweet Spot',
+    description: 'Configure nodes and problem size to achieve exactly 10 TFLOP/s throughput',
+    check: (nodes, ops) => {
+      const time = ops / (nodes * 350 + 100);
+      const flops = (ops / time) / 1000;
+      return Math.abs(flops - 10) < 0.5;
+    },
+    hint: 'Try around 16-20 nodes with 6000-8000 GFLOPs'
+  },
+  'speedup-laws': {
+    title: 'Challenge: Amdahl\'s Ceiling',
+    description: 'Find the serial fraction that limits speedup to exactly 10× with 64 processors',
+    check: (serialFrac, procs) => {
+      const f = 1 - (serialFrac / 100);
+      const amdahl = 1 / ((1 - f) + f / procs);
+      return Math.abs(amdahl - 10) < 0.2;
+    },
+    hint: 'Think: if max speedup is 10×, then 1/(1-f) = 10, so (1-f) = 0.1'
+  },
+  'cuda-basics': {
+    title: 'Challenge: Maximum Occupancy',
+    description: 'Configure grid and block dimensions to launch exactly 65,536 threads',
+    check: (blocks, threads) => {
+      return blocks * threads === 65536;
+    },
+    hint: 'Try 256 blocks × 256 threads, or 128 blocks × 512 threads'
+  }
+};
 
 export const LAB_CATALOG = [
   { id: 'hpc-throughput', unit: 1, topic: 1, title: 'HPC Throughput & Benchmark Simulator' },
@@ -23,7 +90,46 @@ export const LAB_CATALOG = [
 ];
 
 export function renderLabHub(currentType = 'hpc-throughput') {
-  return `<div class="lab-hub-header"><div class="eyebrow">Interactive Workspace</div><h1>Virtual Laboratory Hub</h1><p class="lede">Select an experiment below to explore hands-on simulations across HPC foundations, parallel models, GPU computing, and quantum circuits.</p><div class="lab-selector"><label for="lab-select">Choose Experiment:</label><select id="lab-select" onchange="location.hash='#/lab/'+this.value">${LAB_CATALOG.map(l => `<option value="${l.id}" ${l.id === currentType ? 'selected' : ''}>Unit 0${l.unit} - Topic ${l.topic}: ${esc(l.title)}</option>`).join('')}</select></div></div>`;
+  const currentLab = LAB_CATALOG.find(l => l.id === currentType);
+  const unitLabs = LAB_CATALOG.filter(l => l.unit === currentLab.unit);
+  
+  return `<div class="lab-hub-header">
+    <div class="eyebrow">Interactive Workspace · Enhanced Learning Mode</div>
+    <h1>Virtual Laboratory Hub</h1>
+    <p class="lede">Hands-on simulations with step-by-step tutorials, real-time feedback, and interactive challenges for faster, deeper learning.</p>
+    
+    <div class="lab-features-banner">
+      <div class="lab-feature-item">
+        <span class="feature-icon">🎯</span>
+        <span>Step-by-Step Tutorials</span>
+      </div>
+      <div class="lab-feature-item">
+        <span class="feature-icon">⚡</span>
+        <span>Real-Time Feedback</span>
+      </div>
+      <div class="lab-feature-item">
+        <span class="feature-icon">🏆</span>
+        <span>Interactive Challenges</span>
+      </div>
+      <div class="lab-feature-item">
+        <span class="feature-icon">📊</span>
+        <span>Progress Tracking</span>
+      </div>
+    </div>
+    
+    <div class="lab-selector-enhanced">
+      <div class="lab-selector-row">
+        <label for="lab-select">Choose Experiment:</label>
+        <select id="lab-select" onchange="location.hash='#/lab/'+this.value">
+          ${LAB_CATALOG.map(l => `<option value="${l.id}" ${l.id === currentType ? 'selected' : ''}>Unit 0${l.unit} - Topic ${l.topic}: ${esc(l.title)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="lab-unit-quick-nav">
+        <span>Quick Jump:</span>
+        ${[1, 2, 3, 4].map(u => `<button class="unit-nav-btn ${currentLab.unit === u ? 'active' : ''}" onclick="location.hash='#/lab/${LAB_CATALOG.find(l => l.unit === u).id}'">Unit ${u}</button>`).join('')}
+      </div>
+    </div>
+  </div>`;
 }
 
 export function renderLab(type = 'hpc-throughput', isStandalone = false) {
@@ -91,9 +197,164 @@ export function renderLab(type = 'hpc-throughput', isStandalone = false) {
   return isStandalone ? `${renderLabHub(type)}${content}` : content;
 }
 
-// 1. HPC Throughput & Benchmark Simulator
+// 1. HPC Throughput & Benchmark Simulator (ENHANCED)
 function labHpcThroughput() {
-  return `<div class="lab-layout"><div class="lab-panel"><div class="eyebrow">Unit 01 · Topic 01 Lab</div><h2>HPC Throughput & Benchmark Simulator</h2><p class="lede">Compare a standard PC vs a high-performance cluster. Adjust dataset size and node count to observe wall-clock speedup, achieved FLOPS, and power consumption.</p><div class="control"><label for="hpc-nodes">Cluster Nodes <output data-hpc-nodes-val>16</output></label><input id="hpc-nodes" data-hpc-nodes type="range" min="1" max="128" value="16" /></div><div class="control"><label for="hpc-ops">Problem Size (GFLOPs) <output data-hpc-ops-val>5000</output></label><input id="hpc-ops" data-hpc-ops type="range" min="100" max="50000" step="100" value="5000" /></div><div class="formula">Throughput = N_ops / t_wall &nbsp; | &nbsp; Power = N_nodes × 0.35 kW</div><div class="result"><div><strong data-hpc-time>0.89s</strong><span>wall-clock time</span></div><div><strong data-hpc-flops>5.62 TFLOP/s</strong><span>achieved throughput</span></div><div><strong data-hpc-power>5.6 kW</strong><span>power draw</span></div></div><div class="bar-chart" aria-label="Throughput comparison"><i data-hpc-bar-pc style="height:12%" title="Standard PC"></i><i data-hpc-bar-hpc style="height:85%" title="HPC Cluster"></i></div><div class="chart-labels"><span>Standard PC</span><span>HPC Cluster</span></div></div><aside class="lab-panel"><div class="eyebrow">Learn by Doing</div><h2>Experimenter Notes</h2><p class="callout" data-hpc-feedback>As problem size grows, standard PC time scales linearly to hours, while the cluster maintains sub-second execution. Notice how power scales with node count!</p><button class="button primary" data-action="mark-lab" data-lab="hpc-throughput">Mark lab explored ✓</button></aside></div>`;
+  const tutorialSteps = TUTORIAL_STEPS['hpc-throughput'] || [];
+  const challenge = LAB_CHALLENGES['hpc-throughput'];
+  
+  return `<div class="lab-layout">
+    <!-- Tutorial Progress Bar -->
+    <div class="lab-tutorial-bar">
+      <div class="tutorial-controls">
+        <button class="tutorial-btn" data-tutorial-action="start" data-lab-id="hpc-throughput">
+          <span>📚 Start Tutorial</span>
+        </button>
+        <div class="tutorial-progress" data-tutorial-progress style="display:none;">
+          <span class="tutorial-step-indicator">Step <strong data-step-current>1</strong> of ${tutorialSteps.length}</span>
+          <div class="tutorial-progress-bar">
+            <div class="tutorial-progress-fill" data-progress-fill style="width:25%"></div>
+          </div>
+          <button class="tutorial-nav-btn" data-tutorial-action="next">Next →</button>
+          <button class="tutorial-nav-btn secondary" data-tutorial-action="skip">Skip Tutorial</button>
+        </div>
+      </div>
+      <div class="tutorial-hint" data-tutorial-hint style="display:none;">
+        <span class="hint-icon">💡</span>
+        <span data-hint-text>Start with 4 nodes and 1000 GFLOPs to see baseline performance</span>
+      </div>
+    </div>
+    
+    <div class="lab-panel">
+      <div class="eyebrow">Unit 01 · Topic 01 Lab</div>
+      <h2>HPC Throughput & Benchmark Simulator</h2>
+      <p class="lede">Compare a standard PC vs a high-performance cluster. Adjust dataset size and node count to observe wall-clock speedup, achieved FLOPS, and power consumption.</p>
+      
+      <!-- Challenge Card -->
+      <div class="lab-challenge-card" data-challenge-card>
+        <div class="challenge-header">
+          <span class="challenge-badge">🏆 Challenge</span>
+          <h3>${challenge.title}</h3>
+        </div>
+        <p class="challenge-desc">${challenge.description}</p>
+        <div class="challenge-status" data-challenge-status>
+          <span class="status-indicator pending">⏳ Not Completed</span>
+          <button class="hint-toggle-btn" data-action="toggle-hint">Show Hint</button>
+        </div>
+        <p class="challenge-hint" data-challenge-hint style="display:none;">💡 ${challenge.hint}</p>
+      </div>
+      
+      <div class="control">
+        <label for="hpc-nodes">Cluster Nodes <output data-hpc-nodes-val>16</output></label>
+        <input id="hpc-nodes" data-hpc-nodes type="range" min="1" max="128" value="16" />
+        <div class="control-tips">
+          <span class="tip-badge">Typical HPC: 32-1024 nodes</span>
+        </div>
+      </div>
+      
+      <div class="control">
+        <label for="hpc-ops">Problem Size (GFLOPs) <output data-hpc-ops-val>5000</output></label>
+        <input id="hpc-ops" data-hpc-ops type="range" min="100" max="50000" step="100" value="5000" />
+        <div class="control-tips">
+          <span class="tip-badge">1 GFLOP = 10⁹ floating-point operations</span>
+        </div>
+      </div>
+      
+      <div class="formula">Throughput = N_ops / t_wall &nbsp; | &nbsp; Power = N_nodes × 0.35 kW</div>
+      
+      <div class="result-enhanced">
+        <div class="result-card">
+          <div class="result-icon">⏱️</div>
+          <strong data-hpc-time>0.89s</strong>
+          <span>wall-clock time</span>
+          <div class="result-comparison">vs PC: 28.5s</div>
+        </div>
+        <div class="result-card highlight">
+          <div class="result-icon">⚡</div>
+          <strong data-hpc-flops>5.62 TFLOP/s</strong>
+          <span>achieved throughput</span>
+          <div class="result-comparison">32× faster</div>
+        </div>
+        <div class="result-card">
+          <div class="result-icon">🔋</div>
+          <strong data-hpc-power>5.6 kW</strong>
+          <span>power draw</span>
+          <div class="result-comparison">Efficiency: 1.0 GFLOPS/W</div>
+        </div>
+      </div>
+      
+      <div class="bar-chart" aria-label="Throughput comparison">
+        <i data-hpc-bar-pc style="height:12%" title="Standard PC"></i>
+        <i data-hpc-bar-hpc style="height:85%" title="HPC Cluster"></i>
+      </div>
+      <div class="chart-labels">
+        <span>Standard PC</span>
+        <span>HPC Cluster</span>
+      </div>
+      
+      <!-- Key Insights Panel -->
+      <div class="lab-insights-panel">
+        <h4>📊 Key Insights</h4>
+        <ul class="insights-list" data-insights-list>
+          <li>🔹 Linear scaling: Doubling nodes nearly doubles throughput</li>
+          <li>🔹 Strong scaling: Fixed problem completes faster with more nodes</li>
+          <li>🔹 Power trade-off: More nodes = higher peak performance but more energy</li>
+        </ul>
+      </div>
+    </div>
+    
+    <aside class="lab-panel">
+      <div class="eyebrow">Learn by Doing</div>
+      <h2>Experimenter Notes</h2>
+      
+      <!-- Real-time Feedback -->
+      <div class="feedback-box" data-feedback-box>
+        <p class="callout" data-hpc-feedback>As problem size grows, standard PC time scales linearly to hours, while the cluster maintains sub-second execution. Notice how power scales with node count!</p>
+      </div>
+      
+      <!-- Interactive Metrics -->
+      <div class="metrics-tracking">
+        <h4>Your Progress</h4>
+        <div class="metric-row">
+          <span>Experiments Run:</span>
+          <strong data-experiments-count>0</strong>
+        </div>
+        <div class="metric-row">
+          <span>Best Throughput:</span>
+          <strong data-best-throughput>0 TFLOP/s</strong>
+        </div>
+        <div class="metric-row">
+          <span>Efficiency Score:</span>
+          <strong data-efficiency-score>--</strong>
+        </div>
+      </div>
+      
+      <!-- Quick Reference -->
+      <div class="quick-reference">
+        <h4>Quick Reference</h4>
+        <table class="ref-table">
+          <tr>
+            <td>1 GFLOP</td>
+            <td>10⁹ operations</td>
+          </tr>
+          <tr>
+            <td>1 TFLOP</td>
+            <td>10¹² operations</td>
+          </tr>
+          <tr>
+            <td>TOP500 #1</td>
+            <td>~1 ExaFLOP (10¹⁸)</td>
+          </tr>
+        </table>
+      </div>
+      
+      <button class="button primary" data-action="mark-lab" data-lab="hpc-throughput">Mark lab explored ✓</button>
+      
+      <!-- Compare Mode Toggle -->
+      <button class="button secondary" data-action="toggle-compare" style="margin-top:0.5rem;">
+        📊 Compare with Supercomputers
+      </button>
+    </aside>
+  </div>`;
 }
 
 // 2. Flynn's Taxonomy Simulator

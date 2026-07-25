@@ -1,6 +1,7 @@
 import { getTopic, getUnitTopics } from '../data/topics/index.js';
 import { renderLab } from './labs.js';
 import { DIAGRAM_REGISTRY } from './interactiveDiagrams.js';
+import { renderInteractiveMCQ } from './interactiveMCQ.js';
 
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 const list = (items) => items && items.length ? `<ul>${items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>` : '';
@@ -11,7 +12,19 @@ function getDiagramForTopic(unitId, topicId) {
     '1-1': 'parallel-processing',
     '1-2': 'flynn-taxonomy',
     '1-3': 'memory-hierarchy',
-    '1-4': 'amdahl-law'
+    '1-4': 'amdahl-law',
+    '2-1': 'openmp-scheduling',
+    '2-2': 'mpi-collective',
+    '2-3': 'race-deadlock',
+    '2-4': 'work-stealing',
+    '3-1': 'cuda-basics',
+    '3-2': 'memory-coalescing',
+    '3-3': 'gpu-profiling',
+    '3-4': 'cloud-hpc',
+    '4-1': 'qubit-bloch',
+    '4-2': 'quantum-gates',
+    '4-3': 'quantum-algorithms',
+    '4-4': 'vqe-circuit'
   };
   const key = `${unitId}-${topicId}`;
   const diagramId = diagramMap[key];
@@ -99,6 +112,7 @@ export function renderTopicLesson(unitId, topicId) {
   ${renderSection4(t)}
   ${renderSection5(t)}
   ${renderSection6(t)}
+  ${renderInteractiveMCQ(topicId, unitId)}
   ${renderSection7(t, unitId, topicId)}
   ${renderEndSection(t, unitId, topicId)}`;
 }
