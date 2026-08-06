@@ -17,11 +17,23 @@ export const TUTORIAL_STEPS = {
     { step: 3, instruction: 'Try MIMD to see independent instruction streams', highlight: 'MIMD' },
     { step: 4, instruction: 'Compare cycles: SISD takes 100, SIMD takes only 7!', highlight: 'result' }
   ],
+  'cache-coherence': [
+    { step: 1, instruction: 'Select Sequential Access pattern to see 93.8% L1 cache hit rate', highlight: 'cache-pattern' },
+    { step: 2, instruction: 'Switch to False Sharing pattern to observe cache line bouncing', highlight: 'cache-pattern' },
+    { step: 3, instruction: 'Notice Core states flip to Invalid [I] due to MESI protocol writes', highlight: 'mesi-status-grid' },
+    { step: 4, instruction: 'Increase sharing cores to 8 and see effective access time jump', highlight: 'cache-cores' }
+  ],
   'speedup-laws': [
     { step: 1, instruction: 'Set serial fraction to 5% and 16 processors', highlight: 'serial-frac' },
     { step: 2, instruction: 'Observe Amdahl\'s law ceiling at ~13× speedup', highlight: 'amdahl-speedup' },
     { step: 3, instruction: 'Increase to 64 processors - Amdahl caps at 16×', highlight: 'law-procs' },
     { step: 4, instruction: 'Notice Gustafson achieves 61× with weak scaling!', highlight: 'gustafson-speedup' }
+  ],
+  'top500-cluster': [
+    { step: 1, instruction: 'Start with 32 racks and 4 GPUs per node to see baseline cluster power', highlight: 'cluster-racks' },
+    { step: 2, instruction: 'Increase GPUs to 8 per node to boost LINPACK Rmax performance', highlight: 'cluster-gpus' },
+    { step: 3, instruction: 'Lower cooling PUE to 1.05 (liquid cooling) to maximize Green500 score', highlight: 'cluster-pue' },
+    { step: 4, instruction: 'Observe GFLOPS/Watt jump past 50+ GFLOPS/W!', highlight: 'cluster-efficiency' }
   ],
   'openmp-loop': [
     { step: 1, instruction: 'Start with 4 threads and static scheduling', highlight: 'omp-threads' },
@@ -55,6 +67,12 @@ const LAB_CHALLENGES = {
     check: (arch) => arch === 'SIMD',
     hint: 'SIMD processes 16 data items with a single instruction broadcast'
   },
+  'cache-coherence': {
+    title: 'Challenge: Eliminate False Sharing',
+    description: 'Select the memory access pattern that maximizes spatial locality and achieves >90% L1 hit rate',
+    check: (pattern) => pattern === 'seq',
+    hint: 'Sequential access reads 64-byte cache lines contiguously, keeping hit rates above 90%'
+  },
   'speedup-laws': {
     title: 'Challenge: Amdahl\'s Ceiling',
     description: 'Find the serial fraction that limits speedup to exactly 10× with 64 processors',
@@ -64,6 +82,12 @@ const LAB_CHALLENGES = {
       return Math.abs(amdahl - 10) < 0.2;
     },
     hint: 'Think: if max speedup is 10×, then 1/(1-f) = 10, so (1-f) = 0.1'
+  },
+  'top500-cluster': {
+    title: 'Challenge: Green500 Top 10 Efficiency',
+    description: 'Configure your cluster to achieve over 50 GFLOPS/Watt energy efficiency score',
+    check: (gpus, pue) => gpus >= 4 && pue <= 110,
+    hint: 'Use 4+ GPUs per node and liquid cooling (PUE ≤ 1.10) to lower overhead'
   },
   'cuda-basics': {
     title: 'Challenge: Maximum Occupancy',
@@ -684,9 +708,138 @@ function labFlynnTaxonomy() {
   </div>`;
 }
 
-// 3. Cache Coherence & MESI Simulator
+// 3. Memory Hierarchy & MESI Cache Coherence Simulator (ENHANCED)
 function labCacheCoherence() {
-  return `<div class="lab-layout"><div class="lab-panel"><div class="eyebrow">Unit 01 · Topic 03 Lab</div><h2>Memory Hierarchy & MESI Cache Coherence</h2><p class="lede">Simulate read and write operations across multi-core L1/L2 caches to observe MESI protocol state transitions (Modified, Exclusive, Shared, Invalid).</p><div class="control"><label for="cache-pattern">Access Pattern</label><select id="cache-pattern" data-cache-pattern><option value="seq">Sequential Access (High Spatial Locality)</option><option value="stride">Strided Access (Medium Locality)</option><option value="rand">Random Access (Poor Locality)</option><option value="sharing">False Sharing (Thread Collision)</option></select></div><div class="control"><label for="cache-cores">Cores Sharing Memory <output data-cache-cores-val>4</output></label><input id="cache-cores" data-cache-cores type="range" min="1" max="8" value="4" /></div><div class="mesi-status-grid"><div class="mesi-core"><span>Core 0 Cache Line</span><strong data-mesi-c0 class="mesi-badge m-mod">Modified [M]</strong></div><div class="mesi-core"><span>Core 1 Cache Line</span><strong data-mesi-c1 class="mesi-badge m-inv">Invalid [I]</strong></div><div class="mesi-core"><span>Core 2 Cache Line</span><strong data-mesi-c2 class="mesi-badge m-inv">Invalid [I]</strong></div><div class="mesi-core"><span>Core 3 Cache Line</span><strong data-mesi-c3 class="mesi-badge m-inv">Invalid [I]</strong></div></div><div class="result"><div><strong data-cache-hit>93.8%</strong><span>L1 hit rate</span></div><div><strong data-cache-eat>2.4 ns</strong><span>effective access time</span></div><div><strong data-cache-bus>Low</strong><span>coherence bus traffic</span></div></div></div><aside class="lab-panel"><div class="eyebrow">Cache Protocol</div><h2>Read the MESI State</h2><p class="callout" data-cache-feedback>Sequential access maximizes cache line utilization (64 bytes = 8 doubles). False sharing causes constant cache line invalidations ([I] state) across cores!</p><button class="button primary" data-action="mark-lab" data-lab="cache-coherence">Mark lab explored ✓</button></aside></div>`;
+  const tutorialSteps = TUTORIAL_STEPS['cache-coherence'] || [];
+  const challenge = LAB_CHALLENGES['cache-coherence'];
+
+  return `<div class="lab-layout">
+    <!-- Tutorial Progress Bar -->
+    <div class="lab-tutorial-bar">
+      <div class="tutorial-controls">
+        <button class="tutorial-btn" data-tutorial-action="start" data-lab-id="cache-coherence">
+          <span>📚 Start Tutorial</span>
+        </button>
+        <div class="tutorial-progress" data-tutorial-progress style="display:none;">
+          <span class="tutorial-step-indicator">Step <strong data-step-current>1</strong> of ${tutorialSteps.length}</span>
+          <div class="tutorial-progress-bar">
+            <div class="tutorial-progress-fill" data-progress-fill style="width:25%"></div>
+          </div>
+          <button class="tutorial-nav-btn" data-tutorial-action="next">Next →</button>
+          <button class="tutorial-nav-btn secondary" data-tutorial-action="skip">Skip Tutorial</button>
+        </div>
+      </div>
+      <div class="tutorial-hint" data-tutorial-hint style="display:none;">
+        <span class="hint-icon">💡</span>
+        <span data-hint-text>Select Sequential Access pattern to see 93.8% L1 cache hit rate</span>
+      </div>
+    </div>
+    
+    <div class="lab-panel">
+      <div class="eyebrow">Unit 01 · Topic 03 Lab · Experiential Learning</div>
+      <h2>Memory Hierarchy & MESI Cache Coherence</h2>
+      <p class="lede">Simulate read and write operations across multi-core L1/L2 caches to observe MESI protocol state transitions (Modified, Exclusive, Shared, Invalid).</p>
+      
+      <!-- Challenge Card -->
+      <div class="lab-challenge-card" data-challenge-card>
+        <div class="challenge-header">
+          <span class="challenge-badge">🏆 Challenge</span>
+          <h3>${challenge.title}</h3>
+        </div>
+        <p class="challenge-desc">${challenge.description}</p>
+        <div class="challenge-status" data-challenge-status>
+          <span class="status-indicator pending">⏳ Not Completed</span>
+          <button class="hint-toggle-btn" data-action="toggle-hint">Show Hint</button>
+        </div>
+        <p class="challenge-hint" data-challenge-hint style="display:none;">💡 ${challenge.hint}</p>
+      </div>
+      
+      <div class="control">
+        <label for="cache-pattern">Access Pattern</label>
+        <select id="cache-pattern" data-cache-pattern>
+          <option value="seq">Sequential Access (High Spatial Locality)</option>
+          <option value="stride">Strided Access (Medium Locality)</option>
+          <option value="rand">Random Access (Poor Locality)</option>
+          <option value="sharing">False Sharing (Thread Collision)</option>
+        </select>
+        <div class="control-tips">
+          <span class="tip-badge">💡 Try switching between Sequential and False Sharing</span>
+        </div>
+      </div>
+      
+      <div class="control">
+        <label for="cache-cores">Cores Sharing Memory <output data-cache-cores-val>4</output></label>
+        <input id="cache-cores" data-cache-cores type="range" min="1" max="8" value="4" />
+        <div class="control-tips">
+          <span class="tip-badge">💡 More cores = higher potential MESI coherence traffic</span>
+        </div>
+      </div>
+      
+      <div class="mesi-status-grid">
+        <div class="mesi-core"><span>Core 0 Cache Line</span><strong data-mesi-c0 class="mesi-badge m-mod">Modified [M]</strong></div>
+        <div class="mesi-core"><span>Core 1 Cache Line</span><strong data-mesi-c1 class="mesi-badge m-inv">Invalid [I]</strong></div>
+        <div class="mesi-core"><span>Core 2 Cache Line</span><strong data-mesi-c2 class="mesi-badge m-inv">Invalid [I]</strong></div>
+        <div class="mesi-core"><span>Core 3 Cache Line</span><strong data-mesi-c3 class="mesi-badge m-inv">Invalid [I]</strong></div>
+      </div>
+      
+      <div class="result-enhanced">
+        <div class="result-card highlight">
+          <div class="result-icon">🎯</div>
+          <strong data-cache-hit>93.8%</strong>
+          <span>L1 hit rate</span>
+          <div class="result-comparison">Spatial & Temporal Locality</div>
+        </div>
+        <div class="result-card">
+          <div class="result-icon">⏱️</div>
+          <strong data-cache-eat>2.4 ns</strong>
+          <span>effective access time</span>
+          <div class="result-comparison">EAT = h·t_cache + (1-h)·t_mem</div>
+        </div>
+        <div class="result-card">
+          <div class="result-icon">🔄</div>
+          <strong data-cache-bus>Low</strong>
+          <span>coherence bus traffic</span>
+          <div class="result-comparison">Invalidation Requests</div>
+        </div>
+      </div>
+      
+      <!-- NEP 2020 Reflection Section -->
+      <div class="reflection-section">
+        <h3>🤔 Reflect on Your Learning</h3>
+        <details class="reflection-question">
+          <summary>Why does False Sharing ruin multi-core speedup?</summary>
+          <p>When two threads on separate cores write to independent variables on the same 64-byte line, MESI repeatedly invalidates [I] the line, forcing expensive DRAM bus re-fetches.</p>
+        </details>
+        <details class="reflection-question">
+          <summary>How does array padding prevent cache line bouncing?</summary>
+          <p>By padding data structures so each thread's active variable sits on its own 64-byte line, false sharing is eliminated, restoring high L1 hit rates.</p>
+        </details>
+      </div>
+    </div>
+    
+    <aside class="lab-panel">
+      <div class="eyebrow">Cache Protocol & MESI State</div>
+      <h2>Read the MESI State</h2>
+      
+      <!-- Live Feedback Box -->
+      <div class="feedback-box" data-feedback-box>
+        <p class="callout" data-cache-feedback>Sequential access maximizes cache line utilization (64 bytes = 8 doubles). False sharing causes constant cache line invalidations ([I] state) across cores!</p>
+      </div>
+      
+      <!-- Quick Reference -->
+      <div class="quick-reference">
+        <h4>MESI Protocol States</h4>
+        <table class="ref-table">
+          <tr><td><strong>M (Modified)</strong></td><td>Exclusive, Dirty (differs from DRAM)</td></tr>
+          <tr><td><strong>E (Exclusive)</strong></td><td>Exclusive, Clean (matches DRAM)</td></tr>
+          <tr><td><strong>S (Shared)</strong></td><td>Multiple cores hold copy, Clean</td></tr>
+          <tr><td><strong>I (Invalid)</strong></td><td>Line is stale, must re-fetch</td></tr>
+        </table>
+      </div>
+      
+      <button class="button primary" data-action="mark-lab" data-lab="cache-coherence">Mark lab explored ✓</button>
+    </aside>
+  </div>`;
 }
 
 // 4. Speedup & Scalability Laws (Amdahl vs Gustafson) - ENHANCED
@@ -854,9 +1007,132 @@ function labSpeedupLaws() {
   </div>`;
 }
 
-// 5. TOP500 & Green500 Cluster Builder
+// 5. TOP500 & Green500 Supercomputer Builder (ENHANCED)
 function labTop500Cluster() {
-  return `<div class="lab-layout"><div class="lab-panel"><div class="eyebrow">Unit 01 · Topic 05 Lab</div><h2>TOP500 & Green500 Supercomputer Builder</h2><p class="lede">Configure a high-performance cluster node architecture. Balance CPU cores, GPU accelerators, interconnect, and liquid cooling to maximize GFLOPS/Watt.</p><div class="control"><label for="cluster-racks">Rack Count <output data-cluster-racks-val>32</output></label><input id="cluster-racks" data-cluster-racks type="range" min="1" max="100" value="32" /></div><div class="control"><label for="cluster-gpus">GPUs per Node <output data-cluster-gpus-val>4</output></label><input id="cluster-gpus" data-cluster-gpus type="range" min="0" max="8" value="4" /></div><div class="control"><label for="cluster-pue">Cooling PUE <output data-cluster-pue-val>1.15</output></label><input id="cluster-pue" data-cluster-pue type="range" min="105" max="200" step="5" value="115" /></div><div class="result"><div><strong data-cluster-rpeak>45.2 PFLOPS</strong><span>Rpeak (Theoretical)</span></div><div><strong data-cluster-rmax>36.1 PFLOPS</strong><span>Rmax (LINPACK)</span></div><div><strong data-cluster-efficiency>48.5 GFLOPS/W</strong><span>Green500 Score</span></div></div></div><aside class="lab-panel"><div class="eyebrow">Supercomputer Benchmark</div><h2>LINPACK & Green500 Rank</h2><p class="callout" data-cluster-feedback>Adding GPU accelerators drastically boosts Rmax and GFLOPS/Watt. Lowering PUE towards 1.05 reduces non-computing cooling power overhead!</p><button class="button primary" data-action="mark-lab" data-lab="top500-cluster">Mark lab explored ✓</button></aside></div>`;
+  const tutorialSteps = TUTORIAL_STEPS['top500-cluster'] || [];
+  const challenge = LAB_CHALLENGES['top500-cluster'];
+
+  return `<div class="lab-layout">
+    <!-- Tutorial Progress Bar -->
+    <div class="lab-tutorial-bar">
+      <div class="tutorial-controls">
+        <button class="tutorial-btn" data-tutorial-action="start" data-lab-id="top500-cluster">
+          <span>📚 Start Tutorial</span>
+        </button>
+        <div class="tutorial-progress" data-tutorial-progress style="display:none;">
+          <span class="tutorial-step-indicator">Step <strong data-step-current>1</strong> of ${tutorialSteps.length}</span>
+          <div class="tutorial-progress-bar">
+            <div class="tutorial-progress-fill" data-progress-fill style="width:25%"></div>
+          </div>
+          <button class="tutorial-nav-btn" data-tutorial-action="next">Next →</button>
+          <button class="tutorial-nav-btn secondary" data-tutorial-action="skip">Skip Tutorial</button>
+        </div>
+      </div>
+      <div class="tutorial-hint" data-tutorial-hint style="display:none;">
+        <span class="hint-icon">💡</span>
+        <span data-hint-text>Start with 32 racks and 4 GPUs per node to see baseline cluster power</span>
+      </div>
+    </div>
+    
+    <div class="lab-panel">
+      <div class="eyebrow">Unit 01 · Topic 05 Lab · Experiential Learning</div>
+      <h2>TOP500 & Green500 Supercomputer Builder</h2>
+      <p class="lede">Configure a high-performance cluster node architecture. Balance CPU cores, GPU accelerators, interconnect, and liquid cooling to maximize GFLOPS/Watt.</p>
+      
+      <!-- Challenge Card -->
+      <div class="lab-challenge-card" data-challenge-card>
+        <div class="challenge-header">
+          <span class="challenge-badge">🏆 Challenge</span>
+          <h3>${challenge.title}</h3>
+        </div>
+        <p class="challenge-desc">${challenge.description}</p>
+        <div class="challenge-status" data-challenge-status>
+          <span class="status-indicator pending">⏳ Not Completed</span>
+          <button class="hint-toggle-btn" data-action="toggle-hint">Show Hint</button>
+        </div>
+        <p class="challenge-hint" data-challenge-hint style="display:none;">💡 ${challenge.hint}</p>
+      </div>
+      
+      <div class="control">
+        <label for="cluster-racks">Rack Count <output data-cluster-racks-val>32</output></label>
+        <input id="cluster-racks" data-cluster-racks type="range" min="1" max="100" value="32" />
+        <div class="control-tips">
+          <span class="tip-badge">💡 Racks scale total compute nodes & power footprint</span>
+        </div>
+      </div>
+      
+      <div class="control">
+        <label for="cluster-gpus">GPUs per Node <output data-cluster-gpus-val>4</output></label>
+        <input id="cluster-gpus" data-cluster-gpus type="range" min="0" max="8" value="4" />
+        <div class="control-tips">
+          <span class="tip-badge">💡 GPUs provide massive floating-point density</span>
+        </div>
+      </div>
+      
+      <div class="control">
+        <label for="cluster-pue">Cooling PUE <output data-cluster-pue-val>1.15</output></label>
+        <input id="cluster-pue" data-cluster-pue type="range" min="105" max="200" step="5" value="115" />
+        <div class="control-tips">
+          <span class="tip-badge">💡 PUE = Facility Power / IT Power (1.05 = Liquid cooling)</span>
+        </div>
+      </div>
+      
+      <div class="result-enhanced">
+        <div class="result-card">
+          <div class="result-icon">🖥️</div>
+          <strong data-cluster-rpeak>45.2 PFLOPS</strong>
+          <span>Rpeak (Theoretical)</span>
+          <div class="result-comparison">Peak FLOPS limit</div>
+        </div>
+        <div class="result-card highlight">
+          <div class="result-icon">⚡</div>
+          <strong data-cluster-rmax>36.1 PFLOPS</strong>
+          <span>Rmax (LINPACK)</span>
+          <div class="result-comparison">Achieved HPL Benchmark</div>
+        </div>
+        <div class="result-card highlight">
+          <div class="result-icon">🌱</div>
+          <strong data-cluster-efficiency>48.5 GFLOPS/W</strong>
+          <span>Green500 Score</span>
+          <div class="result-comparison">GFLOPS per Watt</div>
+        </div>
+      </div>
+      
+      <!-- Reflection Questions -->
+      <div class="reflection-section">
+        <h3>🤔 Reflect on Supercomputer Design</h3>
+        <details class="reflection-question">
+          <summary>Why does Green500 rank matter as much as TOP500?</summary>
+          <p>For an Exascale system, electrical bills exceed hardware purchase costs over 5 years. Maximizing GFLOPS/Watt saves millions in annual energy.</p>
+        </details>
+        <details class="reflection-question">
+          <summary>What is the difference between Rpeak and Rmax?</summary>
+          <p>Rpeak is theoretical maximum clock math rate. Rmax is actual achieved benchmark rate on High Performance LINPACK (HPL). Rmax/Rpeak = LINPACK Efficiency.</p>
+        </details>
+      </div>
+    </div>
+    
+    <aside class="lab-panel">
+      <div class="eyebrow">Supercomputer Benchmark</div>
+      <h2>LINPACK & Green500 Rank</h2>
+      
+      <div class="feedback-box" data-feedback-box>
+        <p class="callout" data-cluster-feedback>Adding GPU accelerators drastically boosts Rmax and GFLOPS/Watt. Lowering PUE towards 1.05 reduces non-computing cooling power overhead!</p>
+      </div>
+      
+      <div class="quick-reference">
+        <h4>Key Cluster Metrics</h4>
+        <table class="ref-table">
+          <tr><td><strong>Rmax</strong></td><td>Achieved LINPACK PFLOPS</td></tr>
+          <tr><td><strong>Rpeak</strong></td><td>Theoretical Peak PFLOPS</td></tr>
+          <tr><td><strong>Green500</strong></td><td>GFLOPS / Watt Efficiency</td></tr>
+          <tr><td><strong>PUE</strong></td><td>Target ≤ 1.10 for liquid cooling</td></tr>
+        </table>
+      </div>
+      
+      <button class="button primary" data-action="mark-lab" data-lab="top500-cluster">Mark lab explored ✓</button>
+    </aside>
+  </div>`;
 }
 
 // 6. OpenMP Loop Scheduling Lab - ENHANCED
