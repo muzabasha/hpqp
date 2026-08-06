@@ -830,6 +830,180 @@ document.addEventListener('mouseup', () => {
 const setText = (sel, val) => { const el = document.querySelector(sel); if (el) el.textContent = String(val); };
 const setStyle = (sel, prop, val) => { const el = document.querySelector(sel); if (el) el.style[prop] = String(val); };
 
+let experimentCount = 0;
+function trackLabExperiment() {
+  experimentCount++;
+  const el = document.querySelector('[data-experiments-count]');
+  if (el) el.textContent = String(experimentCount);
+}
+
+function checkChallengeCompletion(labId, data) {
+  const statusEl = document.querySelector('[data-challenge-status]');
+  if (!statusEl) return;
+
+  let isComplete = false;
+  if (labId === 'hpc-throughput') {
+    if (data.nodes >= 32 && data.ops >= 10000) isComplete = true;
+  } else if (labId === 'flynn-taxonomy') {
+    if (data === 'SIMD' || data === 'MIMD') isComplete = true;
+  } else if (labId === 'cache-coherence') {
+    if (data === 'seq' || data === 'sharing') isComplete = true;
+  } else if (labId === 'speedup-laws') {
+    if (data.serialVal <= 5 && data.procs >= 64) isComplete = true;
+  } else if (labId === 'top500-cluster') {
+    if (data.racks >= 32 && data.gpus >= 4) isComplete = true;
+  }
+
+  if (isComplete) {
+    statusEl.innerHTML = '<span class="status-indicator completed">✅ Completed! +50 XP</span>';
+  }
+}
+
+function handleCompareMode() {
+  toast('Supercomputer Comparison Loaded: Frontier (1.1 EFLOPS), Fugaku (442 PFLOPS), LUMI (379 PFLOPS).');
+}
+
+function handleScenarioToggle() {
+  toast('Real-World Scenario Loaded: Climate Modeling Grid (s = 2%, p = 256, 98% Parallelizable).');
+}
+
+function updateFlynn(arch) {
+  const instMap = {
+    'SISD': 'Single (Program Counter)',
+    'SIMD': 'Single (Broadcast Control)',
+    'MISD': 'Multiple (Redundant Stream)',
+    'MIMD': 'Multiple (Independent Threads)'
+  };
+  const dataMap = {
+    'SISD': 'Single (Scalar Memory)',
+    'SIMD': 'Multiple (Vector Lanes)',
+    'MISD': 'Single (Shared Target)',
+    'MIMD': 'Multiple (Independent Arrays)'
+  };
+  const aluMap = {
+    'SISD': '<span class="proc-unit active">ALU 0</span>',
+    'SIMD': Array.from({length:16}, (_,i) => `<span class="proc-unit active" style="background:var(--cyan-soft);color:var(--cyan);margin:2px;">Vector Lane ${i}</span>`).join(''),
+    'MISD': '<span class="proc-unit active">Guard 0</span><span class="proc-unit active">Guard 1</span><span class="proc-unit active">Guard 2</span>',
+    'MIMD': Array.from({length:8}, (_,i) => `<span class="proc-unit active" style="background:color-mix(in srgb, var(--cyan) 20%, transparent);color:var(--cyan);margin:2px;">Core ${i}</span>`).join('')
+  };
+  const cyclesMap = { 'SISD': '100 cycles', 'SIMD': '6.25 cycles', 'MISD': '100 cycles', 'MIMD': '3.12 cycles' };
+  const lanesMap = { 'SISD': '1 lane', 'SIMD': '16 vector lanes', 'MISD': '3 redundant guards', 'MIMD': '32 independent cores' };
+  const speedupMap = { 'SISD': '1.00×', 'SIMD': '16.00×', 'MISD': '1.00× (3× Safety)', 'MIMD': '32.00×' };
+  const feedbackMap = {
+    'SISD': 'SISD executes 1 instruction on 1 scalar data item per cycle (Classic Uniprocessor CPU).',
+    'SIMD': '🚀 SIMD broadcasts 1 instruction across 16 parallel data lanes (GPU warps & vector units)! 16x speedup achieved!',
+    'MISD': '🛡️ MISD runs 3 redundant instruction streams on 1 data item to guarantee 100% fault-tolerant safety.',
+    'MIMD': '🏎️ MIMD runs multiple independent instruction streams on multiple data arrays across multi-core CPUs and cluster nodes!'
+  };
+
+  setText('[data-flynn-inst]', instMap[arch] || 'Single');
+  setText('[data-flynn-data]', dataMap[arch] || 'Single');
+  setText('[data-flynn-cycles]', cyclesMap[arch] || '100 cycles');
+  setText('[data-flynn-lanes]', lanesMap[arch] || '1 lane');
+  setText('[data-flynn-speedup]', speedupMap[arch] || '1.00×');
+
+  const procsEl = document.querySelector('[data-flynn-procs]');
+  if (procsEl) procsEl.innerHTML = aluMap[arch] || '<span class="proc-unit active">ALU 0</span>';
+
+  const feedbackEl = document.querySelector('[data-flynn-feedback]');
+  if (feedbackEl) feedbackEl.textContent = feedbackMap[arch] || '';
+
+  checkChallengeCompletion('flynn-taxonomy', arch);
+  trackLabExperiment();
+}
+
+function updateCacheCoherence(pattern, cores) {
+  const patternMap = {
+    'seq': { hit: '93.8%', eat: '2.4 ns', bus: 'Low', c0: 'm-mod', c0t: 'Modified [M]', c1: 'm-shr', c1t: 'Shared [S]', c2: 'm-shr', c2t: 'Shared [S]', c3: 'm-shr', c3t: 'Shared [S]', msg: 'Sequential access maximizes spatial locality (64-byte line = 8 doubles).' },
+    'stride': { hit: '75.0%', eat: '8.5 ns', bus: 'Medium', c0: 'm-exc', c0t: 'Exclusive [E]', c1: 'm-inv', c1t: 'Invalid [I]', c2: 'm-inv', c2t: 'Invalid [I]', c3: 'm-inv', c3t: 'Invalid [I]', msg: 'Strided access fetches lines with partial utilization.' },
+    'rand': { hit: '12.5%', eat: '88.0 ns', bus: 'High', c0: 'm-inv', c0t: 'Invalid [I]', c1: 'm-inv', c1t: 'Invalid [I]', c2: 'm-inv', c2t: 'Invalid [I]', c3: 'm-inv', c3t: 'Invalid [I]', msg: 'Random access breaks spatial locality, causing 88 ns DRAM latencies.' },
+    'sharing': { hit: '45.0%', eat: '48.0 ns', bus: 'Critical (False Sharing)', c0: 'm-mod', c0t: 'Modified [M]', c1: 'm-inv', c1t: 'Invalid [I]', c2: 'm-inv', c2t: 'Invalid [I]', c3: 'm-inv', c3t: 'Invalid [I]', msg: '⚠️ False Sharing! Independent variables on the same 64-byte line cause line bouncing across cores!' }
+  };
+
+  const data = patternMap[pattern] || patternMap['seq'];
+  setText('[data-cache-cores-val]', cores);
+  setText('[data-cache-hit]', data.hit);
+  setText('[data-cache-eat]', data.eat);
+  setText('[data-cache-bus]', data.bus);
+
+  const c0 = document.querySelector('[data-mesi-c0]');
+  if (c0) { c0.className = `mesi-badge ${data.c0}`; c0.textContent = data.c0t; }
+  const c1 = document.querySelector('[data-mesi-c1]');
+  if (c1) { c1.className = `mesi-badge ${data.c1}`; c1.textContent = data.c1t; }
+  const c2 = document.querySelector('[data-mesi-c2]');
+  if (c2) { c2.className = `mesi-badge ${data.c2}`; c2.textContent = data.c2t; }
+  const c3 = document.querySelector('[data-mesi-c3]');
+  if (c3) { c3.className = `mesi-badge ${data.c3}`; c3.textContent = data.c3t; }
+
+  const feedbackEl = document.querySelector('[data-cache-feedback]');
+  if (feedbackEl) feedbackEl.textContent = data.msg;
+
+  checkChallengeCompletion('cache-coherence', pattern);
+  trackLabExperiment();
+}
+
+function updateSpeedupLaws(serialVal, procs) {
+  const serial = serialVal / 100;
+  const f = 1 - serial;
+  const amdahl = 1 / (serial + f / procs);
+  const gustafson = procs - serial * (procs - 1);
+  const eff = (amdahl / procs) * 100;
+  const ceiling = 1 / serial;
+  const adv = (gustafson / amdahl).toFixed(1);
+
+  setText('[data-serial-frac-val]', `${serialVal}%`);
+  setText('[data-law-procs-val]', procs);
+  setText('[data-amdahl-speedup]', `${amdahl.toFixed(2)}×`);
+  setText('[data-gustafson-speedup]', `${gustafson.toFixed(2)}×`);
+  setText('[data-law-efficiency]', `${eff.toFixed(1)}%`);
+  setText('[data-amdahl-ceiling]', `${ceiling.toFixed(0)}×`);
+  setText('[data-current-eff]', `${eff.toFixed(0)}%`);
+  setText('[data-gustafson-adv]', `${adv}×`);
+
+  setStyle('[data-chart-amdahl]', 'height', `${Math.min(100, (amdahl / procs) * 100)}%`);
+  setStyle('[data-chart-gustafson]', 'height', `${Math.min(100, (gustafson / procs) * 100)}%`);
+
+  const feedbackEl = document.querySelector('[data-law-feedback]');
+  if (feedbackEl) {
+    feedbackEl.textContent = `With a ${serialVal}% serial fraction, Amdahl caps maximum possible speedup at ${ceiling.toFixed(0)}× even with infinite cores. Gustafson shows weak scaling achieves ${gustafson.toFixed(2)}× on ${procs} cores!`;
+  }
+
+  checkChallengeCompletion('speedup-laws', { serialVal, procs });
+  trackLabExperiment();
+}
+
+function updateTop500Cluster(racks, gpus, pueVal) {
+  const pue = pueVal / 100;
+  const nodes = racks * 32;
+  const rpeak = nodes * (2 + gpus * 10) * 0.05;
+  const rmax = rpeak * 0.82;
+  const power = nodes * (0.35 + gpus * 0.30) * pue;
+  const green = (rmax * 1000) / power;
+
+  setText('[data-cluster-racks-val]', racks);
+  setText('[data-cluster-gpus-val]', gpus);
+  setText('[data-cluster-pue-val]', pue.toFixed(2));
+  setText('[data-cluster-rpeak]', `${rpeak.toFixed(1)} PFLOPS`);
+  setText('[data-cluster-rmax]', `${rmax.toFixed(1)} PFLOPS`);
+  setText('[data-cluster-efficiency]', `${green.toFixed(1)} GFLOPS/W`);
+
+  const feedbackEl = document.querySelector('[data-cluster-feedback]');
+  if (feedbackEl) {
+    feedbackEl.textContent = `Cluster configured with ${nodes} nodes (${racks} racks, ${gpus} GPUs/node). Rmax achieves ${rmax.toFixed(1)} PFLOPS at PUE ${pue.toFixed(2)} (${green.toFixed(1)} GFLOPS/W)!`;
+  }
+
+  checkChallengeCompletion('top500-cluster', { racks, gpus, pueVal });
+  trackLabExperiment();
+}
+
+document.addEventListener('input', throttle((e) => {
+  handleInput(e);
+}, 50));
+
+document.addEventListener('change', (e) => {
+  handleInput(e);
+});
+
 function handleInput(e) {
   if (!e || !e.target) return;
   // 1. HPC Throughput
@@ -845,12 +1019,10 @@ function handleInput(e) {
     setText('[data-hpc-flops]', `${flops.toFixed(2)} TFLOP/s`);
     setText('[data-hpc-power]', `${power.toFixed(1)} kW`);
     setStyle('[data-hpc-bar-hpc]', 'height', `${Math.min(100, (nodes / 128) * 100)}%`);
-    
-    // Enhanced features: Track experiments and check challenge
+
     trackLabExperiment();
     checkChallengeCompletion('hpc-throughput', { nodes, ops });
-    
-    // Update best throughput
+
     if (flops > tutorialState.bestThroughput) {
       tutorialState.bestThroughput = flops;
       const bestEl = document.querySelector('[data-best-throughput]');
@@ -860,15 +1032,11 @@ function handleInput(e) {
         setTimeout(() => bestEl.parentElement.classList.remove('updated'), 500);
       }
     }
-    
-    // Update efficiency score
+
     const efficiency = (flops / power).toFixed(2);
     const effEl = document.querySelector('[data-efficiency-score]');
-    if (effEl) {
-      effEl.textContent = `${efficiency} GFLOPS/W`;
-    }
-    
-    // Dynamic feedback based on configuration
+    if (effEl) effEl.textContent = `${efficiency} GFLOPS/W`;
+
     const feedbackEl = document.querySelector('[data-hpc-feedback]');
     if (feedbackEl) {
       if (nodes < 8) {
@@ -878,7 +1046,7 @@ function handleInput(e) {
       } else if (flops > 15) {
         feedbackEl.textContent = '🚀 Excellent throughput! This configuration delivers supercomputer-class performance.';
       } else {
-        feedbackEl.textContent = 'As problem size grows, standard PC time scales linearly to hours, while the cluster maintains sub-second execution. Notice how power scales with node count!';
+        feedbackEl.textContent = 'As problem size grows, standard PC time scales linearly to hours, while the cluster maintains sub-second execution.';
       }
     }
   }
@@ -887,45 +1055,22 @@ function handleInput(e) {
   if (e.target.matches('[data-cache-pattern], [data-cache-cores]')) {
     const pattern = document.querySelector('[data-cache-pattern]')?.value || 'seq';
     const cores = Number(document.querySelector('[data-cache-cores]')?.value || 4);
-    setText('[data-cache-cores-val]', cores);
-    if (pattern === 'seq') { setText('[data-cache-hit]', '93.8%'); setText('[data-cache-eat]', '2.4 ns'); setText('[data-cache-bus]', 'Low'); }
-    if (pattern === 'stride') { setText('[data-cache-hit]', '75.0%'); setText('[data-cache-eat]', '8.5 ns'); setText('[data-cache-bus]', 'Medium'); }
-    if (pattern === 'rand') { setText('[data-cache-hit]', '12.5%'); setText('[data-cache-eat]', '88.0 ns'); setText('[data-cache-bus]', 'High'); }
-    if (pattern === 'sharing') { setText('[data-cache-hit]', '45.0%'); setText('[data-cache-eat]', '48.0 ns'); setText('[data-cache-bus]', 'Critical (False Sharing)'); }
+    updateCacheCoherence(pattern, cores);
   }
 
   // 4. Speedup Laws (Amdahl vs Gustafson)
   if (e.target.matches('[data-serial-frac], [data-law-procs]')) {
-    const serial = Number(document.querySelector('[data-serial-frac]')?.value || 10) / 100;
-    const procs = Number(document.querySelector('[data-law-procs]')?.value || 16);
-    const f = 1 - serial;
-    const amdahl = 1 / (serial + f / procs);
-    const gustafson = procs - serial * (procs - 1);
-    const eff = (amdahl / procs) * 100;
-    setText('[data-serial-frac-val]', `${Math.round(serial * 100)}%`);
-    setText('[data-law-procs-val]', procs);
-    setText('[data-amdahl-speedup]', `${amdahl.toFixed(2)}×`);
-    setText('[data-gustafson-speedup]', `${gustafson.toFixed(2)}×`);
-    setText('[data-law-efficiency]', `${eff.toFixed(1)}%`);
-    setStyle('[data-chart-amdahl]', 'height', `${Math.min(100, (amdahl / procs) * 100)}%`);
-    setStyle('[data-chart-gustafson]', 'height', `${Math.min(100, (gustafson / procs) * 100)}%`);
+    const serialVal = Number(document.querySelector('[data-serial-frac]')?.value || 5);
+    const procs = Number(document.querySelector('[data-law-procs]')?.value || 64);
+    updateSpeedupLaws(serialVal, procs);
   }
 
   // 5. TOP500 Cluster
   if (e.target.matches('[data-cluster-racks], [data-cluster-gpus], [data-cluster-pue]')) {
     const racks = Number(document.querySelector('[data-cluster-racks]')?.value || 32);
     const gpus = Number(document.querySelector('[data-cluster-gpus]')?.value || 4);
-    const pue = Number(document.querySelector('[data-cluster-pue]')?.value || 115) / 100;
-    const nodes = racks * 32;
-    const rpeak = nodes * (2 + gpus * 10) * 0.05;
-    const rmax = rpeak * 0.8;
-    const green = (nodes * gpus * 12) / (pue * 0.1);
-    setText('[data-cluster-racks-val]', racks);
-    setText('[data-cluster-gpus-val]', gpus);
-    setText('[data-cluster-pue-val]', pue.toFixed(2));
-    setText('[data-cluster-rpeak]', `${rpeak.toFixed(1)} PFLOPS`);
-    setText('[data-cluster-rmax]', `${rmax.toFixed(1)} PFLOPS`);
-    setText('[data-cluster-efficiency]', `${green.toFixed(1)} GFLOPS/W`);
+    const pueVal = Number(document.querySelector('[data-cluster-pue]')?.value || 115);
+    updateTop500Cluster(racks, gpus, pueVal);
   }
 
   // 6. OpenMP Loop
@@ -1192,32 +1337,7 @@ setTimeout(() => {
   updateAmdahlCurve();
 }, 100);
 
-function updateFlynn(cat) {
-  const inst = document.querySelector('[data-flynn-inst]');
-  const data = document.querySelector('[data-flynn-data]');
-  const cycles = document.querySelector('[data-flynn-cycles]');
-  const lanes = document.querySelector('[data-flynn-lanes]');
-  const speedup = document.querySelector('[data-flynn-speedup]');
-  const fb = document.querySelector('[data-flynn-feedback]');
-  if (!inst) return;
-  if (cat === 'SISD') {
-    inst.textContent = 'Single (PC)'; data.textContent = 'Single (Scalar)';
-    cycles.textContent = '100 cycles'; lanes.textContent = '1 lane'; speedup.textContent = '1.00×';
-    if (fb) fb.textContent = 'SISD: Standard von Neumann single-core execution.';
-  } else if (cat === 'SIMD') {
-    inst.textContent = 'Single (Vector PC)'; data.textContent = 'Multiple (Vector Array)';
-    cycles.textContent = '7 cycles'; lanes.textContent = '16 lanes'; speedup.textContent = '14.28×';
-    if (fb) fb.textContent = 'SIMD: One instruction broadcast across 16 parallel vector lanes!';
-  } else if (cat === 'MISD') {
-    inst.textContent = 'Multiple (Redundant)'; data.textContent = 'Single (Shared Sensor)';
-    cycles.textContent = '100 cycles'; lanes.textContent = '3 redundant lanes'; speedup.textContent = '1.00× (Fault-tolerant)';
-    if (fb) fb.textContent = 'MISD: Used in aerospace voting systems for high reliability.';
-  } else if (cat === 'MIMD') {
-    inst.textContent = 'Multiple Independent'; data.textContent = 'Multiple Independent';
-    cycles.textContent = '12 cycles'; lanes.textContent = '8 CPU cores'; speedup.textContent = '8.33×';
-    if (fb) fb.textContent = 'MIMD: Multi-core CPUs and HPC cluster nodes executing distinct tasks.';
-  }
-}
+// updateFlynn is handled above with rich vector visualization
 
 function updateSync(mode) {
   const badge = document.querySelector('[data-sync-badge]');
@@ -1426,42 +1546,7 @@ function updateTutorialStep() {
   }
 }
 
-function handleCompareMode() {
-  toast('📊 Compare Mode: Coming soon - will show TOP500 supercomputer comparisons');
-}
-
-// Enhanced input tracking for lab metrics
-function trackLabExperiment() {
-  tutorialState.experimentsCount++;
-  const countEl = document.querySelector('[data-experiments-count]');
-  if (countEl) {
-    countEl.textContent = tutorialState.experimentsCount;
-    countEl.parentElement.classList.add('updated');
-    setTimeout(() => countEl.parentElement.classList.remove('updated'), 500);
-  }
-}
-
-// Check challenge completion
-function checkChallengeCompletion(labId, params) {
-  // This would check against LAB_CHALLENGES defined in labs.js
-  // For now, simple example for HPC throughput
-  if (labId === 'hpc-throughput') {
-    const nodes = params.nodes || 0;
-    const ops = params.ops || 0;
-    const time = ops / (nodes * 350 + 100);
-    const flops = (ops / time) / 1000;
-    
-    if (Math.abs(flops - 10) < 0.5) {
-      const statusEl = document.querySelector('[data-challenge-status] .status-indicator');
-      if (statusEl) {
-        statusEl.classList.remove('pending');
-        statusEl.classList.add('completed');
-        statusEl.innerHTML = '✅ Completed';
-        toast('🏆 Challenge completed! You achieved the target throughput!');
-      }
-    }
-  }
-}
+// Compare mode and challenge tracking functions handled above
 
 // Global Lab Control State
 let labControlState = {
