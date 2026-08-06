@@ -852,6 +852,14 @@ function checkChallengeCompletion(labId, data) {
     if (data.serialVal <= 5 && data.procs >= 64) isComplete = true;
   } else if (labId === 'top500-cluster') {
     if (data.racks >= 32 && data.gpus >= 4) isComplete = true;
+  } else if (labId === 'openmp-loop') {
+    if (data.eff > 85) isComplete = true;
+  } else if (labId === 'mpi-collective') {
+    if (data.procs >= 16 && data.msg >= 4) isComplete = true;
+  } else if (labId === 'sync-deadlock') {
+    if (data === 'ordered' || data === 'mutex') isComplete = true;
+  } else if (labId === 'load-balancing') {
+    if (data.strat === 'stealing') isComplete = true;
   }
 
   if (isComplete) {
@@ -996,6 +1004,170 @@ function updateTop500Cluster(racks, gpus, pueVal) {
   trackLabExperiment();
 }
 
+function updateOpenmpLoop(threads, sched, imbalanceVal) {
+  const imbalance = imbalanceVal / 100;
+  let baseTime = 1 / threads;
+  let penalty = 0;
+
+  if (sched === 'static') {
+    penalty = imbalance * 0.95;
+  } else if (sched === 'dynamic') {
+    penalty = imbalance * 0.12 + 0.03;
+  } else if (sched === 'guided') {
+    penalty = imbalance * 0.08 + 0.02;
+  }
+
+  const time = baseTime + penalty;
+  const speedup = 1 / time;
+  const eff = (speedup / threads) * 100;
+
+  setText('[data-omp-threads-val]', threads);
+  setText('[data-omp-imbalance-val]', `${imbalanceVal}%`);
+  setText('[data-omp-time]', `${time.toFixed(2)}s`);
+  setText('[data-omp-speedup]', `${speedup.toFixed(2)}×`);
+  setText('[data-omp-eff]', `${eff.toFixed(1)}%`);
+
+  for (let i = 0; i < 4; i++) {
+    const threadHeight = sched === 'static' 
+      ? Math.max(15, 95 - i * (imbalanceVal * 0.7)) 
+      : Math.max(75, 90 - (i % 2) * 5);
+    setStyle(`[data-omp-t${i}]`, 'height', `${threadHeight}%`);
+  }
+
+  const maxTime = (time * 1000).toFixed(0);
+  const minTime = (baseTime * 1000).toFixed(0);
+  const ratio = (maxTime / Math.max(1, minTime)).toFixed(2);
+
+  setText('[data-max-thread-time]', `${maxTime} ms`);
+  setText('[data-min-thread-time]', `${minTime} ms`);
+  setText('[data-imbalance-ratio]', ratio);
+
+  const feedbackEl = document.querySelector('[data-omp-feedback]');
+  if (feedbackEl) {
+    if (sched === 'static' && imbalanceVal > 40) {
+      feedbackEl.textContent = '⚠️ High load imbalance detected! Static scheduling leaves threads 2 and 3 idling at the barrier while Thread 0 finishes heavy chunks.';
+    } else if (sched === 'dynamic') {
+      feedbackEl.textContent = '🚀 Dynamic scheduling distributes loop iterations on-demand, eliminating thread idle time despite high work imbalance!';
+    } else {
+      feedbackEl.textContent = '⚡ Guided scheduling starts with large chunks for low overhead, then shrinks chunk sizes to fine-tune final load balance.';
+    }
+  }
+
+  checkChallengeCompletion('openmp-loop', { eff, imbalanceVal });
+  trackLabExperiment();
+}
+
+function updateMpiCollective(procs, op, msg) {
+  const hops = Math.ceil(Math.log2(procs));
+  let latency = 0;
+  let bw = 0;
+  let desc = '';
+
+  if (op === 'bcast') {
+    latency = hops * 0.22 + msg * 0.08;
+    bw = (msg / latency) * 2.8;
+    desc = `MPI_Bcast uses a binary tree spanning ${hops} steps to broadcast ${msg} MB to ${procs} ranks simultaneously.`;
+  } else if (op === 'scatter') {
+    latency = hops * 0.28 + (msg / procs) * 0.06;
+    bw = (msg / latency) * 2.2;
+    desc = `MPI_Scatter divides ${msg} MB payload into ${procs} equal chunks of ${(msg / procs).toFixed(2)} MB per rank.`;
+  } else if (op === 'gather') {
+    latency = hops * 0.32 + msg * 0.09;
+    bw = (msg / latency) * 2.0;
+    desc = `MPI_Gather collects sub-results from ${procs} ranks into the root rank memory buffer.`;
+  } else if (op === 'allreduce') {
+    latency = 2 * (procs - 1) * 0.08 + msg * 0.05;
+    bw = (msg / latency) * 3.4;
+    desc = `MPI_Allreduce executes a ring reduction so all ${procs} ranks receive the global sum total.`;
+  }
+
+  setText('[data-mpi-procs-val]', procs);
+  setText('[data-mpi-msg-val]', `${msg} MB`);
+  setText('[data-mpi-hops]', `${hops} steps`);
+  setText('[data-mpi-comm]', `${latency.toFixed(2)} ms`);
+  setText('[data-mpi-bandwidth]', `${bw.toFixed(2)} GB/s`);
+
+  const feedbackEl = document.querySelector('[data-mpi-feedback]');
+  if (feedbackEl) feedbackEl.textContent = desc;
+
+  checkChallengeCompletion('mpi-collective', { procs, op, msg });
+  trackLabExperiment();
+}
+
+function updateSync(mode) {
+  const badge = document.querySelector('[data-sync-badge]');
+  const counter = document.querySelector('[data-sync-counter]');
+  const contention = document.querySelector('[data-sync-contention]');
+  const status = document.querySelector('[data-sync-status]');
+  const fb = document.querySelector('[data-sync-feedback]');
+
+  if (mode === 'race') {
+    if (badge) { badge.className = 'sync-state-badge m-inv'; badge.textContent = '⚠️ RACE CONDITION DETECTED: Counter is non-deterministic!'; }
+    if (counter) counter.textContent = '1,482,910';
+    if (contention) contention.textContent = '0.0 ms';
+    if (status) status.textContent = 'DATA RACE';
+    if (fb) fb.textContent = 'Without a mutex, concurrent threads overwrite each other\'s increments. Missing 517,090 counter updates!';
+  } else if (mode === 'mutex') {
+    if (badge) { badge.className = 'sync-state-badge m-mod'; badge.textContent = '✅ MUTEX PROTECTED: Deterministic mutual exclusion!'; }
+    if (counter) counter.textContent = '2,000,000';
+    if (contention) contention.textContent = '12.4 ms';
+    if (status) status.textContent = 'MUTEX SAFE';
+    if (fb) fb.textContent = 'Mutex lock enforces mutual exclusion. All 2,000,000 increments correctly committed!';
+  } else if (mode === 'deadlock') {
+    if (badge) { badge.className = 'sync-state-badge m-inv'; badge.textContent = '🚨 DEADLOCK DETECTED: Circular Wait Condition!'; }
+    if (counter) counter.textContent = 'BLOCKED (0)';
+    if (contention) contention.textContent = '∞ (Timeout)';
+    if (status) status.textContent = 'DEADLOCK';
+    if (fb) fb.textContent = 'Thread 0 holds Lock A waiting for Lock B. Thread 1 holds Lock B waiting for Lock A. System frozen!';
+  } else if (mode === 'ordered') {
+    if (badge) { badge.className = 'sync-state-badge m-mod'; badge.textContent = '🛡️ GLOBAL LOCK ORDERING: Deadlock Prevented!'; }
+    if (counter) counter.textContent = '2,000,000';
+    if (contention) contention.textContent = '8.1 ms';
+    if (status) status.textContent = 'ORDERED SAFE';
+    if (fb) fb.textContent = 'Deadlock eliminated by requiring all threads to acquire Lock A before Lock B in strict ascending order.';
+  }
+
+  checkChallengeCompletion('sync-deadlock', mode);
+  trackLabExperiment();
+}
+
+function updateLoadBalancing(strat, varianceVal) {
+  const v = Number(varianceVal);
+  const vText = v === 1 ? 'Low' : v === 2 ? 'Medium' : 'High';
+  let makespan = 0;
+  let idle = 0;
+  let ratio = 0;
+  let msg = '';
+
+  if (strat === 'static') {
+    makespan = 120 * v;
+    idle = 18 * v;
+    ratio = (0.45 * v).toFixed(2);
+    msg = 'Static round-robin assigns tasks fixedly. Worker threads with light tasks idle while heavy worker threads bottleneck overall makespan.';
+  } else if (strat === 'queue') {
+    makespan = 85 * v;
+    idle = 8;
+    ratio = '0.15';
+    msg = 'Central work queue allows workers to fetch tasks on-demand, but global mutex lock causes queue contention under high core counts.';
+  } else if (strat === 'stealing') {
+    makespan = 48 * v;
+    idle = 1.8;
+    ratio = '0.02';
+    msg = '🚀 Lock-free Work Stealing! Idle workers steal tasks from the tail of busy workers\' deques with zero central lock overhead!';
+  }
+
+  setText('[data-lb-variance-val]', vText);
+  setText('[data-lb-makespan]', `${makespan} ms`);
+  setText('[data-lb-idle]', `${idle}%`);
+  setText('[data-lb-imbalance]', ratio);
+
+  const feedbackEl = document.querySelector('[data-lb-feedback]');
+  if (feedbackEl) feedbackEl.textContent = msg;
+
+  checkChallengeCompletion('load-balancing', { strat, v });
+  trackLabExperiment();
+}
+
 document.addEventListener('input', throttle((e) => {
   handleInput(e);
 }, 50));
@@ -1075,45 +1247,25 @@ function handleInput(e) {
 
   // 6. OpenMP Loop
   if (e.target.matches('[data-omp-threads], [data-omp-sched], [data-omp-imbalance]')) {
-    const threads = Number(document.querySelector('[data-omp-threads]')?.value || 8);
+    const threads = Number(document.querySelector('[data-omp-threads]')?.value || 4);
     const sched = document.querySelector('[data-omp-sched]')?.value || 'static';
-    const imbalance = Number(document.querySelector('[data-omp-imbalance]')?.value || 20) / 100;
-    const time = 1 / threads + imbalance * 0.2 + (sched === 'dynamic' ? 0.05 : 0);
-    const speedup = 1 / time;
-    const eff = (speedup / threads) * 100;
-    setText('[data-omp-threads-val]', threads);
-    setText('[data-omp-imbalance-val]', `${Math.round(imbalance * 100)}%`);
-    setText('[data-omp-time]', `${time.toFixed(2)}s`);
-    setText('[data-omp-speedup]', `${speedup.toFixed(2)}×`);
-    setText('[data-omp-eff]', `${eff.toFixed(1)}%`);
+    const imbalance = Number(document.querySelector('[data-omp-imbalance]')?.value || 50);
+    updateOpenmpLoop(threads, sched, imbalance);
   }
 
   // 7. MPI Collective
   if (e.target.matches('[data-mpi-procs], [data-mpi-op], [data-mpi-msg]')) {
     const procs = Number(document.querySelector('[data-mpi-procs]')?.value || 16);
     const op = document.querySelector('[data-mpi-op]')?.value || 'bcast';
-    const msg = Number(document.querySelector('[data-mpi-msg]')?.value || 64);
-    const hops = Math.ceil(Math.log2(procs));
-    const latency = hops * 0.2 + (msg * 0.1);
-    const bw = (msg / latency) * 2.5;
-    setText('[data-mpi-procs-val]', procs);
-    setText('[data-mpi-msg-val]', `${msg} MB`);
-    setText('[data-mpi-hops]', `${hops} steps`);
-    setText('[data-mpi-comm]', `${latency.toFixed(2)} ms`);
-    setText('[data-mpi-bandwidth]', `${bw.toFixed(2)} GB/s`);
+    const msg = Number(document.querySelector('[data-mpi-msg]')?.value || 4);
+    updateMpiCollective(procs, op, msg);
   }
 
   // 9. Load Balancing
   if (e.target.matches('[data-lb-strategy], [data-lb-variance]')) {
     const strat = document.querySelector('[data-lb-strategy]')?.value || 'static';
-    const variance = Number(document.querySelector('[data-lb-variance]')?.value || 2);
-    const makespan = strat === 'static' ? 240 * variance : strat === 'queue' ? 160 : 120;
-    const idle = strat === 'static' ? 35 * variance : strat === 'queue' ? 12 : 3.5;
-    const ratio = (idle / 100).toFixed(2);
-    setText('[data-lb-variance-val]', variance === 1 ? 'Low' : variance === 2 ? 'Medium' : 'High');
-    setText('[data-lb-makespan]', `${makespan} ms`);
-    setText('[data-lb-idle]', `${idle.toFixed(1)}%`);
-    setText('[data-lb-imbalance]', ratio);
+    const variance = Number(document.querySelector('[data-lb-variance]')?.value || 3);
+    updateLoadBalancing(strat, variance);
   }
 
   // 10. CUDA Basics
@@ -1337,33 +1489,7 @@ setTimeout(() => {
   updateAmdahlCurve();
 }, 100);
 
-// updateFlynn is handled above with rich vector visualization
-
-function updateSync(mode) {
-  const badge = document.querySelector('[data-sync-badge]');
-  const counter = document.querySelector('[data-sync-counter]');
-  const contention = document.querySelector('[data-sync-contention]');
-  const status = document.querySelector('[data-sync-status]');
-  const fb = document.querySelector('[data-sync-feedback]');
-  if (!badge) return;
-  if (mode === 'race') {
-    badge.className = 'sync-state-badge s-race'; badge.textContent = 'RACE DETECTED: Counter is non-deterministic!';
-    counter.textContent = '1,482,910'; contention.textContent = '0.0 ms'; status.textContent = 'DATA RACE';
-    if (fb) fb.textContent = 'Unsynchronized writes cause lost updates when threads overlap.';
-  } else if (mode === 'mutex') {
-    badge.className = 'sync-state-badge s-safe'; badge.textContent = 'MUTEX LOCK: Deterministic & Correct!';
-    counter.textContent = '2,000,000'; contention.textContent = '4.2 ms'; status.textContent = 'CORRECT';
-    if (fb) fb.textContent = 'Mutex locks ensure mutual exclusion at the cost of slight contention overhead.';
-  } else if (mode === 'deadlock') {
-    badge.className = 'sync-state-badge s-deadlock'; badge.textContent = 'DEADLOCK: Threads waiting on circular lock graph!';
-    counter.textContent = 'STALLED'; contention.textContent = '∞ ms'; status.textContent = 'DEADLOCK';
-    if (fb) fb.textContent = 'Thread 0 holds Lock A waiting for B; Thread 1 holds Lock B waiting for A.';
-  } else if (mode === 'ordered') {
-    badge.className = 'sync-state-badge s-safe'; badge.textContent = 'ORDERED LOCKS: Deadlock-Free Execution!';
-    counter.textContent = '2,000,000'; contention.textContent = '2.1 ms'; status.textContent = 'CORRECT';
-    if (fb) fb.textContent = 'Enforcing strict lock acquisition order breaks the circular wait condition!';
-  }
-}
+// updateSync is handled above with ThreadSanitizer & Deadlock diagnostic feedback
 
 function updateQuantum(gate) {
   const label = document.querySelector('[data-state-label]');
