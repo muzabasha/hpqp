@@ -7,6 +7,44 @@ export const unit3Topics = [
     dependencies: ['Memory Coalescing (Topic 2) builds on understanding of GPU memory levels', 'Profiling (Topic 3) uses GPU metrics introduced here', 'Cloud HPC (Topic 4) deploys GPU workloads on cloud accelerators', 'AI workloads depend heavily on GPU tensor cores introduced in this topic'],
     preparationPlan: 'Review the SIMT execution model concept, read an introductory CUDA programming guide, and refresh knowledge of C pointer arithmetic and array indexing before class.',
     story: 'Imagine it is Monday morning at Sunnybrook Elementary again, but this time the principal has hired one thousand kindergarteners to flip pancakes. There is a critical catch: every kindergartener is five years old and can only flip exactly one pancake at a time using their left hand. No exceptions. They cannot choose a different spatula. They cannot flip two pancakes. They cannot flip with their right hand. If any child reaches into the wrong ingredient jar, the entire group of twenty-five children standing at that table must stop, wait for the slowest child to finish, and then restart together. This is the GPU execution model in a nutshell. The kindergarteners are CUDA cores. The twenty-five-child groups are warps. Every child in a warp must do the exact same flip at the exact same time. If one child needs blueberries while the others need chocolate chips, all twenty-five wait until the blueberry child finishes. The principal quickly discovers a few interesting things. First, even though each child is individually slow (a GPU core has a much lower clock speed than a CPU), the sheer number of children means pancakes appear at a staggering rate — if they are all doing the same thing. Second, the principal needs a massive countertop (global memory) because no individual child has enough counter space (registers) to hold more than one pancake. Walking across the room to the countertop takes much longer than flipping (memory latency), so the principal buys a series of smaller shelves (shared memory and L1 cache) near each group of twenty-five children. The shelves hold ingredients the group needs together. Third, the principal notices that when all twenty-five children are flipping identical chocolate chip pancakes, they are blazingly fast. But when ten children need blueberry, eight need strawberry, and seven need plain, the group efficiency collapses because children are idle while waiting for the instructions to diverge and reconverge. The parent engineer from last year walks in, looks at the chaos, and says: "You have just built a GPU. The children are CUDA cores. The tables are Streaming Multiprocessors. The countertop is global memory. The shelves are shared memory. And that rule about everyone flipping the same way? That is SIMT — Single Instruction, Multiple Threads." The principal sighs: "How do I program this?" The engineer pulls out a whiteboard and writes: "First, arrange your pancakes so every child can reach the countertop in the same step. Second, keep each group working on the same recipe. Third, make sure the shelves are stocked before the children need the ingredients." The principal realizes the kitchen has incredible raw throughput, but only if the recipe is written for a thousand identical hands.',
+    cartoonPanels: [
+      {
+        scene: 1,
+        title: "F1 CPU vs. 1000 Bicycles",
+        avatar: "🏎️",
+        tag: "SIMT Execution",
+        caption: "Formula 1 sports car (CPU) carries 1 VIP fast; 1000 delivery bicycles (GPU) carry 1000 packages at once!",
+        concept: "SIMT Architecture: Thousands of lightweight CUDA cores executing parallel thread instructions.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(30, 40)"><rect x="0" y="0" width="100" height="70" rx="8" fill="#1e293b" stroke="#ef4444"/><text x="50" y="38" font-size="22" text-anchor="middle">🏎️ CPU</text><text x="50" y="60" font-size="10" fill="#ef4444" text-anchor="middle">1 Fast Core</text></g><g transform="translate(190, 40)"><rect x="0" y="0" width="100" height="70" rx="8" fill="#1e293b" stroke="#22c55e"/><text x="50" y="38" font-size="22" text-anchor="middle">🚲 GPU</text><text x="50" y="60" font-size="10" fill="#22c55e" text-anchor="middle">1000 Cores</text></g><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">SIMT: Massive Data-Parallel Throughput</text></svg>`
+      },
+      {
+        scene: 2,
+        title: "PCIe Bus Bridge Bottleneck",
+        avatar: "🌉",
+        tag: "PCIe Latency",
+        caption: "Data packets queuing across the PCIe bridge between Host CPU RAM and Device VRAM.",
+        concept: "Host-to-Device Transfer Penalty: PCIe bandwidth (16-64 GB/s) limits small GPU kernel launches.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(20, 50)"><rect x="0" y="0" width="70" height="50" rx="6" fill="#1e293b" stroke="#38bdf8"/><text x="35" y="32" fill="#38bdf8" font-size="12" font-weight="bold" text-anchor="middle">CPU RAM</text></g><g transform="translate(230, 50)"><rect x="0" y="0" width="70" height="50" rx="6" fill="#1e293b" stroke="#22c55e"/><text x="35" y="32" fill="#22c55e" font-size="12" font-weight="bold" text-anchor="middle">GPU VRAM</text></g><path d="M 90 75 L 230 75" stroke="#f59e0b" stroke-width="4" stroke-dasharray="6,4"/><text x="160" y="65" font-size="14">🌉 PCIe Bus</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#f59e0b" font-weight="bold">cudaMemcpy Host-to-Device Latency</text></svg>`
+      },
+      {
+        scene: 3,
+        title: "Grid, Block & Thread Matrix",
+        avatar: "📐",
+        tag: "CUDA Hierarchy",
+        caption: "Mapping 2D image pixels to Grid Index, Thread Block ID, and 32-thread Warps.",
+        concept: "CUDA Thread Hierarchy: Kernel <<< Grid, Block >>> maps threads to 1D, 2D, or 3D problem spaces.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="70" y="35" width="180" height="80" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="160" y="65" fill="#38bdf8" font-size="14" font-weight="bold" text-anchor="middle">Grid <<< G, B >>></text><text x="160" y="90" font-size="12" fill="#22c55e" text-anchor="middle">Block (tx, ty) -> Thread ID</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">Thread Block Index Mapping</text></svg>`
+      },
+      {
+        scene: 4,
+        title: "Warp Divergence Masking",
+        avatar: "🔀",
+        tag: "Warp Divergence",
+        caption: "Half of 32 threads take the IF branch while the other half wait idling; then roles flip for ELSE!",
+        concept: "Warp Divergence: Serializes divergent branches within a 32-thread warp, lowering warp efficiency.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="110" y="30" width="100" height="40" rx="6" fill="#1e293b" stroke="#ec4899"/><text x="160" y="55" font-size="14" text-anchor="middle">🔀 IF / ELSE</text><path d="M 130 70 L 70 110 M 190 70 L 250 110" stroke="#ec4899" stroke-width="2"/><text x="70" y="130" font-size="18">🟢 IF</text><text x="250" y="130" font-size="18">⏸️ Wait</text><text x="160" y="160" text-anchor="middle" font-size="11" fill="#ec4899" font-weight="bold">Branch Divergence Serializes Warps</text></svg>`
+      }
+    ],
     storyQuestions: [
       'Why does every child in a group of twenty-five need to flip the same pancake at the same time?',
       'What happens to the group\'s speed when one child needs a different ingredient than the rest?',
@@ -99,6 +137,44 @@ export const unit3Topics = [
     dependencies: ['Profiling (Topic 3) uses coalescing and occupancy metrics introduced here', 'Cloud HPC (Topic 4) deploys optimized kernels on cloud GPUs', 'All GPU optimization depends on understanding memory access patterns', 'Deep learning frameworks optimize these patterns automatically but understanding helps customization'],
     preparationPlan: 'Review how cache lines work from Unit 1, read about GPU memory coalescing rules, and understand the difference between row-major and column-major array layouts in C.',
     story: 'You are a very organized grocery shopper with a very specific rule: when you enter aisle one, you must pick up items in multiples of thirty-two, and those thirty-two items must be on consecutive shelves. If items one through thirty-two are all on the same shelf, you grab them all in one swipe — fast and clean. But if item one is at the far left of the shelf, item two is at the far right, and item three is on a completely different shelf in the next aisle, you have to walk back and forth thirty-two times for what should have been one grab. This is memory coalescing. The GPU equivalent: when 32 threads in a warp each request one element from global memory, the hardware can combine those 32 requests into a single memory transaction if the elements are consecutive in memory. If the elements are scattered, the hardware issues multiple transactions, wasting bandwidth. Now imagine your grocery store has a loyalty program: the more items you grab in one transaction, the bigger the discount. If you grab 32 consecutive items, you pay for one bag. If you grab 32 random items, you pay for 32 bags. The store manager (GPU memory controller) loves you when you shop in order. Now suppose the store has two floors. The first floor (shared memory) is small but you can grab anything on it in one step. The second floor (global memory) is massive but you have to take the elevator, which takes 400 steps worth of time. A smart shopper buys a basket on the first floor, fills it with everything they need for the current recipe (block), and only takes the elevator once per basket load. This is the shared memory tiling pattern: load a tile of data from global memory into shared memory, cooperate with your shopping group to use it, then load the next tile. But there is a trap: two shoppers (threads) reaching for the same item at the same time on the first floor can cause a conflict. If shopper A and shopper B both grab the same bottle of olive oil at the same time, they collide. This is a bank conflict — shared memory is divided into banks, and if two threads in the same warp access different addresses that map to the same bank, the accesses are serialized. The store manager (shared memory controller) says: "You cannot both have the same shelf at the same time. Shopper B, wait one turn." The remedy: each shopper should aim for different banks. The store layout has 32 shelves (banks). If shoppers are spaced 32 apart, no two shoppers ever collide. The principal walks in and says: "This is way too complicated. Can\'t I just buy everything online?" The engineer says: "That is what optimized CUDA libraries like cuBLAS do. But if your recipe is custom, you need to understand the store layout yourself."',
+    cartoonPanels: [
+      {
+        scene: 1,
+        title: "Coalesced Express Lane Sweep",
+        avatar: "🛒",
+        tag: "Coalesced Access",
+        caption: "32 threads reading 32 consecutive array items in 1 single 128-byte DRAM transaction!",
+        concept: "Coalesced Memory Access: 32 threads accessing contiguous addresses merged into 1 memory request.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="40" y="50" width="240" height="40" rx="6" fill="#1e293b" stroke="#22c55e" stroke-width="2"/><text x="160" y="75" fill="#22c55e" font-size="12" font-weight="bold" text-anchor="middle">[0] [1] [2] ... [31] Consecutive</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">1 Single 128-Byte DRAM Transaction</text></svg>`
+      },
+      {
+        scene: 2,
+        title: "Uncoalesced Scavenger Hunt",
+        avatar: "💥",
+        tag: "Uncoalesced Stride",
+        caption: "32 threads grabbing items from 32 random memory locations, forcing 32 separate transactions!",
+        concept: "Uncoalesced Memory Access: Strided access forces up to 32 separate memory transactions per warp.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g fill="#ef4444" font-size="18"><text x="30" y="70">📦</text><text x="100" y="70">📦</text><text x="170" y="70">📦</text><text x="240" y="70">📦</text></g><path d="M 40 85 L 40 120 M 110 85 L 110 120 M 180 85 L 180 120 M 250 85 L 250 120" stroke="#ef4444" stroke-width="2" stroke-dasharray="4"/><text x="160" y="155" text-anchor="middle" font-size="11" fill="#ef4444" font-weight="bold">32 Separate Transactions (32x Penalty)</text></svg>`
+      },
+      {
+        scene: 3,
+        title: "Shared Memory Fast Basket",
+        avatar: "📦",
+        tag: "__shared__ Tiling",
+        caption: "Thread block loading global array tiles into fast shared memory for 10x compute reuse!",
+        concept: "Shared Memory Tiling: Load tile into __shared__ memory to bypass global DRAM latency.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="80" y="45" width="160" height="60" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="160" y="80" font-size="18" text-anchor="middle">📦 __shared__ Tile</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">1.5 TB/s On-Chip Shared Memory Tiling</text></svg>`
+      },
+      {
+        scene: 4,
+        title: "32-Bank Collision Lock",
+        avatar: "🏛️",
+        tag: "Bank Conflict",
+        caption: "2 threads accessing addresses mapping to the same shared memory bank collide, serializing access!",
+        concept: "Shared Memory Bank Conflict: Accesses to same bank serialize. Fix by padding arrays by +1.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="110" y="45" width="100" height="60" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="2"/><text x="160" y="80" font-size="20" text-anchor="middle">🏛️ Bank 0</text><path d="M 60 75 L 110 75 M 260 75 L 210 75" stroke="#ef4444" stroke-width="3"/><text x="160" y="155" text-anchor="middle" font-size="11" fill="#ef4444" font-weight="bold">Serialized Bank Conflict (Pad by +1)</text></svg>`
+      }
+    ],
     storyQuestions: [
       'Why does the store give you a discount for grabbing 32 consecutive items but charge you more for 32 random items?',
       'What happens to your shopping speed when two shoppers try to grab from the same shelf simultaneously?',
@@ -199,6 +275,44 @@ export const unit3Topics = [
     dependencies: ['Cloud HPC (Topic 4) uses profiling to optimize cloud GPU workloads', 'All optimization efforts depend on identifying the correct bottleneck first', 'Performance engineering careers require profiling as a core skill', 'Deep learning framework optimization uses similar profiling techniques'],
     preparationPlan: 'Review GPU memory hierarchy from Topic 1, understand the difference between compute-bound and memory-bound kernels, and install NVIDIA nsight compute or nsight systems if possible.',
     story: 'You are a doctor at Sunnybrook General Hospital. A patient walks in complaining of headaches, fatigue, and difficulty concentrating. The inexperienced doctor immediately prescribes three different medications: one for headaches, one for fatigue, and one for concentration. The patient gets worse. A senior doctor arrives, examines the patient, and runs a systematic diagnostic: blood tests (are iron levels low?), sleep study (is the patient sleeping poorly?), eye exam (is vision straining?), stress evaluation (is work overwhelming?). The results reveal the root cause: chronic iron deficiency causing anemia, which produces ALL three symptoms. One treatment — iron supplements — resolves everything. The inexperienced doctor treated symptoms. The senior doctor treated the cause. Now imagine the hospital has a new MRI machine (profiling tool). The MRI reveals not just the brain structure but the actual blood flow, oxygen levels, and electrical activity in real time. The senior doctor can now see exactly which region of the brain is underperforming, rather than guessing from external symptoms. This is GPU profiling. A developer writes a slow CUDA kernel and immediately assumes the problem is "not enough GPU cores" (the headaches symptom). They buy a bigger GPU (prescribe more medication). The kernel is still slow. The profiler (MRI) reveals the real problem: the kernel is spending 85% of its time waiting for global memory (anemia — the root cause). The "not enough cores" was a symptom; the memory bandwidth was the disease. The profiling tools are like different diagnostic instruments. nsight systems (blood test) shows a high-level timeline of CPU and GPU activity — you can see if the GPU is idle waiting for data from the CPU. nsight compute (MRI) shows detailed hardware metrics per kernel — cache hit rates, memory throughput, compute throughput, warp occupancy. Nsight compute even has a "speed of light" analysis that tells you what fraction of peak compute or memory bandwidth you are using, like the MRI telling you what fraction of your brain is getting oxygen. The senior doctor now teaches the resident: "Before you prescribe any treatment, always run the diagnostic first. The symptoms will mislead you. Only the measurement tells the truth." The resident asks: "What if the measurement itself takes longer than the treatment?" The senior doctor smiles: "Good question. That is why we use sampling and selective instrumentation — only measure what matters, when it matters."',
+    cartoonPanels: [
+      {
+        scene: 1,
+        title: "Roofline Telemetry Diagnostic",
+        avatar: "🏎️",
+        tag: "Roofline Model",
+        caption: "Profiler telemetry checking whether engine speed (Compute) or fuel hose flow rate (Memory) caps speed!",
+        concept: "Roofline Analysis: Quantifies maximum attainable GFLOPS/s based on arithmetic intensity.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><path d="M 40 130 L 140 50 L 280 50" stroke="#38bdf8" stroke-width="3" fill="none"/><circle cx="110" cy="74" r="6" fill="#ef4444"/><text x="125" y="78" font-size="11" fill="#ef4444" font-weight="bold">Memory Bound!</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">Compute-Bound vs Memory-Bound Ceiling</text></svg>`
+      },
+      {
+        scene: 2,
+        title: "Nsight Compute Kernel MRI",
+        avatar: "🩺",
+        tag: "Nsight Compute",
+        caption: "Nsight Compute MRI scanning warp stall reasons, cache hit rates, and Speed of Light metrics.",
+        concept: "Hardware Counter Profiling: Pinpoints memory stall cycles, register pressure, and warp occupancy.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="80" y="45" width="160" height="60" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="2"/><text x="160" y="78" font-size="18" text-anchor="middle">🩺 Nsight MRI 85%</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Nsight Compute Speed of Light Analysis</text></svg>`
+      },
+      {
+        scene: 3,
+        title: "Vectorized 128-Bit Loads (float4)",
+        avatar: "⚡",
+        tag: "Vectorized IO",
+        caption: "Carrying 4 values in 1 wide armful (float4) instead of 4 separate trips across the bus!",
+        concept: "Vectorized Memory Access (`LDG.128`): Fetches 16 bytes in a single instruction to maximize bandwidth.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="70" y="50" width="180" height="45" rx="6" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/><text x="160" y="78" font-size="14" fill="#f59e0b" font-weight="bold" text-anchor="middle">float4 {x, y, z, w} [128-bit]</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#f59e0b" font-weight="bold">Single-Instruction Vectorized Fetch</text></svg>`
+      },
+      {
+        scene: 4,
+        title: "Kernel Fusion Assembly",
+        avatar: "🔥",
+        tag: "Kernel Fusion",
+        caption: "Fusing 3 separate math operations into 1 single combined kernel to eliminate intermediate DRAM writes!",
+        concept: "Kernel Fusion: Combines adjacent element-wise kernels, saving global memory roundtrips.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(40, 50)"><rect x="0" y="0" width="240" height="45" rx="6" fill="#1e293b" stroke="#ec4899" stroke-width="2"/><text x="120" y="28" font-size="14" fill="#ec4899" font-weight="bold" text-anchor="middle">Fused: Scale + Add + ReLU</text></g><text x="160" y="155" text-anchor="middle" font-size="11" fill="#ec4899" font-weight="bold">Fused Single-Pass Execution</text></svg>`
+      }
+    ],
     storyQuestions: [
       'Why did treating all three symptoms separately make the patient worse instead of better?',
       'What does the MRI reveal that the patient\'s description of symptoms cannot?',
@@ -299,6 +413,44 @@ export const unit3Topics = [
     dependencies: ['All previous GPU topics provide the foundation for deployment decisions', 'Unit 1: Cluster basics and TOP500 concepts apply to cloud HPC', 'Unit 2: MPI concepts extend to cloud-based distributed GPU workloads', 'Industry deployment requires understanding of both performance and cost trade-offs'],
     preparationPlan: 'Set up a free-tier cloud account (AWS, GCP, or Azure), install Docker locally if possible, and read one case study about cloud-based scientific computing or AI training.',
     story: 'You own a small bakery that has grown so popular you cannot keep up with demand. You have three options. Option one: build a new permanent kitchen (on-premises HPC cluster). It costs $500,000 upfront, takes six months to build, seats fifty bakers, and you pay electricity and maintenance forever — even when business is slow on Tuesdays. Option two: rent a food truck (cloud GPU instance). It costs $50 per day, you can drive it to the busiest location each morning, and you only pay when it is running. On Monday you need a truck with a pizza oven (A100 GPU). On Tuesday you need a truck with a deep fryer (T4 GPU). On Wednesday you need five trucks simultaneously for a festival (multi-GPU cluster). The food truck is infinitely flexible but costs more per meal during busy periods. Option three: build a prefab kitchen in a shipping container (containers and Kubernetes). It is a standardized kitchen that you can drop into any food truck, any permanent building, or any rented warehouse. The recipe works exactly the same everywhere. If you built the kitchen yourself (native installation), you would discover it only works in your building, breaks when you move it, and every new chef must install every ingredient by hand. The shipping container kitchen (Docker) is the revolution: package the kitchen once, run it anywhere. Now the bakery faces a new challenge: a food critic (performance engineer) visits and says your croissants are slow because your ovens are not designed for croissants. You investigate and discover that general-purpose ovens (GPUs) are good at many things but not optimal for croissants. A specialized croissant oven (Google TPU, AWS Trainium) bakes croissants twice as fast at half the energy. But it cannot bake pizza or cakes. The food critic says: "If you bake 90% croissants, buy a croissant oven. If you bake 10% croissants, the general oven is fine." The bakery now has a portfolio: permanent kitchen for core products (on-premises cluster), food trucks for variable demand (cloud instances), prefab kitchens for portability (containers), and specialized ovens for dominant products (AI accelerators). The principal from Sunnybrook Elementary visits and says: "This is more complicated than managing kindergarteners." You reply: "But the principles are the same — match the tool to the workload, measure the cost, and optimize continuously."',
+    cartoonPanels: [
+      {
+        scene: 1,
+        title: "Shipping Container Kitchen (Docker)",
+        avatar: "📦",
+        tag: "Apptainer / Docker",
+        caption: "Standardized container kitchen dropping onto any cloud host without dependencies breaking!",
+        concept: "Containerized HPC: Encapsulates CUDA drivers, MPI libraries, and code for 100% reproducible execution.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="80" y="45" width="160" height="65" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="160" y="78" font-size="20" text-anchor="middle">🐳 Docker Box</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">Portable Reproducible Execution Engine</text></svg>`
+      },
+      {
+        scene: 2,
+        title: "NVIDIA Tensor Core Matrix Engine",
+        avatar: "⚡",
+        tag: "Tensor Cores",
+        caption: "Dedicated hardware matrix engine computing D = A x B + C in 1 single clock cycle!",
+        concept: "NVIDIA Tensor Cores: Hardware matrix multiply-accumulate accelerators for AI & linear algebra.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="70" y="45" width="180" height="60" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="2"/><text x="160" y="80" font-size="16" fill="#22c55e" font-weight="bold" text-anchor="middle">D = A × B + C [FP16/INT8]</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">1-Cycle Matrix Multiplication Engine</text></svg>`
+      },
+      {
+        scene: 3,
+        title: "Automatic Mixed Precision (AMP)",
+        avatar: "🎛️",
+        tag: "AMP FP16/FP32",
+        caption: "Math computed in fast FP16 while master weights are kept in FP32 for numerical stability.",
+        concept: "Mixed Precision Arithmetic: Halves memory bandwidth footprint while preserving numerical accuracy.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(40, 50)"><rect x="0" y="0" width="110" height="45" rx="6" fill="#1e293b" stroke="#22c55e"/><text x="55" y="28" fill="#22c55e" font-size="12" font-weight="bold" text-anchor="middle">FP16 Fast Compute</text></g><g transform="translate(170, 50)"><rect x="0" y="0" width="110" height="45" rx="6" fill="#1e293b" stroke="#38bdf8"/><text x="55" y="28" fill="#38bdf8" font-size="12" font-weight="bold" text-anchor="middle">FP32 Master Weight</text></g><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Automatic Mixed Precision (AMP) Pipeline</text></svg>`
+      },
+      {
+        scene: 4,
+        title: "Cloud Fleet Elastic Auto-Scaling",
+        avatar: "☁️",
+        tag: "Cloud Auto-Scale",
+        caption: "Cluster automatically provisions 64 GPU instances during spikes and spins down to 0 to save money!",
+        concept: "Cloud Elasticity: Dynamic provisioning matching compute instances directly to active workload queues.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="80" y="45" width="160" height="60" rx="8" fill="#1e293b" stroke="#06b6d4" stroke-width="2"/><text x="160" y="80" font-size="20" text-anchor="middle">☁️ AWS / GCP Fleet</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#06b6d4" font-weight="bold">Pay-Per-Use Elastic Scaling Cluster</text></svg>`
+      }
+    ],
     storyQuestions: [
       'Why does the food truck cost more per meal during busy periods but save money during slow periods?',
       'How does the shipping container kitchen solve the "works on my machine" problem?',

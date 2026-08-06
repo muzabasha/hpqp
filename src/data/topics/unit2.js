@@ -7,6 +7,44 @@ export const unit2Topics = [
     dependencies: ['MPI (Topic 2) extends parallelism across distributed nodes', 'Races and Deadlocks (Topic 3) arise when OpenMP directives are misused', 'Load Balancing (Topic 4) complements OpenMP by distributing uneven work', 'GPU offloading (Unit 3) can replace OpenMP for fine-grained parallelism'],
     preparationPlan: 'Review shared-memory architecture concepts from Topic 3 (cache coherence, false sharing). Read one OpenMP tutorial to see pragma syntax. Install a C compiler with OpenMP support or use an online compiler.',
     story: 'You are the head chef in a bustling restaurant kitchen on Valentine\'s Day. The reservation list shows 200 couples, and every table wants the signature five-course tasting menu. You stand at the pass with a giant whiteboard and start calling out orders. Station 1, start the bruschetta for tables 1 through 20! Station 2, work on the risotto for tables 21 through 40! You are manually dividing work, and for a while it goes beautifully. Four stations humming in parallel, plates flying out the door. Then you realize Station 1 is faster than the others because bruschetta is easy. Station 3 is drowning in beef Wellington, which takes forever. The happy couples at tables 1 through 20 are eating dessert while tables 51 through 60 have not even gotten bread. A waiter whispers, Chef, Station 1 is just standing there now. You bark at Station 1 to help Station 3, but they do not know the Wellington recipe. They burn three steaks. Meanwhile, you realize you have been standing at the pass doing all the coordination yourself. That is serial work, and you are the bottleneck. A sous chef suggests a new approach: each station gets a timer and a recipe card. When a station finishes, it grabs the next unstarted dish from the queue automatically. No more central coordination. You add a rule: if your station is idle, check the queue. This is work-sharing, the core idea behind OpenMP dynamic scheduling. But now a new problem emerges: two stations reach for the same truffle oil simultaneously, bump bottles, and spill half on the floor. That is a data race. You institute a rule: only one station may access the truffle oil at a time, put a red flag next to it when in use. That is a critical section, and OpenMP implements it with atomic directives and locks. Finally, a health inspector shows up and demands that one person, you the head chef, sign every plate before it leaves the kitchen. You are the serial bottleneck again, but now you know how to fix it: delegate the signing to a senior sous chef while you focus on quality control. The kitchen scales. You have just discovered the three pillars of OpenMP: work-sharing for distributing loop iterations, synchronization for protecting shared resources, and reduction for combining partial results into a final answer.',
+    cartoonPanels: [
+      {
+        scene: 1,
+        title: "Manual Order Calling",
+        avatar: "👨‍🍳",
+        tag: "Serial Master Thread",
+        caption: "Head chef calling out table orders one by one from a whiteboard. Master thread handles all setup serially!",
+        concept: "Master Thread Overhead: Serial region creates a central bottleneck before parallel region fork.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="30" y="40" width="100" height="70" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="80" y="75" font-size="28" text-anchor="middle">👨‍🍳📋</text><path d="M 130 75 L 220 75" stroke="#38bdf8" stroke-width="3" stroke-dasharray="4"/><text x="240" y="55" font-size="20">👨‍🍳</text><text x="240" y="85" font-size="20">👩‍🍳</text><text x="240" y="115" font-size="20">👨‍🍳</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">Single Master Thread Dispatching Work</text></svg>`
+      },
+      {
+        scene: 2,
+        title: "Imbalanced Kitchen Workload",
+        avatar: "🏃",
+        tag: "Static Imbalance",
+        caption: "Station 1 finishes easy bruschetta and sits idle, while Station 3 drowns in complex Beef Wellington!",
+        concept: "Static Schedule Load Imbalance: Fixed iteration assignment wastes CPU cycles when tasks take uneven time.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(30, 40)"><rect x="0" y="0" width="110" height="70" rx="8" fill="#1e293b" stroke="#22c55e"/><text x="55" y="38" font-size="22" text-anchor="middle">🍞 Idle</text><text x="55" y="60" font-size="10" fill="#22c55e" text-anchor="middle">Station 1 Done</text></g><g transform="translate(180, 40)"><rect x="0" y="0" width="110" height="70" rx="8" fill="#1e293b" stroke="#ef4444"/><text x="55" y="38" font-size="22" text-anchor="middle">🥩 Drowning</text><text x="55" y="60" font-size="10" fill="#ef4444" text-anchor="middle">Station 3 Overwhelmed</text></g><text x="160" y="155" text-anchor="middle" font-size="11" fill="#f59e0b" font-weight="bold">#pragma omp for schedule(static) Bottleneck</text></svg>`
+      },
+      {
+        scene: 3,
+        title: "Work-Sharing Recipe Queue",
+        avatar: "📋",
+        tag: "Dynamic Scheduling",
+        caption: "Idle stations automatically grab the next available unstarted dish from the shared queue timer!",
+        concept: "Dynamic Scheduling (#pragma omp for schedule(dynamic, chunk)): Keeps all threads 100% utilized.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="100" y="40" width="120" height="60" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="2"/><text x="160" y="75" font-size="20" text-anchor="middle">📋 Work Queue</text><path d="M 50 110 L 100 80 M 270 110 L 220 80" stroke="#22c55e" stroke-width="3"/><text x="30" y="130" font-size="22">👩‍🍳</text><text x="270" y="130" font-size="22">👨‍🍳</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Dynamic Work-Stealing Loop Worksharing</text></svg>`
+      },
+      {
+        scene: 4,
+        title: "Truffle Oil Race Condition",
+        avatar: "🧂",
+        tag: "Critical Section",
+        caption: "Two chefs reach for the truffle oil simultaneously, spilling it! Red flag marker forces 1 chef at a time.",
+        concept: "Data Race & Critical Section (#pragma omp critical / atomic): Protects shared variable mutations.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="120" y="50" width="80" height="60" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="2"/><text x="160" y="85" font-size="24" text-anchor="middle">🍾🚩</text><text x="50" y="80" font-size="24">👨‍🍳</text><text x="270" y="80" font-size="24">👩‍🍳</text><path d="M 80 80 L 120 80 M 240 80 L 200 80" stroke="#ef4444" stroke-width="3"/><text x="160" y="155" text-anchor="middle" font-size="11" fill="#ef4444" font-weight="bold">#pragma omp critical (Mutual Exclusion)</text></svg>`
+      }
+    ],
     storyQuestions: [
       'Why did Station 1 standing idle slow down the whole kitchen, and how does this relate to Amdahl\'s Law?',
       'What problem arose when two stations grabbed the truffle oil at the same time?',
@@ -91,6 +129,44 @@ export const unit2Topics = [
     dependencies: ['Races and Deadlocks (Topic 3) apply to inter-process communication', 'Load Balancing (Topic 4) becomes critical when MPI processes have uneven work', 'GPU computing (Unit 3) can be combined with MPI for multi-node GPU clusters', 'All large-scale HPC applications use MPI as the communication backbone'],
     preparationPlan: 'Review the difference between threads (shared memory) and processes (distributed memory). Read a basic MPI Hello World tutorial. Understand that each MPI process has its own memory space.',
     story: 'You are the postmaster general of a country with 50 cities, each with its own independent post office. Every post office has its own sorting room, its own mail carriers, and its own inventory of stamps. City A cannot walk into City B post office and grab a package. They must send it through the mail. Now imagine you need to coordinate a nationwide vote tally. Each city counts its own ballots independently. When a city finishes counting, it must send its subtotal to every other city so each city can compute the national total. City 1 finishes first and sends its count to Cities 2 through 50. City 2 finishes next and does the same. But City 47 is slow. It has ten million ballots and only two counters. While City 47 works, Cities 1 through 46 sit idle, having already sent their subtotals. The postmaster notices two problems. First, City 1 sends 49 separate messages to tell every other city its count. That is 49 times 49 equals 2,401 messages total across all cities. The mail trucks are overwhelmed. Second, the fast cities are idle while the slow city works. The postmaster introduces a new protocol: instead of every city talking to every other city, each city sends its count to a central hub, the capital. The capital collects all 50 subtotals, adds them up, and broadcasts the result back to every city. This is a reduce operation followed by a broadcast, a collective communication pattern. The message count drops from 2,401 to 98. A second improvement: instead of waiting for every city, the capital starts adding as soon as the first city arrives. This is a reduce-scatter: each city gets only the partial sum relevant to it. Now a new crisis: two cities need to swap data simultaneously. City A sends a 1 GB dataset to City B while City B sends a 1 GB dataset to City A. But the network link between them only supports one direction at a time. The postmaster introduces a handshake protocol: both cities agree on who sends first, then swap. This is point-to-point communication with blocking sends and receives. The postmaster realizes that managing all these protocols by hand is exhausting. She writes a handbook: if you need everyone to get the same message, use Bcast. If you need to combine data from everyone, use Reduce. If you need to swap between pairs, use Send and Recv. That handbook is MPI.',
+    cartoonPanels: [
+      {
+        scene: 1,
+        title: "Point-to-Point Letter Passing",
+        avatar: "✉️",
+        tag: "MPI_Send / Recv",
+        caption: "Rank 0 sends an explicit envelope across the network to Rank 1 via courier truck.",
+        concept: "Explicit Distributed Memory Exchange: MPI_Send() and MPI_Recv() pairing between two distinct ranks.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(30, 50)"><rect x="0" y="0" width="70" height="50" rx="6" fill="#1e293b" stroke="#38bdf8"/><text x="35" y="32" font-size="14" fill="#38bdf8" font-weight="bold" text-anchor="middle">Rank 0</text></g><g transform="translate(220, 50)"><rect x="0" y="0" width="70" height="50" rx="6" fill="#1e293b" stroke="#38bdf8"/><text x="35" y="32" font-size="14" fill="#38bdf8" font-weight="bold" text-anchor="middle">Rank 1</text></g><path d="M 110 75 L 210 75" stroke="#f59e0b" stroke-width="3" stroke-dasharray="6,4"/><text x="160" y="65" font-size="20" text-anchor="middle">✉️🚚</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">MPI_Send(dest=1) -> MPI_Recv(source=0)</text></svg>`
+      },
+      {
+        scene: 2,
+        title: "Megaphone Broadcast",
+        avatar: "📢",
+        tag: "MPI_Bcast",
+        caption: "Rank 0 uses a central megaphone to broadcast the election blueprint to all 50 city post offices at once!",
+        concept: "Collective Broadcast (MPI_Bcast): One rank sends identical data to all participating ranks in communicator.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><circle cx="160" cy="70" r="25" fill="#1e293b" stroke="#22c55e" stroke-width="2"/><text x="160" y="78" font-size="22" text-anchor="middle">📢</text><g stroke="#22c55e" stroke-width="2"><line x1="135" y1="70" x2="60" y2="40"/><line x1="135" y1="70" x2="60" y2="100"/><line x1="185" y1="70" x2="260" y2="40"/><line x1="185" y1="70" x2="260" y2="100"/></g><text x="40" y="40" font-size="18">🏢</text><text x="40" y="110" font-size="18">🏢</text><text x="270" y="40" font-size="18">🏢</text><text x="270" y="110" font-size="18">🏢</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">MPI_Bcast Collective One-to-All</text></svg>`
+      },
+      {
+        scene: 3,
+        title: "Scatter & Gather Assembly",
+        avatar: "📦",
+        tag: "Scatter / Gather",
+        caption: "Root splits 1000 ballots into 10 chunks, sends to 10 nodes, then gathers final subtotals back!",
+        concept: "MPI_Scatter distributes slice of array to each process; MPI_Gather aggregates slices back to root.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="110" y="30" width="100" height="35" rx="6" fill="#1e293b" stroke="#ec4899"/><text x="160" y="52" fill="#ec4899" font-size="12" font-weight="bold" text-anchor="middle">Root Dataset</text><g transform="translate(30, 100)"><rect x="0" y="0" width="50" height="30" rx="4" fill="#334155"/><rect x="70" y="0" width="50" height="30" rx="4" fill="#334155"/><rect x="140" y="0" width="50" height="30" rx="4" fill="#334155"/><rect x="210" y="0" width="50" height="30" rx="4" fill="#334155"/></g><path d="M 130 65 L 55 100 M 150 65 L 125 100 M 170 65 L 195 100 M 190 65 L 265 100" stroke="#ec4899" stroke-width="2"/><text x="160" y="155" text-anchor="middle" font-size="11" fill="#ec4899" font-weight="bold">MPI_Scatter() Chunk Division</text></svg>`
+      },
+      {
+        scene: 4,
+        title: "Tree-Based Allreduce Sum",
+        avatar: "🧮",
+        tag: "MPI_Allreduce",
+        caption: "All ranks combine partial vote totals via a reduction tree so every node knows the global winner!",
+        concept: "MPI_Allreduce(MPI_SUM): Computes global reduction and distributes result to all ranks without root bottleneck.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="80" y="40" width="160" height="60" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="160" y="75" font-size="20" text-anchor="middle">🧮 ∑ Global Total</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">MPI_Allreduce Tree Reduction (Log N Steps)</text></svg>`
+      }
+    ],
     storyQuestions: [
       'Why did every city talking to every other city create a message explosion?',
       'How did the central hub reduce the total number of messages?',
@@ -184,6 +260,44 @@ export const unit2Topics = [
     dependencies: ['Load Balancing (Topic 4) requires synchronization-free distribution', 'GPU computing (Unit 3) has its own synchronization primitives (barriers, atomics)', 'All concurrent systems (databases, operating systems, web servers) face these issues', 'Formal methods for verifying concurrent programs build on these concepts'],
     preparationPlan: 'Review OpenMP shared variables and MPI message ordering. Think about what happens when two threads increment the same counter simultaneously. Read about the dining philosophers problem.',
     story: 'You are the elevator coordinator in a 50-story office building. There are 5 elevators and 2,000 employees. The building has a simple rule: any employee can call any elevator at any time by pressing a button. There is no coordination between elevators. Monday morning at 8:45 AM: Elevator 1 is on Floor 1. Elevator 2 is on Floor 3. Both receive a call from Floor 2 at the same instant. Both race to Floor 2. Elevator 1 arrives first, picks up three passengers, and heads to Floor 30. Elevator 2 arrives at Floor 2, finds no passengers, and returns empty to Floor 1. This is a race condition: two elevators competed for the same resource and the outcome depended on timing. Tuesday: The building manager installs a traffic controller. Now all elevator calls go to a central queue. The controller assigns each call to the nearest available elevator. No more races. But a new problem appears: Elevator 3 is on Floor 15, going up to Floor 40. The traffic controller decides to reassign it to pick up someone on Floor 10, but Elevator 3 is already committed to Floor 40. The controller waits for Elevator 3 to finish. Meanwhile, four other elevators are waiting for the controller to make a decision. The controller is waiting for Elevator 3, and the other four are waiting for the controller. This is a deadlock-like scenario: a circular dependency where progress stalls. Wednesday: An employee on Floor 25 presses the button and holds it for 30 seconds. The system interprets this as 30 separate calls and dispatches all 5 elevators to Floor 25. This is a livelock: every elevator is busy but none is making useful progress for anyone else. Thursday: The building manager installs floor locks. Only one elevator may serve each floor at a time. Elevator 1 locks Floor 2 and Floor 30. Elevator 2 cannot serve Floor 2 while Elevator 1 holds the lock. This prevents races but introduces waiting. If Elevator 1 also wants Floor 3, which Elevator 2 holds, and Elevator 1 refuses to release Floor 2 until it gets Floor 3, you have a classic deadlock: Elevator 1 holds Floor 2 and wants Floor 3; Elevator 2 holds Floor 3 and wants Floor 2. Neither releases until it gets what it wants. The building manager implements the no hold and wait rule: elevators must request all needed floors simultaneously or none. This breaks the deadlock. Friday: The system is working well until a VIP employee on Floor 50 presses the button. The controller always gives priority to Floor 50 requests, so employees on lower floors wait indefinitely. This is starvation: the VIP gets service while others are permanently postponed. The building manager adds a fairness policy: requests older than 2 minutes get priority regardless of floor. The elevators now serve everyone eventually.',
+    cartoonPanels: [
+      {
+        scene: 1,
+        title: "Unsynchronized Elevator Race",
+        avatar: "💥",
+        tag: "Race Condition",
+        caption: "Elevators 1 & 2 race to Floor 2 simultaneously. Elevator 2 arrives to an empty floor, wasting energy!",
+        concept: "Race Condition: Non-deterministic execution order leads to incorrect computational state or wasted work.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(60, 40)"><rect x="0" y="0" width="80" height="80" rx="6" fill="#1e293b" stroke="#ef4444" stroke-width="2"/><text x="40" y="45" font-size="24" text-anchor="middle">🛗1</text></g><g transform="translate(180, 40)"><rect x="0" y="0" width="80" height="80" rx="6" fill="#1e293b" stroke="#ef4444" stroke-width="2"/><text x="40" y="45" font-size="24" text-anchor="middle">🛗2</text></g><text x="160" y="155" text-anchor="middle" font-size="11" fill="#ef4444" font-weight="bold">Race Condition: Uncoordinated Concurrent Access</text></svg>`
+      },
+      {
+        scene: 2,
+        title: "4-Way Circular Deadlock",
+        avatar: "🚗",
+        tag: "Deadlock Lock",
+        caption: "Elevator 1 holds Floor 2 wanting Floor 3; Elevator 2 holds Floor 3 wanting Floor 2. Both freeze forever!",
+        concept: "Deadlock: Mutual exclusion + Hold and Wait + No Preemption + Circular Wait.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(40, 50)"><rect x="0" y="0" width="80" height="60" rx="6" fill="#1e293b" stroke="#ef4444"/><text x="40" y="38" font-size="16" fill="#ef4444" font-weight="bold" text-anchor="middle">Holds L1</text><text x="40" y="55" font-size="10" fill="#f59e0b" text-anchor="middle">Wants L2</text></g><g transform="translate(200, 50)"><rect x="0" y="0" width="80" height="60" rx="6" fill="#1e293b" stroke="#ef4444"/><text x="40" y="38" font-size="16" fill="#ef4444" font-weight="bold" text-anchor="middle">Holds L2</text><text x="40" y="55" font-size="10" fill="#f59e0b" text-anchor="middle">Wants L1</text></g><path d="M 120 70 L 200 70 M 200 90 L 120 90" stroke="#ef4444" stroke-width="3" stroke-dasharray="4,4"/><text x="160" y="155" text-anchor="middle" font-size="11" fill="#ef4444" font-weight="bold">Circular Lock Wait (Deadlock Freeze)</text></svg>`
+      },
+      {
+        scene: 3,
+        title: "No-Hold-and-Wait Lock Order",
+        avatar: "🔒",
+        tag: "Lock Hierarchy",
+        caption: "Manager forces elevators to request all needed floor locks simultaneously in global numbered order.",
+        concept: "Deadlock Prevention: Enforcing strict global lock ordering eliminates circular wait conditions.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="80" y="50" width="160" height="60" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="2"/><text x="160" y="85" font-size="20" text-anchor="middle">🔒 Lock 1 -> Lock 2</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Ordered Lock Hierarchy Prevents Deadlocks</text></svg>`
+      },
+      {
+        scene: 4,
+        title: "Atomic Hardware Counter",
+        avatar: "⚛️",
+        tag: "Atomic Primitives",
+        caption: "Hardware atomic instructions increment shared counters in 1 uninterruptible clock cycle!",
+        concept: "Atomic Operations (Fetch-and-Add / Compare-and-Swap): Lock-free hardware synchronization.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="90" y="45" width="140" height="65" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="160" y="82" font-size="22" text-anchor="middle">⚛️ Atomic++</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">Hardware Atomic Execution (0 Lock Overhead)</text></svg>`
+      }
+    ],
     storyQuestions: [
       'How did the race condition on Monday differ from the deadlock on Thursday?',
       'Why did the livelock on Wednesday happen even though every elevator was following the rules?',
@@ -268,6 +382,44 @@ export const unit2Topics = [
     dependencies: ['GPU computing (Unit 3) requires load balancing across SMs and CUs', 'Cloud auto-scaling uses similar principles for virtual machine allocation', 'All previous Unit 2 topics provide the context for why load balancing matters', 'Workflow scheduling in distributed systems builds on these concepts'],
     preparationPlan: 'Review static vs dynamic scheduling from OpenMP (Topic 1). Think about what happens when tasks take different amounts of time. Read about Python multiprocessing Pool and map functions.',
     story: 'You are the manager of a pizza delivery shop on New Year Eve. The phone is ringing off the hook. Orders are coming in: a single margherita for Apartment 3, a feast for 12 with five toppings for the penthouse, two plain cheese pizzas for the dormitory, and a massive order of 20 pizzas for a corporate party in the basement. You have 6 delivery drivers, each with a scooter. If you assign orders in the order they arrive (static round-robin), Driver 1 gets the single margherita (5 minutes). Driver 2 gets the penthouse feast (45 minutes). Driver 3 gets two cheese pizzas (10 minutes). Driver 4 gets the corporate party (90 minutes). Drivers 1 and 3 finish quickly and sit in the break room while Drivers 2 and 4 are still on the road. Your delivery throughput is terrible: four drivers are idle most of the time. A new strategy: keep a central order board. When a driver becomes available, they take the next unassigned order from the board (dynamic work-sharing). Now Driver 1 finishes the margherita in 5 minutes, immediately picks up the dormitory order, and delivers both dormitory pizzas in 10 minutes total while Driver 2 is still handling the penthouse feast. Driver 3 finishes the dormitory, picks up the corporate order, and delivers it in three trips. The board keeps everyone busy. But a new problem emerges: the corporate order has 20 pizzas and each trip carries only 4 pizzas. Driver 3 makes 5 trips back and forth. Meanwhile, three other drivers sit idle because all other orders are done. The bottleneck is not the drivers but the scooter capacity. You need a different strategy for large orders: split them across multiple drivers. Assign 4 drivers to the corporate party, each carrying 5 pizzas in one trip. All four deliver simultaneously, and the corporate order finishes in one round-trip instead of five. This is work decomposition: breaking a large task into smaller subtasks that can run in parallel. Now a quality control problem emerges: two drivers both pick up the same order from the board (a race condition on the order queue). The customer gets two deliveries. You add a lock: only one driver may access the board at a time. But now drivers line up at the board, creating a bottleneck. You redesign the board with individual lockers: each order goes into a numbered locker, and each locker has its own lock. Drivers can access different lockers simultaneously without blocking each other. This is fine-grained locking, and it dramatically reduces contention. Finally, you notice that deliveries to the same neighborhood should be grouped. Sending Driver A to Neighborhood 1 and Driver B to Neighborhood 2 is faster than both criss-crossing the city. This is data locality: keeping related work close together to minimize communication overhead.',
+    cartoonPanels: [
+      {
+        scene: 1,
+        title: "Python GIL Foreman Bottleneck",
+        avatar: "🚧",
+        tag: "Python GIL",
+        caption: "4 threads sitting idle because only 1 foreman can speak at a time! Python GIL restricts CPU-bound multithreading.",
+        concept: "Global Interpreter Lock (GIL): Permits only 1 thread to execute Python bytecode at a time.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="110" y="40" width="100" height="60" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="2"/><text x="160" y="75" font-size="22" text-anchor="middle">🔒 GIL</text><g fill="#ef4444" font-size="16"><text x="30" y="130">🧵 Waiting</text><text x="120" y="130">🧵 Waiting</text><text x="210" y="130">🧵 Waiting</text></g><text x="160" y="155" text-anchor="middle" font-size="11" fill="#ef4444" font-weight="bold">Single-Threaded Bytecode Execution Lock</text></svg>`
+      },
+      {
+        scene: 2,
+        title: "4 Independent Process Pools",
+        avatar: "🏗️",
+        tag: "Multiprocessing",
+        caption: "Spawning 4 separate Python processes, each with its own memory space and foreman! Full 4-core parallel speed.",
+        concept: "Python `multiprocessing.Pool`: Bypasses GIL by creating separate OS process memory spaces.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(20, 40)"><rect x="0" y="0" width="60" height="50" rx="6" fill="#1e293b" stroke="#22c55e"/><text x="30" y="32" font-size="14" fill="#22c55e" font-weight="bold" text-anchor="middle">P0</text><rect x="75" y="0" width="60" height="50" rx="6" fill="#1e293b" stroke="#22c55e"/><text x="105" y="32" font-size="14" fill="#22c55e" font-weight="bold" text-anchor="middle">P1</text><rect x="150" y="0" width="60" height="50" rx="6" fill="#1e293b" stroke="#22c55e"/><text x="180" y="32" font-size="14" fill="#22c55e" font-weight="bold" text-anchor="middle">P2</text><rect x="225" y="0" width="60" height="50" rx="6" fill="#1e293b" stroke="#22c55e"/><text x="255" y="32" font-size="14" fill="#22c55e" font-weight="bold" text-anchor="middle">P3</text></g><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Independent Process Memory Spaces</text></svg>`
+      },
+      {
+        scene: 3,
+        title: "Work-Stealing Delivery Crew",
+        avatar: "🧹",
+        tag: "Work Stealing",
+        caption: "Idle Driver 4 steals unstarted pizza delivery orders from the bottom of busy Driver 1's queue!",
+        concept: "Work-Stealing Scheduling: Idle worker threads steal tasks from heavy queues to balance load dynamically.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="40" y="40" width="90" height="70" rx="6" fill="#1e293b" stroke="#f59e0b"/><text x="85" y="70" font-size="20" text-anchor="middle">🍕🍕🍕</text><rect x="190" y="40" width="90" height="70" rx="6" fill="#1e293b" stroke="#22c55e"/><text x="235" y="70" font-size="20" text-anchor="middle">🛵 Steal</text><path d="M 130 75 L 190 75" stroke="#22c55e" stroke-width="3" stroke-dasharray="4"/><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Dynamic Work-Stealing Balancer</text></svg>`
+      },
+      {
+        scene: 4,
+        title: "Pickling Serialization Cost",
+        avatar: "📦",
+        tag: "IPC Overhead",
+        caption: "Time lost packing big blueprints (pickle/unpickle) across process boundaries reduces speedup!",
+        concept: "IPC Overhead: Object serialization (pickling) and IPC channel latency set minimum task size.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="90" y="50" width="140" height="60" rx="8" fill="#1e293b" stroke="#ec4899" stroke-width="2"/><text x="160" y="85" font-size="22" text-anchor="middle">📦 Pickle Payload</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#ec4899" font-weight="bold">IPC Serialization & Deserialization Overhead</text></svg>`
+      }
+    ],
     storyQuestions: [
       'Why did static round-robin assignment leave four drivers idle while two were overloaded?',
       'How did the central order board improve utilization, and what new problem did it create?',

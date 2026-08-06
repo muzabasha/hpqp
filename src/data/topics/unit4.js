@@ -7,6 +7,44 @@ export const unit4Topics = [
     dependencies: ['Superposition and Entanglement (Topic 2) extends single-qubit states to multi-qubit systems', 'Deutsch-Jozsa, Grover, and Shor (Topic 3) chains gates into algorithms', 'VQE and QAOA (Topic 4) wraps gates in variational circuits', 'All quantum algorithms in the course build on qubit, gate, and measurement primitives'],
     preparationPlan: 'Review complex number arithmetic, refresh matrix multiplication, and watch a 3-minute Bloch sphere animation to build geometric intuition before tackling the algebra.',
     story: 'You walk into a mysterious antique shop and find a peculiar coin on the counter. The shopkeeper, a grinning old man with mismatched socks, tells you this is no ordinary coin. When you flip it and catch it in your palm without looking, it behaves normally -- heads or tails, pick one. But here is the strange part: while the coin is spinning in the air, it is somehow both heads AND tails at the same time. Not alternating. Not flickering. Genuinely, physically both. The shopkeeper calls this the "moment of indecision." The coin only commits to being heads or tails when you peek at it. You try it. Flip. The coin spins. You look. Heads. You flip again. Spin. Look. Tails. You flip a third time, and this time you try to catch it without looking. The shopkeeper slaps your hand away: "If you look too early, the coin gets nervous and picks randomly. You must wait until you are ready to read it properly." You learn that the coin remembers every flip instruction you have ever given it. If you gently tap the side before flipping, it tilts slightly toward heads. If you blow on it, it leans toward tails. These little nudges are called "gates" -- they reshape the coin\\\'s indecision in predictable ways. The shopkeeper shows you a special nudge called the "Hadamard tap" that makes the coin perfectly balanced between heads and tails every single time. Then he shows you a trick: he flips two coins simultaneously and somehow they always land on the same side, even though each one is randomly choosing. "Entanglement," he whispers mysteriously. You realize this coin is not just a novelty -- it is a tiny, indecisive, magical processor that can explore possibilities faster than any normal calculator, but only if you stop being nosy and let it spin.',
+    cartoonPanels: [
+      {
+        scene: 1,
+        title: "Spinning Coin Superposition",
+        avatar: "🪙",
+        tag: "Qubit State",
+        caption: "Coin spinning on the table—simultaneously both Heads |0> and Tails |1> until caught!",
+        concept: "Quantum Superposition: Qubit state |ψ> = α|0> + β|1> before measurement observation.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><circle cx="160" cy="80" r="35" fill="none" stroke="#f59e0b" stroke-width="4" stroke-dasharray="8,6"/><text x="160" y="88" font-size="28" text-anchor="middle">🪙</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#f59e0b" font-weight="bold">Superposition: Both |0⟩ and |1⟩ Simultaneously</text></svg>`
+      },
+      {
+        scene: 2,
+        title: "Bloch Sphere Coordinate Globe",
+        avatar: "🌐",
+        tag: "Bloch Sphere",
+        caption: "State vector arrow pointing anywhere on the surface of a 3D unit sphere.",
+        concept: "Bloch Sphere Representation: Visualizes single qubit rotations along X, Y, Z axes.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><circle cx="160" cy="80" r="40" fill="none" stroke="#38bdf8" stroke-width="2"/><ellipse cx="160" cy="80" rx="40" ry="15" fill="none" stroke="#38bdf8" stroke-width="1" stroke-dasharray="4"/><line x1="160" y1="80" x2="185" y2="55" stroke="#ef4444" stroke-width="3" marker-end="url(#arrow)"/><text x="160" y="155" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">Bloch Sphere State Rotation Vector</text></svg>`
+      },
+      {
+        scene: 3,
+        title: "Hadamard Equalizer Gate",
+        avatar: "🔮",
+        tag: "Hadamard H Gate",
+        caption: "Hadamard gate H kicks a stable |0> state into a 50/50 equal amplitude superposition!",
+        concept: "Hadamard Gate (H): H|0> = (|0>+|1>)/√2. Creates maximum superposition.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="110" y="45" width="100" height="60" rx="8" fill="#1e293b" stroke="#ec4899" stroke-width="2"/><text x="160" y="82" fill="#ec4899" font-size="24" font-weight="bold" text-anchor="middle">H Gate</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#ec4899" font-weight="bold">Creates 50/50 Equal Quantum Superposition</text></svg>`
+      },
+      {
+        scene: 4,
+        title: "Measurement State Collapse",
+        avatar: "👁️",
+        tag: "State Collapse",
+        caption: "Peeking at the coin forces the wavefunction to instantly collapse to 100% Heads or 100% Tails!",
+        concept: "Projective Measurement: Irreversibly collapses state |ψ> to basis state with probability |α|^2.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><text x="160" y="60" font-size="28" text-anchor="middle">👁️ Peek!</text><rect x="110" y="80" width="100" height="40" rx="6" fill="#1e293b" stroke="#22c55e"/><text x="160" y="105" fill="#22c55e" font-size="16" font-weight="bold" text-anchor="middle">Collapse |0⟩</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Irreversible Wavefunction Collapse</text></svg>`
+      }
+    ],
     storyQuestions: [
       'Why does looking at the spinning coin too early ruin the trick?',
       'What is the difference between a regular nudge and the Hadamard tap?',
@@ -107,6 +145,44 @@ export const unit4Topics = [
     dependencies: ['Deutsch-Jozsa, Grover, and Shor (Topic 3) exploit entanglement for speedup', 'VQE and QAOA (Topic 4) use entangled ansatz circuits', 'Quantum error correction relies on entangled ancilla qubits', 'Quantum communication protocols require entanglement as a resource'],
     preparationPlan: 'Review tensor products from linear algebra, understand what "independence" means classically, and watch a Bell state construction video to see entanglement before the math.',
     story: 'Imagine two professional dance partners, Alice and Bob, who have rehearsed a synchronized routine for years. They are so perfectly in sync that when Alice lifts her left arm, Bob simultaneously lowers his right arm -- not because he sees her, but because their choreography is pre-entangled. Now here is where it gets weird: you blindfold both of them, put Alice in New York and Bob in Tokyo, and play different music in each city. Alice hears a tango. Bob hears a waltz. Yet somehow, when Alice twirls left, Bob twirls right at the exact same instant, even though neither knows what music the other is hearing. Their movements are perfectly anti-correlated across thousands of miles with zero communication. Classical dance partners would need to see each other or hear the same music to stay synchronized. But Alice and Bob share something deeper -- their choreography was written into the fabric of their partnership in a way that defies spatial separation. The choreographer (a quantum physicist) explains: "Before you separated, I choreographed you into a special state where your movements are undefined individually but perfectly correlated jointly. Neither of you has a choreography until the music starts, but the moment it does, you are locked in." A skeptical observer tries to test this by watching Alice\\\'s rehearsal. The moment the observer sees Alice twirl left, Bob is guaranteed to twirl right. But if the observer had instead watched Bob first, they would see Bob twirl right and then know Alice twirled left. The order of observation does not matter -- the correlation is absolute. Now the choreographer introduces a second trick: before the partners separate, she performs a special move called a "Bell tap" that locks their choreography into the strongest possible correlation. After this tap, any measurement on one partner instantly reveals the other\\\'s state, regardless of distance. This is entanglement: a joint property that cannot be described by looking at either partner alone. The skeptical observer asks: "Can you use this to send a text message faster than light?" The choreographer laughs: "No -- each partner\\\'s individual movements still look random. The correlation only appears when you compare notes afterward."',
+    cartoonPanels: [
+      {
+        scene: 1,
+        title: "Magic Entangled Dice",
+        avatar: "🎲",
+        tag: "Bell State",
+        caption: "Rolling 2 entangled dice in separate rooms: if Qubit 1 lands on Heads, Qubit 2 instantly lands on Heads!",
+        concept: "Quantum Entanglement: Joint state |Φ+> = (|00> + |11>)/√2 cannot be factored into product states.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(30, 50)"><rect x="0" y="0" width="70" height="50" rx="6" fill="#1e293b" stroke="#ec4899"/><text x="35" y="32" font-size="20" text-anchor="middle">🎲 Q1</text></g><g transform="translate(220, 50)"><rect x="0" y="0" width="70" height="50" rx="6" fill="#1e293b" stroke="#ec4899"/><text x="35" y="32" font-size="20" text-anchor="middle">🎲 Q2</text></g><path d="M 100 75 L 220 75" stroke="#ec4899" stroke-width="4" stroke-dasharray="4,4"/><text x="160" y="65" font-size="16">⚡ Linked</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#ec4899" font-weight="bold">Non-Separable Joint Wavefunction |Φ+⟩</text></svg>`
+      },
+      {
+        scene: 2,
+        title: "Bell Circuit Generation",
+        avatar: "🔗",
+        tag: "H + CNOT Circuit",
+        caption: "Hadamard gate on Qubit 0 followed by CNOT targeting Qubit 1 generates a pure Bell pair!",
+        concept: "Bell State Circuit: H(q0) -> CNOT(q0, q1) produces maximal 2-qubit entanglement.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(60, 40)"><rect x="0" y="0" width="40" height="30" rx="4" fill="#ec4899"/><text x="20" y="20" fill="white" font-size="12" font-weight="bold" text-anchor="middle">H</text><line x1="40" y1="15" x2="110" y2="15" stroke="#38bdf8" stroke-width="2"/><circle cx="110" cy="15" r="4" fill="#38bdf8"/><line x1="110" y1="15" x2="110" y2="55" stroke="#38bdf8" stroke-width="2"/><circle cx="110" cy="55" r="10" fill="none" stroke="#38bdf8" stroke-width="2"/><line x1="110" y1="48" x2="110" y2="62" stroke="#38bdf8" stroke-width="2"/></g><text x="160" y="155" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">Hadamard + CNOT Entangling Circuit</text></svg>`
+      },
+      {
+        scene: 3,
+        title: "Quantum Teleportation Beam",
+        avatar: "🚀",
+        tag: "Teleportation",
+        caption: "Transferring unknown qubit state |ψ> across the galaxy using 1 entangled pair and 2 classical bits!",
+        concept: "Quantum Teleportation: Destroys original qubit state to reconstruct exact replica at receiver node.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(30, 45)"><rect x="0" y="0" width="80" height="50" rx="6" fill="#1e293b" stroke="#38bdf8"/><text x="40" y="32" font-size="12" fill="#38bdf8" font-weight="bold" text-anchor="middle">Alice |ψ⟩</text></g><g transform="translate(210, 45)"><rect x="0" y="0" width="80" height="50" rx="6" fill="#1e293b" stroke="#22c55e"/><text x="40" y="32" font-size="12" fill="#22c55e" font-weight="bold" text-anchor="middle">Bob |ψ⟩</text></g><path d="M 110 70 L 210 70" stroke="#f59e0b" stroke-width="3" stroke-dasharray="4"/><text x="160" y="60" font-size="11" fill="#f59e0b" text-anchor="middle">2 Classical Bits</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">No-Cloning Compliant Teleportation Protocol</text></svg>`
+      },
+      {
+        scene: 4,
+        title: "Decoherence Noise Attack",
+        avatar: "⏳",
+        tag: "Decoherence T2",
+        caption: "Thermal fluctuation noise destroying fragile superposition, degrading pure state to mixed state!",
+        concept: "Decoherence & Relaxation (T1, T2): Environmental noise collapses fragile quantum phase coherence.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="80" y="45" width="160" height="60" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="2"/><text x="160" y="80" font-size="18" text-anchor="middle">⏳ T2 Noise</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#ef4444" font-weight="bold">Environmental Phase Decoherence (T2 Time Limit)</text></svg>`
+      }
+    ],
     storyQuestions: [
       'Why can\\\'t Alice figure out her choreography by watching only herself?',
       'What makes the Bell tap different from just agreeing on a routine beforehand?',
@@ -207,6 +283,44 @@ export const unit4Topics = [
     dependencies: ['VQE and QAOA (Topic 4) generalize these ideas to optimization and chemistry', 'Quantum error correction must handle the gate depth these algorithms require', 'All quantum advantage claims rest on comparisons established here'],
     preparationPlan: 'Review the oracle model of computation, refresh modular arithmetic, and understand why classical search requires O(N) queries before seeing the quantum alternatives.',
     story: 'You are a detective investigating a mysterious theft at a grand hotel with 1024 rooms. You know that exactly one room contains the stolen diamond, and a helpful informant (the oracle) can answer exactly one type of question: "Is the diamond in this room?" with a simple yes or no. A classical detective would have to check rooms one by one -- on average 512 questions, worst case 1024. But you are no ordinary detective. You have a quantum magnifying glass that lets you ask about ALL rooms simultaneously. Here is how it works: you prepare a special dust that spreads equally across all 1024 rooms. When you flash the oracle\\\'s light through the dust, it flips the dust in the room containing the diamond. Now here is the clever part -- you do not look at the dust yet. Instead, you perform a special maneuver called the "amplification shuffle" that takes the dust in the diamond room (which is slightly different) and amplifies its signal while canceling out the dust in all other rooms. After about 32 shuffles (the square root of 1024), the dust in the diamond room is overwhelmingly strong and the dust everywhere else has faded to nearly nothing. You look. The dust points to room 742. Diamond found in 32 questions instead of 512. Your colleague, an even more ambitious detective, tackles a different case: a hotel where the informant follows a hidden rule. The rule is either "constant" (same answer for every room) or "balanced" (yes for exactly half, no for the other half). Classically, you might need to check 513 rooms to be sure. Your quantum magnifying glass resolves this in exactly ONE question by testing all rooms simultaneously. The oracle\\\'s light reveals whether the rule has any variation at all. Meanwhile, a third detective faces the ultimate challenge: a vault with a serial number that is the product of two enormous prime numbers. The only way to open the vault is to find those primes. Classically, this would take longer than the age of the universe. But the detective has a quantum musical instrument: she plays a special melody (the quantum Fourier transform) that reveals the hidden rhythm (period) of the serial number, and from that rhythm, the prime factors fall out like notes in a chord. The melody takes polynomial time. The vault opens.',
+    cartoonPanels: [
+      {
+        scene: 1,
+        title: "Deutsch-Jozsa 1-Query Oracle",
+        avatar: "🪞",
+        tag: "Deutsch-Jozsa",
+        caption: "Testing whether a function is constant or balanced in just 1 single quantum query!",
+        concept: "Deutsch-Jozsa Algorithm: Evaluates global function property with 1 query using phase kickback.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="80" y="45" width="160" height="60" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="160" y="80" font-size="18" text-anchor="middle">🪞 Oracle Uf (1 Query)</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">Exponential Query Complexity Reduction O(1)</text></svg>`
+      },
+      {
+        scene: 2,
+        title: "Grover's Amplitude Amplification",
+        avatar: "🔍",
+        tag: "Grover O(√N)",
+        caption: "Amplifying the wave amplitude of target item in an unsorted database of N items in O(√N) steps!",
+        concept: "Grover's Search Algorithm: Quadratic speedup O(√N) for unstructured database search.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="40" y="100" width="30" height="30" fill="#334155"/><rect x="90" y="100" width="30" height="30" fill="#334155"/><rect x="140" y="40" width="30" height="90" fill="#22c55e"/><rect x="190" y="100" width="30" height="30" fill="#334155"/><rect x="240" y="100" width="30" height="30" fill="#334155"/><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Amplitude Amplification (Target Peak)</text></svg>`
+      },
+      {
+        scene: 3,
+        title: "Quantum Fourier Transform (QFT)",
+        avatar: "🎹",
+        tag: "QFT Period Finding",
+        caption: "Identifying hidden periodic patterns in complex numbers using quantum phase interference wheels.",
+        concept: "Quantum Fourier Transform (QFT): Extracts periodicity r in O(log^2 N) time for Shor's factoring.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><path d="M 40 80 Q 80 30 120 80 T 200 80 T 280 80" stroke="#f59e0b" stroke-width="3" fill="none"/><text x="160" y="155" text-anchor="middle" font-size="11" fill="#f59e0b" font-weight="bold">QFT Periodicity Phase Interference</text></svg>`
+      },
+      {
+        scene: 4,
+        title: "Shor's RSA Prime Unlocking",
+        avatar: "🔓",
+        tag: "Shor's Algorithm",
+        caption: "Finding prime factors of massive RSA keys in polynomial time using QFT period finding!",
+        concept: "Shor's Factoring Algorithm: Breaks RSA public-key encryption in polynomial time O(n^3).",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="80" y="45" width="160" height="60" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="2"/><text x="160" y="80" font-size="20" text-anchor="middle">🔓 RSA N = p × q</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#ef4444" font-weight="bold">Exponential Shor's Factoring Advantage</text></svg>`
+      }
+    ],
     storyQuestions: [
       'Why does the amplification shuffle work faster than checking rooms one by one?',
       'What is the difference between the hotel with 1024 rooms and the hotel with the constant/balanced rule?',
@@ -307,6 +421,44 @@ export const unit4Topics = [
     dependencies: ['All previous quantum topics provide the circuit primitives used here', 'Quantum error mitigation techniques are essential for VQE/QAOA on real hardware', 'Industrial applications of quantum computing rely on these near-term algorithms', 'Future fault-tolerant algorithms will build on variational principles established here'],
     preparationPlan: 'Review cost function minimization from calculus, understand what a Hamiltonian represents in physics, and familiarize yourself with the concept of a parameterized quantum circuit.',
     story: 'You are on a treasure hunt in a massive city with 10,000 intersections. Each intersection has a treasure chest, but most contain rocks and only a few contain gold. You have a quantum compass that points toward "interesting" intersections, but the compass dial is blurry -- it gives a general direction, not a precise location. You also have a classical map that shows the terrain. The strategy unfolds in rounds. In each round, you (the classical guide) look at the compass reading and decide which direction to walk next based on your knowledge of the terrain. You walk 100 meters north. The compass updates. You see that it is pointing more strongly to the northwest. You adjust and walk 80 meters northwest. The compass updates again. After several rounds of this dance -- compass gives quantum direction, you give classical guidance -- you arrive at an intersection with a chest full of gold. The key insight is that neither you nor the compass could find the treasure alone. The compass is great at exploring many directions simultaneously (superposition), but it cannot interpret the readings. You are great at interpreting patterns and making decisions, but you cannot explore 10,000 intersections efficiently. Together, you form a hybrid system: the quantum device handles the parts that benefit from superposition and entanglement, while the classical computer handles the parts that require logic, memory, and interpretation. Your rival, Dr. Greedy, tries a simpler approach: he always follows the compass\\\'s strongest reading without using the map. He ends up in local treasure traps -- small gold deposits that are not the best. You, using the map and a clever strategy called the "quantum alternating path," occasionally take suboptimal turns to avoid traps. You find the best treasure. The treasure hunt organizer reveals that the real challenge is not finding ANY gold -- it is finding the BEST gold. The quantum compass explores the landscape in a way that no classical compass can, but the classical guide\\\'s intelligence determines whether the exploration leads to the global optimum or gets stuck in a local one. This partnership between quantum and classical is the future of near-term computing.',
+    cartoonPanels: [
+      {
+        scene: 1,
+        title: "Quantum-Classical Hybrid Relay Loop",
+        avatar: "🏃",
+        tag: "Hybrid Loop",
+        caption: "Quantum coprocessor measures energy E(θ); classical CPU optimizes parameters θ in a feedback loop!",
+        concept: "Hybrid Co-Processing: Combines NISQ quantum state evaluation with classical optimizer gradient updates.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(30, 45)"><rect x="0" y="0" width="100" height="50" rx="6" fill="#1e293b" stroke="#ec4899"/><text x="50" y="32" fill="#ec4899" font-size="12" font-weight="bold" text-anchor="middle">Quantum QPU</text></g><g transform="translate(190, 45)"><rect x="0" y="0" width="100" height="50" rx="6" fill="#1e293b" stroke="#38bdf8"/><text x="50" y="32" fill="#38bdf8" font-size="12" font-weight="bold" text-anchor="middle">Classical CPU</text></g><path d="M 130 60 L 190 60 M 190 80 L 130 80" stroke="#22c55e" stroke-width="3" stroke-dasharray="4"/><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Continuous Quantum-Classical Feedback Loop</text></svg>`
+      },
+      {
+        scene: 2,
+        title: "VQE Molecular Ground State",
+        avatar: "🧪",
+        tag: "VQE Chemistry",
+        caption: "Adjusting parameterized quantum circuit (Ansatz) angles θ to find the ground state energy of H2 molecule!",
+        concept: "Variational Quantum Eigensolver (VQE): Minimizes expectation value <ψ(θ)|H|ψ(θ)> for molecular chemistry.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="80" y="45" width="160" height="60" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="2"/><text x="160" y="80" font-size="18" text-anchor="middle">🧪 VQE E(θ) -> E₀</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Variational Energy Minimization Principle</text></svg>`
+      },
+      {
+        scene: 3,
+        title: "Barren Plateau Gradient Desert",
+        avatar: "🏔️",
+        tag: "Barren Plateau",
+        caption: "Optimizer stuck in a flat energy landscape where gradients vanish exponentially (Var[∇E] -> 0)!",
+        concept: "Barren Plateau Problem: Random deep circuits lead to exponentially vanishing cost function gradients.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><line x1="40" y1="80" x2="280" y2="80" stroke="#ef4444" stroke-width="3"/><text x="160" y="65" font-size="14" fill="#ef4444" font-weight="bold" text-anchor="middle">Flat Gradient ∇E ≈ 0</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#ef4444" font-weight="bold">Vanishing Gradient Optimization Trap</text></svg>`
+      },
+      {
+        scene: 4,
+        title: "QAOA Graph Max-Cut Solver",
+        avatar: "🎯",
+        tag: "QAOA Optimization",
+        caption: "Mapping combinatorial graph nodes to qubit spin states to solve hard Max-Cut logistics problems!",
+        concept: "Quantum Approximate Optimization Algorithm (QAOA): Solves combinatorial graph problems on NISQ devices.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(60, 45)"><circle cx="20" cy="20" r="12" fill="#38bdf8"/><circle cx="180" cy="20" r="12" fill="#22c55e"/><circle cx="100" cy="60" r="12" fill="#38bdf8"/><line x1="20" y1="20" x2="100" y2="60" stroke="#ec4899" stroke-width="2"/><line x1="180" y1="20" x2="100" y2="60" stroke="#ec4899" stroke-width="2"/></g><text x="160" y="155" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">QAOA Max-Cut Combinatorial Graph Partition</text></svg>`
+      }
+    ],
     storyQuestions: [
       'Why can\\\'t the quantum compass find the treasure without the classical guide?',
       'What advantage does the compass have over just searching intersections one by one?',
