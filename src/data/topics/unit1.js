@@ -7,6 +7,44 @@ export const unit1Topics = [
     dependencies: ['Flynn\\\'s Taxonomy (Topic 2) builds on this classification', 'Memory Hierarchy (Topic 3) explains why raw speed isn\\\'t enough', 'Speedup Laws (Topic 4) quantify the gains we introduce here', 'Cluster Basics (Topic 5) shows real systems that implement these ideas'],
     preparationPlan: 'Review computer organization notes, refresh Big-O analysis, and read one case study about weather forecasting or genomic sequencing to see why a laptop isn\\\'t enough.',
     story: 'Imagine it is Monday morning at Sunnybrook Elementary. The lunch bell rings and 400 hungry students pour into the cafeteria. There is exactly one cook, one stove, and one counter. The cook starts flipping pancakes. One by one. By the time the twelfth pancake hits a plate, the kindergarteners are crying, the sixth-graders are staging a revolt, and someone has already started a petition to impeach the principal. The principal panics and calls a meeting. A parent suggests hiring five more cooks. The principal agrees, but there is a catch: all six cooks must share one spatula, one stove, and one counter. They trip over each other, bump elbows, and half the pancakes end up on the floor. The cafeteria is now slower than before. A second parent, an engineer, raises her hand: \\\"What if we buy four more stoves, assign each cook their own station, and create a serving line so students walk past each cook in order?\\\" The principal tries it. Suddenly pancakes appear three times faster. But then a problem appears: the cook at Station 3 makes blueberry pancakes while Station 1 makes chocolate chip. Students start complaining about inconsistency. The engineer suggests a shared recipe card and a timer so each cook works at the same pace. Now the cafeteria hums. But a new bottleneck appears: the dishwasher. It cannot keep up with six cooks. The engineer smiles and says, \\\"You just discovered HPC.\\\" The story has a hidden structure: identify the bottleneck, add resources wisely, share the workload, measure the result, and fix the next bottleneck. That loop never ends because every fix reveals a new constraint.',
+    cartoonPanels: [
+      {
+        scene: 1,
+        title: "1 Cook, 1 Stove Bottleneck",
+        avatar: "👨‍🍳",
+        tag: "Serial CPU Limit",
+        caption: "400 hungry kids line up, but there is only 1 cook and 1 stove. Flipping pancakes one by one creates a massive serial queue!",
+        concept: "Single-threaded CPU execution: 1 core handles all operations sequentially.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="30" y="100" width="80" height="60" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><circle cx="50" cy="120" r="10" fill="#ef4444" opacity="0.8"/><circle cx="90" cy="120" r="10" fill="#334155"/><text x="70" y="70" font-size="36" text-anchor="middle">👨‍🍳</text><text x="82" y="45" font-size="18">🍳</text><g transform="translate(130, 110)"><text x="0" y="0" font-size="22">👧</text><text x="30" y="0" font-size="22">👦</text><text x="60" y="0" font-size="22">🧒</text><text x="90" y="0" font-size="22">👶</text><text x="125" y="0" font-size="16" fill="#ef4444" font-weight="bold">+396</text></g><path d="M 130 130 L 280 130" stroke="#f43f5e" stroke-width="3" stroke-dasharray="6,4"/><text x="205" y="155" text-anchor="middle" font-size="11" fill="#f43f5e" font-weight="bold">Long Queue (High Latency)</text></svg>`
+      },
+      {
+        scene: 2,
+        title: "6 Cooks, 1 Spatula Chaos",
+        avatar: "💥",
+        tag: "Lock Contention",
+        caption: "The principal hires 5 more cooks, but forgets extra tools! All 6 cooks trip over each other fighting for 1 spatula.",
+        concept: "Adding threads without scaling hardware memory/bus causes severe lock contention.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="120" y="100" width="80" height="60" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="2"/><text x="160" y="135" font-size="24" text-anchor="middle">🍳</text><g transform="translate(60, 80)"><text x="0" y="0" font-size="26">👨‍🍳</text><text x="35" y="0" font-size="26">👩‍🍳</text><text x="70" y="0" font-size="26">👨‍🍳</text><text x="105" y="0" font-size="26">👩‍🍳</text><text x="140" y="0" font-size="26">👨‍🍳</text></g><path d="M 80 90 L 150 120 M 115 90 L 150 120 M 180 90 L 160 120" stroke="#ef4444" stroke-width="2" stroke-dasharray="4,4"/><text x="160" y="40" font-size="24" text-anchor="middle">💥 Collision!</text><text x="160" y="168" text-anchor="middle" font-size="11" fill="#ef4444" font-weight="bold">Resource Contention (Shared Lock)</text></svg>`
+      },
+      {
+        scene: 3,
+        title: "4 Cook Stations & Pipeline",
+        avatar: "🚀",
+        tag: "Multi-Core & Pipeline",
+        caption: "The engineer installs 4 separate stations and an assembly line. Pancakes now flow out 3x faster in organized parallel streams!",
+        concept: "Multi-core architecture with independent execution pipelines and private L1 caches.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(20, 40)"><rect x="0" y="0" width="60" height="50" rx="6" fill="#1e293b" stroke="#38bdf8"/><text x="30" y="32" font-size="20" text-anchor="middle">👨‍🍳</text><rect x="75" y="0" width="60" height="50" rx="6" fill="#1e293b" stroke="#38bdf8"/><text x="105" y="32" font-size="20" text-anchor="middle">👩‍🍳</text><rect x="150" y="0" width="60" height="50" rx="6" fill="#1e293b" stroke="#38bdf8"/><text x="180" y="32" font-size="20" text-anchor="middle">👨‍🍳</text><rect x="225" y="0" width="60" height="50" rx="6" fill="#1e293b" stroke="#38bdf8"/><text x="255" y="32" font-size="20" text-anchor="middle">👩‍🍳</text></g><path d="M 30 110 L 290 110" stroke="#22c55e" stroke-width="4"/><text x="160" y="140" font-size="22" text-anchor="middle">🥞 🥞 🥞 🥞</text><text x="160" y="165" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Parallel Pipeline Throughput (3x Speedup)</text></svg>`
+      },
+      {
+        scene: 4,
+        title: "Overwhelmed Dishwasher",
+        avatar: "🧼",
+        tag: "Memory Wall",
+        caption: "Cooks make pancakes fast, but the single dishwasher can't clean plates quick enough! A new bottleneck appears.",
+        concept: "Memory Bandwidth Wall: CPU compute speed exceeds DRAM data supply rate.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(40, 50)"><rect x="0" y="0" width="100" height="80" rx="8" fill="#1e293b" stroke="#22c55e"/><text x="50" y="45" font-size="14" fill="#22c55e" font-weight="bold" text-anchor="middle">Fast Cooks</text></g><path d="M 140 90 L 190 90" stroke="#ef4444" stroke-width="4"/><g transform="translate(190, 50)"><rect x="0" y="0" width="90" height="80" rx="8" fill="#1e293b" stroke="#ef4444"/><text x="45" y="35" font-size="22" text-anchor="middle">🧼</text><text x="45" y="65" font-size="11" fill="#ef4444" font-weight="bold" text-anchor="middle">Slow Washer</text></g><text x="160" y="160" text-anchor="middle" font-size="11" fill="#f59e0b" font-weight="bold">DRAM Memory Bandwidth Bottleneck</text></svg>`
+      }
+    ],
     storyQuestions: [
       'Why did adding more cooks without more stoves make things worse?',
       'What was the real bottleneck after the stoves were added?',
@@ -91,6 +129,44 @@ export const unit1Topics = [
     dependencies: ['Memory Hierarchy (Topic 3) explains how data moves within each architecture class', 'Speedup Laws (Topic 4) quantify the performance of different classifications', 'OpenMP (Unit 2) targets shared-memory MIMD systems', 'MPI (Unit 2) targets distributed-memory MIMD systems'],
     preparationPlan: 'Review the instruction cycle, distinguish between data and instruction streams, and sketch a simple block diagram of a single-core processor before classifying multi-core variants.',
     story: 'Imagine a highway system with four distinct intersections. Intersection A has one lane going one direction, one car at a time — predictable, orderly, but painfully slow during rush hour. This is the original von Neumann design: one instruction stream, one data stream. Intersection B is a highway with six lanes but a single traffic light controlling all of them. Every car must move in the exact same direction at the exact same time. If one car needs to turn left, every other lane stops. This is SIMD: one instruction applied to many data points simultaneously. Fantastic for identical operations, useless when cars need different destinations. Intersection C is a roundabout with a guard who lets cars enter only when the road ahead is completely clear. No car can move unless the path is guaranteed free. This resembles MISD: multiple instruction streams attempting to control one data pipeline. Rare, expensive, and mostly found in safety-critical flight controllers. Intersection D is a modern multi-lane interchange where each car follows its own GPS route at its own speed. One car might head to the beach, another to the mountains, another to the grocery store. Traffic lights coordinate major intersections, but individual cars make independent choices. This is MIMD: multiple instruction streams on multiple data streams simultaneously. Now imagine the highway engineer is asked: \\\"Which intersection design handles a snowstorm best?\\\" The answer depends on whether all cars need the same destination (SIMD wins) or different ones (MIMD wins). The engineer also discovers that some intersections have excellent roads but poor signage (fast CPU, slow memory), while others have wide roads but few lanes (big memory, few cores). The choice of intersection design is not just about speed — it is about matching the traffic pattern to the infrastructure.',
+    cartoonPanels: [
+      {
+        scene: 1,
+        title: "1-Lane Highway (SISD)",
+        avatar: "🚗",
+        tag: "SISD Class",
+        caption: "One lane, one traffic light, one car at a time. Orderly and simple, but backs up during rush hour.",
+        concept: "SISD: Single Instruction stream, Single Data stream (Classic Von Neumann CPU).",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="20" y="70" width="280" height="40" fill="#334155"/><line x1="20" y1="90" x2="300" y2="90" stroke="#f59e0b" stroke-width="2" stroke-dasharray="8,6"/><text x="80" y="96" font-size="24">🚗</text><circle cx="260" cy="50" r="12" fill="#ef4444"/><text x="160" y="145" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">SISD: 1 Instruction / 1 Data Item</text></svg>`
+      },
+      {
+        scene: 2,
+        title: "16-Lane Convoy (SIMD)",
+        avatar: "🚌",
+        tag: "SIMD Vector/GPU",
+        caption: "16 parallel lanes controlled by 1 master traffic light. All 16 vehicles accelerate together in perfect sync!",
+        concept: "SIMD: Single Instruction stream broadcast to Multiple Data lanes (GPUs & Vector CPUs).",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(20, 20)"><rect x="0" y="0" width="280" height="120" rx="8" fill="#1e293b" stroke="#38bdf8"/><g font-size="16"><text x="25" y="25">🚗</text><text x="90" y="25">🚗</text><text x="155" y="25">🚗</text><text x="220" y="25">🚗</text><text x="25" y="53">🚗</text><text x="90" y="53">🚗</text><text x="155" y="53">🚗</text><text x="220" y="53">🚗</text><text x="25" y="81">🚗</text><text x="90" y="81">🚗</text><text x="155" y="81">🚗</text><text x="220" y="81">🚗</text><text x="25" y="109">🚗</text><text x="90" y="109">🚗</text><text x="155" y="109">🚗</text><text x="220" y="109">🚗</text></g></g><text x="160" y="165" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">SIMD: 1 Master Control -> 16 Parallel Lanes</text></svg>`
+      },
+      {
+        scene: 3,
+        title: "3 Security Guards (MISD)",
+        avatar: "✈️",
+        tag: "MISD Fault-Tolerant",
+        caption: "3 independent security guards inspect the exact same car to guarantee 100% safety before takeoff.",
+        concept: "MISD: Multiple Instruction streams process Single Data stream (Space Shuttle flight computers).",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="120" y="60" width="80" height="50" rx="8" fill="#334155"/><text x="160" y="92" font-size="24" text-anchor="middle">🛩️</text><text x="60" y="50" font-size="22">👮‍♂️</text><text x="60" y="90" font-size="22">👮‍♀️</text><text x="60" y="130" font-size="22">👮‍♂️</text><path d="M 90 45 L 120 70 M 90 85 L 120 85 M 90 125 L 120 100" stroke="#38bdf8" stroke-width="2"/><text x="160" y="155" text-anchor="middle" font-size="11" fill="#f59e0b" font-weight="bold">MISD: 3 Instructions -> 1 Shared Target</text></svg>`
+      },
+      {
+        scene: 4,
+        title: "Multi-Lane Interchange (MIMD)",
+        avatar: "🏎️",
+        tag: "MIMD Multi-Core",
+        caption: "Multi-lane cloverleaf interchange where every driver follows their own GPS route independently.",
+        concept: "MIMD: Multiple Instruction streams operate on Multiple Data streams (Multi-core CPUs & Clusters).",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><path d="M 40 40 Q 160 160 280 40 M 40 140 Q 160 20 280 140" stroke="#475569" stroke-width="20" fill="none"/><text x="60" y="50" font-size="20">🏎️</text><text x="240" y="50" font-size="20">🚙</text><text x="60" y="140" font-size="20">🚚</text><text x="240" y="140" font-size="20">🚕</text><text x="160" y="168" text-anchor="middle" font-size="11" fill="#ec4899" font-weight="bold">MIMD: Independent Execution Across Cores</text></svg>`
+      }
+    ],
     storyQuestions: [
       'Why does SIMD work brilliantly when all cars go to the same place but fail when they diverge?',
       'What happens at Intersection D if one car breaks down in the middle of the roundabout?',
@@ -175,6 +251,44 @@ export const unit1Topics = [
     dependencies: ['Speedup Laws (Topic 4) quantify the impact of memory latency', 'GPU Architecture (Unit 3) depends on understanding coalesced memory access', 'Cache-aware algorithm design is essential for all parallel programming'],
     preparationPlan: 'Review the difference between registers, cache, RAM, and disk. Sketch a simple cache mapping diagram and refresh the concept of spatial and temporal locality.',
     story: 'You live in a tiny studio apartment. Your kitchen counter is tiny — it fits exactly one cutting board, one knife, and one bowl. This counter is your register: blazing fast, but room for almost nothing. Next to the counter is a small shelf that holds your ten most-used spices. This is your L1 cache: fast to reach, small capacity. Down the hall is a pantry with fifty jars. This is your L2 cache: a bit slower to walk to, but more spacious. Across the street is a grocery store with ten thousand products. This is your RAM: much larger, but you must leave the building to get anything. And somewhere in another city is a warehouse with millions of items. This is your SSD or hard drive: enormous capacity, glacial access time. Now suppose you are cooking a complicated recipe that needs seventeen different ingredients. If all seventeen are on the counter, you cook in five minutes. If you must walk to the shelf ten times, add ten minutes. If you must cross to the store five times, add thirty minutes. If you must drive to the warehouse twice, your dinner is tomorrow. A clever chef looks at the recipe first, gathers all seventeen ingredients before starting, and arranges them on the counter in the order they will be used. That is cache optimization: prefetch data you will need, arrange it in memory so spatial locality helps you, and minimize trips to slow storage. Now imagine ten chefs sharing the same kitchen. Chef A moves the salt to the counter. Chef B does not know and adds extra salt from the pantry. Chef C puts the salt back in the pantry while Chef A is still using it. This chaos is cache coherence: when multiple processors share memory, they must agree on where the latest version of every data item lives. The hardware coherence protocol (MESI, MOESI) is like a kitchen rule book that tracks which chef has which ingredient and whether it has been modified.',
+    cartoonPanels: [
+      {
+        scene: 1,
+        title: "The Tiny Counter (Registers)",
+        avatar: "🔪",
+        tag: "Registers",
+        caption: "Cutting board right under your knife! Extremely fast (1 cycle), but holds only 1 ingredient at a time.",
+        concept: "CPU Registers: Fastest storage element (~0.5 ns), very small capacity (a few dozen registers).",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="110" y="60" width="100" height="60" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="160" y="98" font-size="28" text-anchor="middle">🔪🥕</text><text x="160" y="45" font-size="12" fill="#38bdf8" font-weight="bold" text-anchor="middle">Counter (Registers)</text><text x="160" y="150" font-size="11" fill="#22c55e" text-anchor="middle">Latency: 1 Cycle (~0.5 ns)</text></svg>`
+      },
+      {
+        scene: 2,
+        title: "Shelf vs. Supermarket (L1 vs RAM)",
+        avatar: "🧂",
+        tag: "Memory Gap",
+        caption: "Reaching the spice shelf (L1) takes 5 seconds; driving to the warehouse (DRAM) takes 30 minutes!",
+        concept: "L1 Cache (~1 ns) vs DRAM Main Memory (~100 ns latency gap).",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(30, 40)"><rect x="0" y="0" width="80" height="70" rx="6" fill="#1e293b" stroke="#22c55e"/><text x="40" y="40" font-size="24" text-anchor="middle">🧂</text><text x="40" y="62" font-size="10" fill="#22c55e" text-anchor="middle">L1 (1 ns)</text></g><g transform="translate(200, 40)"><rect x="0" y="0" width="90" height="70" rx="6" fill="#1e293b" stroke="#ef4444"/><text x="45" y="40" font-size="24" text-anchor="middle">🏬</text><text x="45" y="62" font-size="10" fill="#ef4444" text-anchor="middle">DRAM (100 ns)</text></g><path d="M 115 75 L 195 75" stroke="#f59e0b" stroke-width="3" stroke-dasharray="4,4"/><text x="155" y="65" font-size="16">🚗</text><text x="160" y="150" font-size="11" fill="#f59e0b" font-weight="bold" text-anchor="middle">100x Memory Latency Penalty!</text></svg>`
+      },
+      {
+        scene: 3,
+        title: "3 Chefs & Stale Salt (MESI Protocol)",
+        avatar: "🍳",
+        tag: "MESI Protocol",
+        caption: "Chef A moves the salt to modified [M], Chef B gets invalid [I] state and must fetch the latest copy!",
+        concept: "Cache Coherence: MESI protocol invalidates stale cache lines across multi-core CPUs.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(30, 40)"><text x="30" y="30" font-size="24">👨‍🍳</text><rect x="0" y="40" width="60" height="30" rx="4" fill="#22c55e"/><text x="30" y="60" fill="white" font-size="11" font-weight="bold" text-anchor="middle">[M] Core 0</text></g><g transform="translate(230, 40)"><text x="30" y="30" font-size="24">👩‍🍳</text><rect x="0" y="40" width="60" height="30" rx="4" fill="#ef4444"/><text x="30" y="60" fill="white" font-size="11" font-weight="bold" text-anchor="middle">[I] Core 1</text></g><path d="M 100 65 L 220 65" stroke="#ef4444" stroke-width="3" stroke-dasharray="4"/><text x="160" y="55" font-size="11" fill="#ef4444" text-anchor="middle">Invalidate Line!</text><text x="160" y="150" font-size="11" fill="#38bdf8" font-weight="bold" text-anchor="middle">MESI Hardware Coherence Enforcement</text></svg>`
+      },
+      {
+        scene: 4,
+        title: "False Sharing Elbow Bouncing",
+        avatar: "💥",
+        tag: "False Sharing",
+        caption: "Chefs use different spices, but because they sit on 1 shared tray, the tray keeps bouncing between chefs!",
+        concept: "False Sharing: Independent variables sharing a 64-byte line trigger continuous cache line invalidations.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="60" y="70" width="200" height="40" rx="6" fill="#1e293b" stroke="#ec4899" stroke-width="3"/><text x="100" y="96" font-size="20">🧂</text><text x="220" y="96" font-size="20">🌶️</text><text x="30" y="95" font-size="22">👨‍🍳</text><text x="280" y="95" font-size="22">👩‍🍳</text><text x="160" y="50" font-size="16" text-anchor="middle">⚡ 64-Byte Cache Line ⚡</text><text x="160" y="150" font-size="11" fill="#ec4899" font-weight="bold" text-anchor="middle">False Sharing Causes Line Bouncing</text></svg>`
+      }
+    ],
     storyQuestions: [
       'Why does walking to the grocery store mid-recipe ruin your cooking time?',
       'How would you reorganize the recipe to minimize trips to the pantry?',
@@ -259,6 +373,44 @@ export const unit1Topics = [
     dependencies: ['OpenMP (Unit 2) uses these laws to evaluate thread scaling', 'MPI (Unit 2) applies these laws across distributed nodes', 'GPU occupancy (Unit 3) extends these models to accelerators', 'All performance evaluation in the course builds on these laws'],
     preparationPlan: 'Review the Amdahl preview from Topic 1, compute a few examples by hand, and read about strong vs weak scaling before class.',
     story: 'You are the manager of a moving company. A client needs to move 12 boxes from an apartment to a truck. The truck is parked 50 meters away. One mover carries one box at a time: 12 trips x 50 meters = 600 meters of walking. Total time: 24 minutes. You hire a second mover. Now they can carry two boxes simultaneously. Great, right? Except they both need to fit through one narrow hallway, one staircase, and one doorway. They spend more time waiting for each other than carrying. The second mover only saves 4 minutes. You add a third mover. Now they are tripping over each other in the hallway. Time saved: 2 minutes. A fourth mover: 1 minute. A fifth: basically nothing, and someone sprains an ankle. The lesson? The hallway, staircase, and doorway are the serial bottleneck. No amount of movers can walk through a single doorway faster than one person. Now suppose the client has ten apartments in the same building. You assign one mover per apartment. Each mover works independently in their own apartment. Now ten movers all carry simultaneously with almost no interference. The hallway is shared only for loading the truck, which is a small fraction of total work. This is weak scaling: when you increase the problem size proportionally with the number of workers, speedup stays nearly linear. The moving company has discovered two fundamental laws. Amdahl\\\'s Law: for a fixed problem, the serial fraction limits speedup. Gustafson\\\'s Law: when you increase the problem size with the workers, you can maintain efficiency. The moving company\\\'s next challenge: a client with 1000 boxes and 10 narrow staircases. How do you partition the work to maximize throughput? You assign 10 movers, each handling 100 boxes in a different stairwell. Each mover\\\'s serial fraction (waiting at the staircase) is small relative to their carrying work. The company now has a scalability model: measure the serial fraction, predict the speedup curve, and choose the right number of movers for each building.',
+    cartoonPanels: [
+      {
+        scene: 1,
+        title: "4 Movers Jammed in 1 Doorway",
+        avatar: "📦",
+        tag: "Amdahl's Law",
+        caption: "4 movers hired to carry 12 boxes, but only 1 mover fits through the narrow apartment doorway at a time!",
+        concept: "Strong Scaling (Amdahl's Law): Fixed problem size N. Serial bottleneck limits speedup ceiling to 1/(1-f).",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="140" y="40" width="20" height="90" fill="#ef4444"/><text x="120" y="85" font-size="22">📦👷</text><text x="80" y="85" font-size="22">👷</text><text x="40" y="85" font-size="22">👷</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#ef4444" font-weight="bold">Amdahl Ceiling: Doorway Serial Bottleneck</text></svg>`
+      },
+      {
+        scene: 2,
+        title: "10 Movers in 10 Stairwells",
+        avatar: "🏢",
+        tag: "Gustafson's Law",
+        caption: "10 movers assigned to 10 separate stairwells simultaneously. Scaling boxes with workers maintains near-linear speedup!",
+        concept: "Weak Scaling (Gustafson's Law): Scaling problem size with processor count keeps parallel efficiency high.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(30, 40)"><g font-size="18"><text x="0" y="25">🏢📦👷</text><text x="55" y="25">🏢📦👷</text><text x="110" y="25">🏢📦👷</text><text x="165" y="25">🏢📦👷</text><text x="220" y="25">🏢📦👷</text><text x="0" y="65">🏢📦👷</text><text x="55" y="65">🏢📦👷</text><text x="110" y="65">🏢📦👷</text><text x="165" y="65">🏢📦👷</text><text x="220" y="65">🏢📦👷</text></g></g><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Gustafson Weak Scaling: Linear Speedup</text></svg>`
+      },
+      {
+        scene: 3,
+        title: "100 Movers for 12 Boxes",
+        avatar: "📉",
+        tag: "Diminishing Returns",
+        caption: "Hiring 100 movers for 12 boxes saves 1 extra second, but 90 movers sit on the lawn drinking soda!",
+        concept: "Diminishing Returns (E = S/P): Adding processors beyond the serial fraction limit wastes hardware & energy.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><path d="M 40 130 Q 160 40 280 40" stroke="#f59e0b" stroke-width="3" fill="none"/><circle cx="280" cy="40" r="6" fill="#ef4444"/><text x="210" y="60" font-size="11" fill="#ef4444" font-weight="bold">Efficiency Drops!</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#f59e0b" font-weight="bold">Diminishing Returns Beyond Optimal P</text></svg>`
+      },
+      {
+        scene: 4,
+        title: "Iso-Efficiency Fleet Balancing",
+        avatar: "⚖️",
+        tag: "Iso-Efficiency",
+        caption: "The smart manager scales the mover count proportionally with the building size to guarantee constant 80% efficiency.",
+        concept: "Iso-Efficiency Function: Dictates how fast problem size must grow relative to processor count.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="80" y="50" width="160" height="70" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="160" y="85" font-size="20" text-anchor="middle">📊 E = 80%</text><text x="160" y="105" font-size="11" fill="#38bdf8" text-anchor="middle">Iso-Efficiency Model</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">Optimal Problem-to-Processor Ratio</text></svg>`
+      }
+    ],
     storyQuestions: [
       'Why did the fourth mover save almost no time for the single apartment move?',
       'What changed when you moved to ten apartments that made ten movers effective?',
@@ -359,6 +511,44 @@ export const unit1Topics = [
     dependencies: ['OpenMP and MPI (Unit 2) run on these cluster architectures', 'GPU computing (Unit 3) extends cluster nodes with accelerators', 'Quantum computing (Unit 4) will eventually hybridize with classical clusters'],
     preparationPlan: 'Visit top500.org and green500.org, browse the current rankings, and note the hardware specs of the top 10 systems. Familiarize yourself with terms like LINPACK, HPL, and HPCG benchmarks.',
     story: 'You are the head chef at a global cooking competition. The judges will rank every restaurant in the world based on two scores. Score one is \\\"How many meals can you prepare in one hour?\\\" Score two is \\\"How many meals per unit of electricity?\\\" A massive industrial kitchen with fifty ovens, twenty dishwashers, and a staff of two hundred can crank out ten thousand meals an hour. Impressive? Absolutely. But the electricity bill is the GDP of a small country, and the judges deduct points for energy waste. A tiny kitchen with five ovens and ten cooks produces only five hundred meals an hour, but runs on a single solar panel. On the energy-efficiency ranking, the tiny kitchen wins. Now the competition introduces a twist: the judges don\\\'t just measure how many meals you cook when everything goes perfectly. They measure how quickly you can solve a specific recipe that requires coordinating all fifty ovens simultaneously, with ingredients arriving from five different suppliers on strict schedules. This is the HPCG benchmark: it tests real-world coordination, not just raw throughput. The industrial kitchen discovers that while it can cook ten thousand simple meals per hour, the coordinated recipe requires all the ovens to synchronize their temperatures, the dishwashers to share water at precise intervals, and the suppliers to deliver in exact sequence. The kitchen\\\'s real throughput for the complex recipe drops to three thousand meals per hour — still impressive, but revealing that raw power is not the same as coordinated performance. The judges also notice that the industrial kitchen produces ten times the food waste of smaller kitchens. They add a \\\"waste per meal\\\" metric. This is the concept behind the Green500: energy per useful computation, not just computation per second. The global competition has another level: teams must submit their kitchen design — floor plan, equipment list, cooling system, power distribution — for other teams to study. This is the HPC challenge: not just how fast you cook, but how intelligently you designed the kitchen.',
+    cartoonPanels: [
+      {
+        scene: 1,
+        title: "50 Industrial Ovens (TOP500)",
+        avatar: "🏆",
+        tag: "TOP500 Rmax",
+        caption: "50 commercial ovens cranking out 10,000 meals/hour! Enormous cooking speed, but the electric meter is smoking.",
+        concept: "TOP500 List & LINPACK (Rmax): Measures raw floating-point throughput solving dense Ax=b.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(30, 40)"><g font-size="22"><text x="0" y="20">🎛️</text><text x="65" y="20">🎛️</text><text x="130" y="20">🎛️</text><text x="195" y="20">🎛️</text><text x="0" y="45">🎛️</text><text x="65" y="45">🎛️</text><text x="130" y="45">🎛️</text><text x="195" y="45">🎛️</text><text x="0" y="70">🎛️</text><text x="65" y="70">🎛️</text><text x="130" y="70">🎛️</text><text x="195" y="70">🎛️</text><text x="0" y="95">🎛️</text><text x="65" y="95">🎛️</text><text x="130" y="95">🎛️</text><text x="195" y="95">🎛️</text></g></g><text x="160" y="155" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">TOP500: Raw LINPACK Performance (Rmax)</text></svg>`
+      },
+      {
+        scene: 2,
+        title: "Solar Bistro (Green500)",
+        avatar: "🌿",
+        tag: "Green500 GFLOPS/W",
+        caption: "Only 500 meals/hour, but runs on 1 solar panel! Wins 1st place in energy efficiency.",
+        concept: "Green500 List: Measures computational efficiency in GFLOPS per Watt of electrical power.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="60" y="50" width="80" height="60" rx="8" fill="#1e293b" stroke="#22c55e"/><text x="100" y="88" font-size="26" text-anchor="middle">☀️</text><text x="210" y="88" font-size="26" text-anchor="middle">🌱</text><path d="M 140 80 L 180 80" stroke="#22c55e" stroke-width="3"/><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Green500: Energy Efficiency (GFLOPS/Watt)</text></svg>`
+      },
+      {
+        scene: 3,
+        title: "Coordinated Recipe Test (HPCG)",
+        avatar: "🍲",
+        tag: "HPCG Benchmark",
+        caption: "Simple meals were easy, but the complex multi-course recipe causes oven synchronization traffic jams!",
+        concept: "HPCG Benchmark: Tests real-world sparse matrix memory bandwidth & interconnect latency.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(60, 40)"><rect x="0" y="0" width="200" height="70" rx="8" fill="#1e293b" stroke="#f59e0b"/><text x="100" y="42" font-size="24" text-anchor="middle">🍲🔄🍲</text></g><text x="160" y="155" text-anchor="middle" font-size="11" fill="#f59e0b" font-weight="bold">HPCG: Sparse Memory Bandwidth & Latency</text></svg>`
+      },
+      {
+        scene: 4,
+        title: "Liquid Cooling Pipes (Low PUE)",
+        avatar: "❄️",
+        tag: "Cooling PUE",
+        caption: "Cold water pipes wrapped directly around ovens eliminate noisy room fans, dropping PUE overhead to 1.05!",
+        concept: "Direct-to-Chip Liquid Cooling: Lowers Power Usage Effectiveness (PUE) towards ideal 1.0.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="100" y="50" width="120" height="60" rx="8" fill="#1e293b" stroke="#06b6d4" stroke-width="3"/><path d="M 60 80 L 260 80" stroke="#06b6d4" stroke-width="6" stroke-linecap="round"/><text x="160" y="85" font-size="22" text-anchor="middle">❄️ PUE = 1.05</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#06b6d4" font-weight="bold">Direct Liquid Cooling Minimizes Overhead</text></svg>`
+      }
+    ],
     storyQuestions: [
       'Why does a kitchen that excels at simple meals struggle with a complex coordinated recipe?',
       'What is the difference between raw cooking speed and energy-efficient cooking speed?',

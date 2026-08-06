@@ -41,11 +41,67 @@ function renderSection1(t, unitId, topicId) {
 }
 
 function renderSection2(t) {
-  return `<section class="lesson-section story-section"><div class="section-heading"><div><div class="eyebrow">Section 2</div><h2>A story before the terminology</h2></div><p>Remember the idea before the label.</p></div>
-  <div class="story-container"><p class="story-lead">${esc(t.story)}</p></div>
-  <div class="story-questions"><h4>Reflect on the story</h4><div class="checklist">${t.storyQuestions.map((q) => `<div class="story-q"><span class="story-q-icon">?</span><span>${esc(q)}</span></div>`).join('')}</div></div>
-  <div class="callout"><strong>What did we just learn?</strong> ${esc(t.storyBridge)}</div>
-  <details><summary>Technical vocabulary</summary>${list(t.terminology)}</details></section>`;
+  const panels = t.cartoonPanels || [];
+  
+  const storyboardHtml = panels.length ? `
+    <div class="cartoon-storyboard-container" data-storyboard>
+      <div class="storyboard-header">
+        <div class="storyboard-badge">🎨 Cartoon Storyboard</div>
+        <h3>Visual Story Narration</h3>
+        <p>Follow the cartoon story panels below to easily narrate and visualize the core architectural concept before diving into terminology.</p>
+      </div>
+      
+      <div class="cartoon-panels-grid">
+        ${panels.map((p) => `
+          <div class="cartoon-panel-card" data-scene="${p.scene}">
+            <div class="cartoon-card-header">
+              <span class="scene-num">Scene ${p.scene}</span>
+              <span class="scene-avatar">${p.avatar}</span>
+              <span class="scene-tag">${esc(p.tag)}</span>
+            </div>
+            <div class="cartoon-visual-box">
+              ${p.svg}
+            </div>
+            <div class="cartoon-card-body">
+              <h4 class="scene-title">${esc(p.title)}</h4>
+              <p class="scene-caption">${esc(p.caption)}</p>
+              <div class="scene-concept">
+                <strong>⚙️ HPC Concept:</strong> ${esc(p.concept)}
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      
+      <details class="text-story-accordion">
+        <summary>📖 Read Full Text Story Narrative</summary>
+        <div class="story-container" style="margin-top:0.75rem;"><p class="story-lead">${esc(t.story)}</p></div>
+      </details>
+    </div>
+  ` : `
+    <div class="story-container"><p class="story-lead">${esc(t.story)}</p></div>
+  `;
+
+  return `<section class="lesson-section story-section">
+    <div class="section-heading">
+      <div>
+        <div class="eyebrow">Section 2</div>
+        <h2>A Story Before the Terminology</h2>
+      </div>
+      <p>Remember the visual cartoon story before the formal label.</p>
+    </div>
+    
+    ${storyboardHtml}
+    
+    <div class="story-questions">
+      <h4>Reflect on the Story</h4>
+      <div class="checklist">
+        ${(t.storyQuestions || []).map((q) => `<div class="story-q"><span class="story-q-icon">?</span><span>${esc(q)}</span></div>`).join('')}
+      </div>
+    </div>
+    <div class="callout"><strong>What did we just learn?</strong> ${esc(t.storyBridge)}</div>
+    <details><summary>Technical vocabulary</summary>${list(t.terminology)}</details>
+  </section>`;
 }
 
 function renderInteractiveDiagram(unitId, topicId) {
