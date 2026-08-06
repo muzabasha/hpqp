@@ -423,181 +423,309 @@ route(/^\/lab\/(.+)$/, standaloneLabPage);
 route(/^\/lab$/, (path, app) => standaloneLabPage('/lab/hpc-throughput', app));
 route(/^.*$/, notFound);
 
+// Performance: Throttle helper for high-frequency events (like input/scroll)
+function throttle(func, limit) {
+  let inThrottle;
+  return function(...args) {
+    if (!inThrottle) {
+      func.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  };
+}
+
+// Performance: Debounce helper for expensive operations
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+// Performance: Request animation frame wrapper
+function scheduleUpdate(fn) {
+  requestAnimationFrame(() => {
+    fn();
+  });
+}
+
 // Event Listeners for Theme, Progress, Virtual Labs, Projects, & Questions Filter
+// Optimized to prevent UI blocking
 document.addEventListener('click', (e) => {
+  // Early return if no relevant target
+  if (!e.target) return;
+  
+  // Use event delegation efficiently - check specific areas first
   const action = e.target.closest('[data-action]');
   if (action) {
-    if (action.dataset.action === 'toggle-theme') {
-      state.theme = state.theme === 'dark' ? 'light' : 'dark';
-      document.documentElement.dataset.theme = state.theme;
-      save();
-    }
-    if (action.dataset.action === 'toggle-presentation') {
-      const isPresentationMode = document.body.classList.toggle('presentation-mode');
-      document.documentElement.dataset.presentation = isPresentationMode;
+    e.preventDefault(); // Prevent default early
+    
+    const actionType = action.dataset.action;
+    
+    // Fast paths for common actions
+    switch(actionType) {
+      case 'toggle-theme':
+        state.theme = state.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = state.theme;
+        save();
+        return;
       
-      // Store presentation mode preference
-      state.presentationMode = isPresentationMode;
-      save();
+      case 'mark-topic':
+        const topicKey = `topic-${action.dataset.topic}`;
+        if (!state.completed.includes(topicKey)) state.completed.push(topicKey);
+        save();
+        toast('Topic added to your progress.');
+        return;
       
-      // Show toast notification
-      toast(isPresentationMode ? 'Presentation Mode Enabled - Press F to toggle' : 'Presentation Mode Disabled');
+      case 'mark-lab':
+        const labKey = `lab-${action.dataset.lab}`;
+        if (!state.completed.includes(labKey)) state.completed.push(labKey);
+        save();
+        toast('Lab progress saved on this device.');
+        return;
       
-      // Scroll to top for better view
-      if (isPresentationMode) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    }
-    if (action.dataset.action === 'mark-topic') {
-      const key = `topic-${action.dataset.topic}`;
-      if (!state.completed.includes(key)) state.completed.push(key);
-      save();
-      toast('Topic added to your progress.');
-    }
-    if (action.dataset.action === 'mark-lab') {
-      const key = `lab-${action.dataset.lab}`;
-      if (!state.completed.includes(key)) state.completed.push(key);
-      save();
-      toast('Lab progress saved on this device.');
-    }
-    if (action.dataset.action === 'reset-circuit') updateQuantum('reset');
-    if (action.dataset.action === 'toggle-ux-modal') {
-      const modal = document.getElementById('ux-modal');
-      if (modal) {
-        const isHidden = modal.getAttribute('aria-hidden') === 'true';
-        modal.setAttribute('aria-hidden', String(!isHidden));
-        modal.classList.toggle('open');
-      }
-    }
-    if (action.dataset.action === 'retest-ux') {
-      toast('Running live UI/UX audit... 100% WCAG AAA Compliant!');
-      const gauge = document.querySelector('[data-ux-gauge]');
-      const display = document.querySelector('[data-ux-score-display]');
-      if (gauge && display) {
-        gauge.style.strokeDashoffset = '0';
-        display.textContent = '100';
-      }
+      case 'toggle-presentation':
+        scheduleUpdate(() => {
+          const isPresentationMode = document.body.classList.toggle('presentation-mode');
+          document.documentElement.dataset.presentation = isPresentationMode;
+          state.presentationMode = isPresentationMode;
+          save();
+          toast(isPresentationMode ? 'Presentation Mode Enabled - Press F to toggle' : 'Presentation Mode Disabled');
+          if (isPresentationMode) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        });
+        return;
+      
+      case 'reset-circuit':
+        scheduleUpdate(() => updateQuantum('reset'));
+        return;
+      
+      case 'toggle-ux-modal':
+        scheduleUpdate(() => {
+          const modal = document.getElementById('ux-modal');
+          if (modal) {
+            const isHidden = modal.getAttribute('aria-hidden') === 'true';
+            modal.setAttribute('aria-hidden', String(!isHidden));
+            modal.classList.toggle('open');
+          }
+        });
+        return;
+      
+      case 'retest-ux':
+        scheduleUpdate(() => {
+          toast('Running live UI/UX audit... 100% WCAG AAA Compliant!');
+          const gauge = document.querySelector('[data-ux-gauge]');
+          const display = document.querySelector('[data-ux-score-display]');
+          if (gauge && display) {
+            gauge.style.strokeDashoffset = '0';
+            display.textContent = '100';
+          }
+        });
+        return;
+      
+      case 'toggle-hint':
+        scheduleUpdate(() => {
+          const hintEl = document.querySelector('[data-challenge-hint]');
+          if (hintEl) {
+            const isVisible = hintEl.style.display !== 'none';
+            hintEl.style.display = isVisible ? 'none' : 'block';
+            e.target.textContent = isVisible ? 'Show Hint' : 'Hide Hint';
+          }
+        });
+        return;
+      
+      case 'toggle-compare':
+        scheduleUpdate(() => handleCompareMode());
+        return;
     }
   }
 
-  // Project Unit Filters
+  // Project Unit Filters - defer rendering
   const projBtn = e.target.closest('[data-project-unit]');
   if (projBtn) {
-    const main = document.getElementById('app');
-    if (main) main.innerHTML = renderProjectsView(projBtn.dataset.projectUnit);
+    scheduleUpdate(() => {
+      const main = document.getElementById('app');
+      if (main) main.innerHTML = renderProjectsView(projBtn.dataset.projectUnit);
+    });
+    return;
   }
 
-  // Question Unit Filters
+  // Question Unit Filters - defer rendering
   const qBtn = e.target.closest('[data-question-unit]');
   if (qBtn) {
-    const main = document.getElementById('app');
-    if (main) main.innerHTML = renderCriticalQuestionsView(qBtn.dataset.questionUnit);
+    scheduleUpdate(() => {
+      const main = document.getElementById('app');
+      if (main) main.innerHTML = renderCriticalQuestionsView(qBtn.dataset.questionUnit);
+    });
+    return;
   }
 
   // Flynn Taxonomy Category Buttons
   const flynnBtn = e.target.closest('[data-flynn]');
   if (flynnBtn) {
-    document.querySelectorAll('[data-flynn]').forEach(b => b.classList.remove('active'));
-    flynnBtn.classList.add('active');
-    updateFlynn(flynnBtn.dataset.flynn);
+    scheduleUpdate(() => {
+      document.querySelectorAll('[data-flynn]').forEach(b => b.classList.remove('active'));
+      flynnBtn.classList.add('active');
+      updateFlynn(flynnBtn.dataset.flynn);
+    });
+    return;
   }
 
   // Sync / Mutex Sandbox Buttons
   const syncBtn = e.target.closest('[data-sync-mode]');
   if (syncBtn) {
-    document.querySelectorAll('[data-sync-mode]').forEach(b => b.classList.remove('active'));
-    syncBtn.classList.add('active');
-    updateSync(syncBtn.dataset.syncMode);
+    scheduleUpdate(() => {
+      document.querySelectorAll('[data-sync-mode]').forEach(b => b.classList.remove('active'));
+      syncBtn.classList.add('active');
+      updateSync(syncBtn.dataset.syncMode);
+    });
+    return;
   }
 
   // Quantum Gate Buttons
   const gateBtn = e.target.closest('[data-gate]');
-  if (gateBtn) updateQuantum(gateBtn.dataset.gate);
+  if (gateBtn) {
+    scheduleUpdate(() => updateQuantum(gateBtn.dataset.gate));
+    return;
+  }
 
   // Interactive Diagram Controls
   const diagramAction = e.target.closest('[data-diagram-action]');
-  if (diagramAction) handleDiagramAction(diagramAction.dataset.diagramAction, e.target.closest('[data-diagram]'));
+  if (diagramAction) {
+    scheduleUpdate(() => {
+      handleDiagramAction(diagramAction.dataset.diagramAction, e.target.closest('[data-diagram]'));
+    });
+    return;
+  }
 
   const flynnSelect = e.target.closest('[data-flynn-select]');
-  if (flynnSelect) handleFlynnSelect(flynnSelect.dataset.flynnSelect);
+  if (flynnSelect) {
+    scheduleUpdate(() => handleFlynnSelect(flynnSelect.dataset.flynnSelect));
+    return;
+  }
 
   const memLayer = e.target.closest('[data-layer]');
-  if (memLayer) handleMemoryLayer(memLayer.dataset.layer);
+  if (memLayer) {
+    scheduleUpdate(() => handleMemoryLayer(memLayer.dataset.layer));
+    return;
+  }
 
   // Unit 3 Diagram Interactions
   const cudaLevel = e.target.closest('[data-cuda-level]');
-  if (cudaLevel) handleCudaLevel(cudaLevel.dataset.cudaLevel);
+  if (cudaLevel) {
+    scheduleUpdate(() => handleCudaLevel(cudaLevel.dataset.cudaLevel));
+    return;
+  }
 
   const coalescePattern = e.target.closest('[data-coalesce-pattern]');
-  if (coalescePattern) handleCoalescePattern(coalescePattern.dataset.coalescePattern);
+  if (coalescePattern) {
+    scheduleUpdate(() => handleCoalescePattern(coalescePattern.dataset.coalescePattern));
+    return;
+  }
 
   // Unit 4 Diagram Interactions
   const blochState = e.target.closest('[data-bloch-state]');
-  if (blochState) handleBlochState(blochState.dataset.blochState);
+  if (blochState) {
+    scheduleUpdate(() => handleBlochState(blochState.dataset.blochState));
+    return;
+  }
 
   // Unit 2 Diagram Interactions
   const scheduleSelect = e.target.closest('[data-schedule-select]');
-  if (scheduleSelect) handleScheduleSelect(scheduleSelect.dataset.scheduleSelect);
+  if (scheduleSelect) {
+    scheduleUpdate(() => handleScheduleSelect(scheduleSelect.dataset.scheduleSelect));
+    return;
+  }
 
   // Enhanced Lab Features
   const tutorialAction = e.target.closest('[data-tutorial-action]');
-  if (tutorialAction) handleTutorialAction(tutorialAction.dataset.tutorialAction, tutorialAction.dataset.labId);
+  if (tutorialAction) {
+    scheduleUpdate(() => {
+      handleTutorialAction(tutorialAction.dataset.tutorialAction, tutorialAction.dataset.labId);
+    });
+    return;
+  }
   
   const challengeBadge = e.target.closest('[data-challenge-badge]');
-  if (challengeBadge) toggleChallengeCard();
-
-  const hintToggle = e.target.closest('[data-action="toggle-hint"]');
-  if (hintToggle) {
-    const hintEl = document.querySelector('[data-challenge-hint]');
-    if (hintEl) {
-      const isVisible = hintEl.style.display !== 'none';
-      hintEl.style.display = isVisible ? 'none' : 'block';
-      e.target.textContent = isVisible ? 'Show Hint' : 'Hide Hint';
-    }
+  if (challengeBadge) {
+    scheduleUpdate(() => toggleChallengeCard());
+    return;
   }
-
-  const compareToggle = e.target.closest('[data-action="toggle-compare"]');
-  if (compareToggle) handleCompareMode();
 
   // Video Player Controls
   const playPauseBtn = e.target.closest('#play-pause-btn');
-  if (playPauseBtn) togglePlayPause();
+  if (playPauseBtn) {
+    togglePlayPause(); // Keep synchronous for media
+    return;
+  }
 
   const muteBtn = e.target.closest('#mute-btn');
-  if (muteBtn) toggleMute();
+  if (muteBtn) {
+    toggleMute(); // Keep synchronous for media
+    return;
+  }
 
   const fullscreenBtn = e.target.closest('#fullscreen-btn');
-  if (fullscreenBtn) toggleFullscreen();
+  if (fullscreenBtn) {
+    toggleFullscreen(); // Keep synchronous for media
+    return;
+  }
 
   // Global Lab Controls
   const speedBtn = e.target.closest('.speed-btn');
-  if (speedBtn) handleSpeedChange(speedBtn.dataset.speed);
+  if (speedBtn) {
+    handleSpeedChange(speedBtn.dataset.speed);
+    return;
+  }
 
   const controlAction = e.target.closest('.control-action-btn');
-  if (controlAction) handleLabControlAction(controlAction.dataset.action);
+  if (controlAction) {
+    scheduleUpdate(() => handleLabControlAction(controlAction.dataset.action));
+    return;
+  }
 
   // Auto-run toggle
   const autoRunToggle = e.target.closest('#auto-run-toggle');
-  if (autoRunToggle) handleAutoRunToggle(autoRunToggle.checked);
+  if (autoRunToggle) {
+    handleAutoRunToggle(autoRunToggle.checked);
+    return;
+  }
 
   // Hints toggle
   const hintsToggle = e.target.closest('#hints-toggle');
-  if (hintsToggle) handleHintsToggle(hintsToggle.checked);
+  if (hintsToggle) {
+    handleHintsToggle(hintsToggle.checked);
+    return;
+  }
 
   // Formulas toggle
   const formulasToggle = e.target.closest('#formulas-toggle');
-  if (formulasToggle) handleFormulasToggle(formulasToggle.checked);
-
-
-
+  if (formulasToggle) {
+    handleFormulasToggle(formulasToggle.checked);
+    return;
+  }
 
   const mpiOp = e.target.closest('[data-mpi-op]');
-  if (mpiOp) handleMPIOperation(mpiOp.dataset.mpiOp);
+  if (mpiOp) {
+    scheduleUpdate(() => handleMPIOperation(mpiOp.dataset.mpiOp));
+    return;
+  }
 
   const syncIssue = e.target.closest('[data-sync-issue]');
-  if (syncIssue) handleSyncIssue(syncIssue.dataset.syncIssue);
+  if (syncIssue) {
+    scheduleUpdate(() => handleSyncIssue(syncIssue.dataset.syncIssue));
+    return;
+  }
 
   const stealingAction = e.target.closest('[data-stealing-action]');
+
   if (stealingAction) handleWorkStealing(stealingAction.dataset.stealingAction);
 
   // MCQ Answer Selection
