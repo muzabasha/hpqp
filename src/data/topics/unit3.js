@@ -1,142 +1,322 @@
 export const unit3Topics = [
   {
     id: 1,
-    title: 'GPU Architecture and CUDA Basics',
-    description: 'Understand how thousands of simple cores collaborate through warps and threads to achieve massive throughput on data-parallel workloads.',
-    prerequisites: ['Unit 1: Flynn\'s Taxonomy and parallel architectures', 'Unit 1: Memory hierarchy and cache concepts', 'Unit 2: Basic threading and synchronization (OpenMP/MPI)', 'C or Python programming proficiency'],
-    dependencies: ['Memory Coalescing (Topic 2) builds on understanding of GPU memory levels', 'Profiling (Topic 3) uses GPU metrics introduced here', 'Cloud HPC (Topic 4) deploys GPU workloads on cloud accelerators', 'AI workloads depend heavily on GPU tensor cores introduced in this topic'],
-    preparationPlan: 'Review the SIMT execution model concept, read an introductory CUDA programming guide, and refresh knowledge of C pointer arithmetic and array indexing before class.',
-    story: 'Imagine it is Monday morning at Sunnybrook Elementary again, but this time the principal has hired one thousand kindergarteners to flip pancakes. There is a critical catch: every kindergartener is five years old and can only flip exactly one pancake at a time using their left hand. No exceptions. They cannot choose a different spatula. They cannot flip two pancakes. They cannot flip with their right hand. If any child reaches into the wrong ingredient jar, the entire group of twenty-five children standing at that table must stop, wait for the slowest child to finish, and then restart together. This is the GPU execution model in a nutshell. The kindergarteners are CUDA cores. The twenty-five-child groups are warps. Every child in a warp must do the exact same flip at the exact same time. If one child needs blueberries while the others need chocolate chips, all twenty-five wait until the blueberry child finishes. The principal quickly discovers a few interesting things. First, even though each child is individually slow (a GPU core has a much lower clock speed than a CPU), the sheer number of children means pancakes appear at a staggering rate — if they are all doing the same thing. Second, the principal needs a massive countertop (global memory) because no individual child has enough counter space (registers) to hold more than one pancake. Walking across the room to the countertop takes much longer than flipping (memory latency), so the principal buys a series of smaller shelves (shared memory and L1 cache) near each group of twenty-five children. The shelves hold ingredients the group needs together. Third, the principal notices that when all twenty-five children are flipping identical chocolate chip pancakes, they are blazingly fast. But when ten children need blueberry, eight need strawberry, and seven need plain, the group efficiency collapses because children are idle while waiting for the instructions to diverge and reconverge. The parent engineer from last year walks in, looks at the chaos, and says: "You have just built a GPU. The children are CUDA cores. The tables are Streaming Multiprocessors. The countertop is global memory. The shelves are shared memory. And that rule about everyone flipping the same way? That is SIMT — Single Instruction, Multiple Threads." The principal sighs: "How do I program this?" The engineer pulls out a whiteboard and writes: "First, arrange your pancakes so every child can reach the countertop in the same step. Second, keep each group working on the same recipe. Third, make sure the shelves are stocked before the children need the ingredients." The principal realizes the kitchen has incredible raw throughput, but only if the recipe is written for a thousand identical hands.',
+    title: 'GPU Architecture, First-Time Environment Setup & Your First CUDA Application',
+    description: 'A complete beginner-friendly guide to setting up your GPU development environment (Google Colab, Local Windows/Linux with NVIDIA drivers & CUDA Toolkit 12.x, nvcc), understanding the Host-Device GPU execution workflow, and developing, compiling, and running your first high-performance CUDA C/C++ application.',
+    prerequisites: [
+      'Basic C/C++ programming proficiency (variables, loops, pointers, functions, dynamic memory malloc/free)',
+      'Basic command-line / terminal navigation (cd, ls/dir, running shell commands)',
+      'Unit 1: Flynn\'s Taxonomy and parallel architectures (SIMD vs MIMD)',
+      'Unit 1: Memory hierarchy, bandwidth, and cache concepts'
+    ],
+    dependencies: [
+      'Memory Coalescing & Shared Memory (Topic 2) builds directly on understanding CUDA thread indexing and memory types',
+      'Debugging & Profiling Tools (Topic 3) uses compiler flags, runtime diagnostics, and GPU hardware metrics introduced here',
+      'Cloud HPC & GPU Containers (Topic 4) packages CUDA applications developed with nvcc into production Docker containers',
+      'Modern AI frameworks (PyTorch, TensorFlow, TensorRT) build on this fundamental CUDA Host-Device execution workflow'
+    ],
+    preparationPlan: 'Choose your environment path: (A) Zero-install Google Colab with free T4 GPU, or (B) Local workstation with NVIDIA GPU (GTX 1060 to RTX 4090). Verify terminal access and practice 1D array pointer arithmetic.',
+    story: 'Imagine walking into a massive commercial bakery as a newly hired kitchen manager. The bakery has two distinct areas: The Office (Host / CPU) where you sit with high-speed planning desk space (Host RAM), and The Factory Floor (Device / GPU) where thousands of junior bakers (CUDA Cores) stand at dozens of prep tables (Streaming Multiprocessors / SMs). The junior bakers are incredibly fast at repetitive tasks, but they cannot read regular recipes or access the office pantry directly. If you want pancakes made, you must follow a strict 5-step operational workflow: Step 1: Reserve counter space in the office (malloc) and on the factory floor (cudaMalloc). Step 2: Push a cart of raw ingredients across the narrow hallway bridge (PCIe Bus) into the factory pantry (cudaMemcpyHostToDevice). Step 3: Pick up your megaphone and shout the batch size, table coordinates, and recipe instructions to all tables simultaneously (Launch Kernel: <<<gridDim, blockDim>>>). Step 4: Wait for the whistle and wheel the finished pancakes back across the bridge to the office (cudaMemcpyDeviceToHost). Step 5: Clean up all tables and counters (cudaFree). Before you bake anything, a senior engineer hands you the Manager Toolkit: run your kitchen inspection tool (nvidia-smi) to check temperatures and VRAM capacity, and use your recipe compiler (nvcc) to translate C++ code into machine instructions that thousands of synchronized hands can execute together without chaos!',
     cartoonPanels: [
       {
         scene: 1,
-        title: "F1 CPU vs. 1000 Bicycles",
-        avatar: "🏎️",
-        tag: "SIMT Execution",
-        caption: "Formula 1 sports car (CPU) carries 1 VIP fast; 1000 delivery bicycles (GPU) carry 1000 packages at once!",
-        concept: "SIMT Architecture: Thousands of lightweight CUDA cores executing parallel thread instructions.",
-        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(30, 40)"><rect x="0" y="0" width="100" height="70" rx="8" fill="#1e293b" stroke="#ef4444"/><text x="50" y="38" font-size="22" text-anchor="middle">🏎️ CPU</text><text x="50" y="60" font-size="10" fill="#ef4444" text-anchor="middle">1 Fast Core</text></g><g transform="translate(190, 40)"><rect x="0" y="0" width="100" height="70" rx="8" fill="#1e293b" stroke="#22c55e"/><text x="50" y="38" font-size="22" text-anchor="middle">🚲 GPU</text><text x="50" y="60" font-size="10" fill="#22c55e" text-anchor="middle">1000 Cores</text></g><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">SIMT: Massive Data-Parallel Throughput</text></svg>`
+        title: "First-Time Environment Setup & Inspection",
+        avatar: "🛠️",
+        tag: "Step 1: Setup & Verify",
+        caption: "First-time setup: Verify NVIDIA driver, CUDA Toolkit version, and GPU hardware with `nvidia-smi` and `nvcc -V`!",
+        concept: "GPU Environment Setup: Validating that physical GPU drivers and the NVCC compiler toolchain are correctly installed and linked.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="20" y="25" width="280" height="110" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="35" y="48" fill="#38bdf8" font-family="monospace" font-size="11" font-weight="bold">$ nvidia-smi</text><text x="35" y="68" fill="#22c55e" font-family="monospace" font-size="10">GPU 0: NVIDIA RTX / T4 (16GB VRAM) | Driver 535.x</text><text x="35" y="88" fill="#38bdf8" font-family="monospace" font-size="11" font-weight="bold">$ nvcc --version</text><text x="35" y="108" fill="#f59e0b" font-family="monospace" font-size="10">Cuda compilation tools, release 12.2, V12.2.140</text><text x="35" y="125" fill="#e2e8f0" font-family="monospace" font-size="9">$ nvcc -O3 vecAdd.cu -o vecAdd &amp;&amp; ./vecAdd</text><text x="160" y="160" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">First-Time GPU Toolchain Verification</text></svg>`
       },
       {
         scene: 2,
-        title: "PCIe Bus Bridge Bottleneck",
+        title: "The 5-Step CUDA Memory Lifecycle",
         avatar: "🌉",
-        tag: "PCIe Latency",
-        caption: "Data packets queuing across the PCIe bridge between Host CPU RAM and Device VRAM.",
-        concept: "Host-to-Device Transfer Penalty: PCIe bandwidth (16-64 GB/s) limits small GPU kernel launches.",
-        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(20, 50)"><rect x="0" y="0" width="70" height="50" rx="6" fill="#1e293b" stroke="#38bdf8"/><text x="35" y="32" fill="#38bdf8" font-size="12" font-weight="bold" text-anchor="middle">CPU RAM</text></g><g transform="translate(230, 50)"><rect x="0" y="0" width="70" height="50" rx="6" fill="#1e293b" stroke="#22c55e"/><text x="35" y="32" fill="#22c55e" font-size="12" font-weight="bold" text-anchor="middle">GPU VRAM</text></g><path d="M 90 75 L 230 75" stroke="#f59e0b" stroke-width="4" stroke-dasharray="6,4"/><text x="160" y="65" font-size="14">🌉 PCIe Bus</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#f59e0b" font-weight="bold">cudaMemcpy Host-to-Device Latency</text></svg>`
+        tag: "Step 2: Memory Workflow",
+        caption: "The complete Host-Device lifecycle: cudaMalloc -> cudaMemcpy(H2D) -> Kernel -> cudaMemcpy(D2H) -> cudaFree.",
+        concept: "CUDA Memory Lifecycle: Host CPU orchestrates memory allocation, data transfer over PCIe, kernel launch, and result retrieval.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(15, 35)"><rect x="0" y="0" width="80" height="65" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="40" y="25" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle">CPU (Host)</text><text x="40" y="42" fill="#94a3b8" font-size="9" text-anchor="middle">Host RAM</text><text x="40" y="56" fill="#22c55e" font-size="8" text-anchor="middle">malloc / free</text></g><g transform="translate(225, 35)"><rect x="0" y="0" width="80" height="65" rx="6" fill="#1e293b" stroke="#22c55e" stroke-width="2"/><text x="40" y="25" fill="#22c55e" font-size="11" font-weight="bold" text-anchor="middle">GPU (Device)</text><text x="40" y="42" fill="#94a3b8" font-size="9" text-anchor="middle">Device VRAM</text><text x="40" y="56" fill="#38bdf8" font-size="8" text-anchor="middle">cudaMalloc / Free</text></g><path d="M 95 55 L 225 55" stroke="#f59e0b" stroke-width="3" stroke-dasharray="5,3"/><path d="M 225 80 L 95 80" stroke="#a855f7" stroke-width="3" stroke-dasharray="5,3"/><text x="160" y="48" font-size="9" fill="#f59e0b" text-anchor="middle">1. cudaMemcpy (H2D)</text><text x="160" y="95" font-size="9" fill="#a855f7" text-anchor="middle">2. cudaMemcpy (D2H)</text><text x="160" y="160" text-anchor="middle" font-size="11" fill="#f59e0b" font-weight="bold">Host-to-Device 5-Step Execution Workflow</text></svg>`
       },
       {
         scene: 3,
-        title: "Grid, Block & Thread Matrix",
+        title: "Thread Geometry & 1D Index Calculation",
         avatar: "📐",
-        tag: "CUDA Hierarchy",
-        caption: "Mapping 2D image pixels to Grid Index, Thread Block ID, and 32-thread Warps.",
-        concept: "CUDA Thread Hierarchy: Kernel <<< Grid, Block >>> maps threads to 1D, 2D, or 3D problem spaces.",
-        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="70" y="35" width="180" height="80" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="160" y="65" fill="#38bdf8" font-size="14" font-weight="bold" text-anchor="middle">Grid <<< G, B >>></text><text x="160" y="90" font-size="12" fill="#22c55e" text-anchor="middle">Block (tx, ty) -> Thread ID</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">Thread Block Index Mapping</text></svg>`
+        tag: "Step 3: Thread Indexing",
+        caption: "Computing global index: `int idx = blockIdx.x * blockDim.x + threadIdx.x;` with boundary check `if (idx < N)`.",
+        concept: "Thread Coordinate Mapping: Translates multi-block hardware thread IDs into unique 1D/2D array element indices.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="30" y="30" width="260" height="90" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="2"/><text x="160" y="55" fill="#38bdf8" font-size="12" font-weight="bold" text-anchor="middle">Kernel Launch: vecAdd&lt;&lt;&lt;grid, block&gt;&gt;&gt;(d_a, d_b, d_c, N)</text><text x="160" y="80" font-size="11" fill="#22c55e" font-family="monospace" text-anchor="middle">int idx = blockIdx.x * blockDim.x + threadIdx.x;</text><text x="160" y="102" font-size="11" fill="#f59e0b" font-family="monospace" text-anchor="middle">if (idx &lt; N) c[idx] = a[idx] + b[idx];</text><text x="160" y="160" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Unique Thread Index &amp; Boundary Guard</text></svg>`
       },
       {
         scene: 4,
-        title: "Warp Divergence Masking",
+        title: "SIMT Warp Execution & Branch Lockstep",
         avatar: "🔀",
-        tag: "Warp Divergence",
-        caption: "Half of 32 threads take the IF branch while the other half wait idling; then roles flip for ELSE!",
-        concept: "Warp Divergence: Serializes divergent branches within a 32-thread warp, lowering warp efficiency.",
-        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="110" y="30" width="100" height="40" rx="6" fill="#1e293b" stroke="#ec4899"/><text x="160" y="55" font-size="14" text-anchor="middle">🔀 IF / ELSE</text><path d="M 130 70 L 70 110 M 190 70 L 250 110" stroke="#ec4899" stroke-width="2"/><text x="70" y="130" font-size="18">🟢 IF</text><text x="250" y="130" font-size="18">⏸️ Wait</text><text x="160" y="160" text-anchor="middle" font-size="11" fill="#ec4899" font-weight="bold">Branch Divergence Serializes Warps</text></svg>`
+        tag: "Step 4: Warp Lockstep",
+        caption: "GPU executes threads in 32-thread Warps. If threads diverge (if-else), the branches execute sequentially!",
+        concept: "SIMT Execution Model: 32 threads in a warp execute the same instruction simultaneously; avoid divergent branch conditions.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="60" y="30" width="200" height="40" rx="6" fill="#1e293b" stroke="#ec4899"/><text x="160" y="55" font-size="12" fill="#ec4899" text-anchor="middle">Warp (32 Threads in Lockstep)</text><path d="M 120 70 L 75 110 M 200 70 L 245 110" stroke="#ec4899" stroke-width="2"/><rect x="35" y="110" width="80" height="25" fill="#1e293b" stroke="#22c55e" rx="4"/><text x="75" y="127" fill="#22c55e" font-size="10" text-anchor="middle">IF (Active)</text><rect x="205" y="110" width="80" height="25" fill="#1e293b" stroke="#ef4444" rx="4"/><text x="245" y="127" fill="#ef4444" font-size="10" text-anchor="middle">ELSE (Masked)</text><text x="160" y="160" text-anchor="middle" font-size="11" fill="#ec4899" font-weight="bold">Warp Lockstep &amp; Branch Divergence</text></svg>`
       }
     ],
     storyQuestions: [
-      'Why does every child in a group of twenty-five need to flip the same pancake at the same time?',
-      'What happens to the group\'s speed when one child needs a different ingredient than the rest?',
-      'Why does the small shelf near the table help more than making the countertop bigger?',
-      'What strategy would you use to keep all one thousand children busy if you have three different pancake recipes?'
+      'What are the two primary commands (`nvidia-smi` and `nvcc --version`) used to verify that your GPU and CUDA compiler are working properly?',
+      'Why is host CPU memory (RAM) separated from GPU device memory (VRAM), and what function copies data between them?',
+      'What does each part of the formula `int idx = blockIdx.x * blockDim.x + threadIdx.x;` represent for a thread in a grid?',
+      'Why is the boundary condition `if (idx < N)` strictly required in every element-wise CUDA kernel?'
     ],
-    storyBridge: 'GPU architecture mirrors the Sunnybrook kitchen. A GPU contains thousands of small cores (kindergarteners), grouped into warps of 32 threads (tables of twenty-five), organized on Streaming Multiprocessors (the kitchen itself). Global memory is the distant countertop. Shared memory is the nearby shelf. The programming challenge is identical: keep the children doing the same thing, minimize trips to the countertop, and organize the shelves so every child finds what they need without waiting.',
-    terminology: ['CUDA Core', 'Streaming Multiprocessor (SM)', 'Warp', 'Warp divergence', 'SIMT', 'Grid', 'Block', 'Thread', 'Global memory', 'Shared memory', 'Registers', 'Constant memory', 'Texture memory', 'Kernel launch', 'Block size', 'Grid size'],
-    mathNeed: 'We need quantitative models to predict how efficiently a GPU kernel utilizes its thousands of cores, because raw core count does not translate directly to throughput.',
-    mathMotivation: 'GPU performance depends on the number of active warps, memory access patterns, and warp divergence — all of which can be modeled mathematically before writing code.',
-    realWorldChallenges: ['Deep learning training requires billions of multiply-accumulate operations that map naturally to GPU cores', 'Real-time ray tracing demands massive parallelism across millions of pixels', 'Scientific simulations (molecular dynamics, climate) must be restructured from sequential to massive data-parallel formats'],
-    technicalChallenges: ['CPU-GPU data transfer over PCIe bus creates a bottleneck for small problems', 'Warp divergence reduces effective throughput when threads in a warp follow different branches', 'Programmers must manage three levels of memory: registers, shared memory, and global memory'],
+    storyBridge: 'For a first-time developer, GPU computing is simply a disciplined 5-step conversation between the CPU (Host) and GPU (Device). Once your environment is verified with `nvidia-smi` and `nvcc`, you allocate device memory, copy data across the PCIe bus, launch thousands of threads configured as Grids and Blocks, copy results back, and free resources.',
+    terminology: [
+      'Host (CPU) vs Device (GPU)',
+      'Host Memory (RAM) vs Device Memory (VRAM)',
+      'NVIDIA CUDA Toolkit',
+      'nvcc (NVIDIA CUDA Compiler)',
+      'nvidia-smi (System Management Interface)',
+      'Compute Capability (e.g. sm_75, sm_80, sm_89)',
+      'Streaming Multiprocessor (SM)',
+      'CUDA Core / Arithmetic Lane',
+      'Warp (32 Synchronized Threads)',
+      'Thread Block (blockDim, blockIdx)',
+      'Grid (gridDim)',
+      'Kernel Launch Syntax <<<Grid, Block>>>',
+      'cudaMalloc & cudaFree',
+      'cudaMemcpy & cudaMemcpyKind',
+      'cudaDeviceSynchronize()',
+      'cudaGetLastError() & Error Macros',
+      'Unified Memory (cudaMallocManaged)',
+      'Google Colab GPU Runtime'
+    ],
+    mathNeed: 'First-time users need mathematical formulas to compute grid launch dimensions from problem sizes, calculate memory transfer bytes, and predict theoretical peak GPU throughput.',
+    mathMotivation: 'Without calculating launch dimensions, beginners often launch too few threads (leaving the GPU 99% idle) or launch too many without boundary guards (causing crashes and memory corruption). Mathematical formulas ensure 100% data coverage with zero memory violations.',
+    realWorldChallenges: [
+      'Driver version mismatch where host NVIDIA drivers are older than the installed CUDA Toolkit version',
+      'Setting system environment variables (`PATH`, `LD_LIBRARY_PATH`, `CUDA_HOME`) correctly so terminal finds nvcc',
+      'Selecting the correct architecture flag (e.g. `-arch=sm_75` for T4, `-arch=sm_80` for A100, `-arch=sm_89` for RTX 4090)',
+      'PCIe bandwidth bottlenecks making small computations slower on GPU than single-core CPU'
+    ],
+    technicalChallenges: [
+      'Passing host pointers to device functions by accident, triggering segmentation faults or `cudaErrorIllegalAddress`',
+      'Handling integer division truncations when calculating grid size for arrays not divisible by block size',
+      'Preventing silent asynchronous kernel launch failures by inspecting `cudaGetLastError()`',
+      'Managing out-of-memory errors when allocating large arrays that exceed physical VRAM capacity'
+    ],
     equations: [
       {
-        name: 'GPU Core Throughput',
-        latex: 'T_{GPU} = N_{cores} \\times f_{clock} \\times U',
-        symbols: 'T_GPU is theoretical GPU throughput (FLOP/s), N_cores is the total number of CUDA cores, f_clock is the clock frequency in GHz, U is the utilization factor (0 to 1).',
-        meaning: 'The achievable throughput depends on how many cores are active and how efficiently each core is utilized each clock cycle.',
-        whyNeeded: 'Raw core counts are misleading without accounting for utilization losses from divergence, memory stalls, and occupancy limits.',
-        interpretation: 'An RTX 4090 has 16,384 cores at 2.52 GHz. Theoretical peak = 16384 * 2.52 * 2 (FMA) = ~82.6 TFLOPS. Actual utilization is typically 60-80%.'
+        name: 'Grid Dimension Calculation (1D Ceiling Division)',
+        latex: 'N_{blocks} = \\left\\lceil \\frac{N}{B} \\right\\rceil = \\frac{N + B - 1}{B}',
+        symbols: 'N is total problem size (number of elements), B is threads per block (blockDim.x, typically 128 or 256), N_blocks is total thread blocks required (gridDim.x).',
+        meaning: 'Calculates the exact integer number of thread blocks required to cover N data elements using integer arithmetic.',
+        whyNeeded: 'Standard integer division `N / B` truncates the remainder, leaving the last `N % B` elements uncomputed. Ceiling division ensures complete coverage.',
+        interpretation: 'For N = 1,000,000 elements with B = 256 threads/block: N_blocks = (1,000,000 + 255) / 256 = 3,907 blocks. Total threads launched = 3,907 × 256 = 1,000,192 threads (boundary check `if (idx < N)` guards the last 192 threads).'
       },
       {
-        name: 'Warp Execution Efficiency',
-        latex: '\\eta_{warp} = \\frac{N_{active\\_threads}}{N_{warp\\_size}}',
-        symbols: 'eta_warp is warp execution efficiency, N_active_threads is the number of threads in the warp doing useful work, N_warp_size is 32 (fixed warp size on NVIDIA GPUs).',
-        meaning: 'The fraction of threads in a warp that are actively executing the same instruction at any given cycle.',
-        whyNeeded: 'When threads diverge (if-else branches), inactive threads waste execution slots, directly reducing throughput.',
-        interpretation: 'A warp with 20 out of 32 threads active has efficiency 20/32 = 62.5%. The other 37.5% of the compute cycle is wasted.'
+        name: 'Global Thread Index Formula (1D)',
+        latex: 'idx = \\text{blockIdx.x} \\times \\text{blockDim.x} + \\text{threadIdx.x}',
+        symbols: 'blockIdx.x is current block ID (0 to gridDim.x - 1), blockDim.x is block size (threads per block), threadIdx.x is local thread ID within the block (0 to blockDim.x - 1).',
+        meaning: 'Maps a 2-level hierarchical hardware thread address to a unique linear 1D memory array index.',
+        whyNeeded: 'Enables each thread in the parallel grid to determine which specific element of the array it is responsible for computing.',
+        interpretation: 'In Block 2 with Block Size 256, Thread 5 computes: idx = 2 × 256 + 5 = 517. It reads a[517], b[517] and writes to c[517].'
       },
       {
-        name: 'Kernel Execution Time',
-        latex: 'T_{kernel} = \\frac{N_{blocks}}{N_{SM}} \\times T_{block}',
-        symbols: 'T_kernel is total kernel execution time, N_blocks is the number of thread blocks, N_SM is the number of Streaming Multiprocessors, T_block is the execution time of one block.',
-        meaning: 'The total time to execute a kernel is determined by how many blocks must cycle through the available SMs.',
-        whyNeeded: 'It shows that both the problem size (N_blocks) and the hardware (N_SM) jointly determine execution time.',
-        interpretation: 'A GPU with 80 SMs executing 800 blocks needs 10 rounds. If each block takes 5 microseconds, the kernel takes 50 microseconds.'
+        name: 'Theoretical Peak Compute Throughput (FLOPS)',
+        latex: 'P_{peak} = N_{SM} \\times N_{cores\\_per\\_SM} \\times f_{clock} \\times 2 \\text{ (FMA ops/cycle)}',
+        symbols: 'N_SM is number of Streaming Multiprocessors, N_cores_per_SM is CUDA cores per SM, f_clock is GPU clock frequency, factor 2 accounts for Fused Multiply-Add (FMA = 1 multiply + 1 add in 1 cycle).',
+        meaning: 'The theoretical maximum floating-point operations the GPU hardware can perform per second when 100% saturated.',
+        whyNeeded: 'Serves as the theoretical reference ceiling to calculate your application’s efficiency percentage.',
+        interpretation: 'NVIDIA Tesla T4 (Google Colab free GPU): 40 SMs × 64 cores/SM = 2,560 CUDA cores @ 1.59 GHz boost clock: P_peak = 2,560 × 1.59 × 10^9 × 2 = 8.14 TFLOPS (FP32).'
       }
     ],
-    numericalExample: 'An RTX 4090 has 128 SMs, each with 128 CUDA cores (16,384 total). A kernel launches 512 blocks of 256 threads each. Occupancy: 512 blocks / 128 SMs = 4 blocks per SM. Total threads = 512 × 256 = 131,072. Warps per block = 256/32 = 8. Active warps per SM = 4 × 8 = 32. Maximum warps per SM = 48. Occupancy = 32/48 = 66.7%. If the kernel executes 20 FLOP/s per thread per cycle at 2.52 GHz: Achieved FLOPS = 131,072 threads × 20 × 2.52 × 10^9 = 6.61 TFLOPS. Compared to peak 82.6 TFLOPS, utilization is 8.0%. This low value highlights the need for optimization — more work per thread or better occupancy would close the gap.',
-    metrics: ['Occupancy (active warps / maximum warps)', 'Warp execution efficiency', 'Achieved vs peak FLOP/s', 'Kernel execution time', 'Thread block configuration', 'Grid coverage of SMs'],
-    optimizationPossibilities: 'Tune block size to maximize occupancy, minimize warp divergence by restructuring branch logic, use shared memory to reduce global memory accesses, and overlap kernel execution with data transfers using CUDA streams.',
-    futureEnhancements: 'Tensor cores for mixed-precision matrix operations, thread block clusters (Hopper architecture), asynchronous execution with warp-level synchronization, and dynamic parallelism for nested kernel launches.',
-    activities: [
-      { level: 1, levelName: 'Teacher Do', objective: 'Demonstrate SIMT execution using a hands-on pancake analogy.', instructions: 'Assign 32 students to be "threads in a warp." Give them a recipe card: "All 32 of you must crack one egg." Time it. Then give mixed instructions: half crack eggs, half stir batter. Time again. Show the slowdown caused by divergence.', inputs: '32 students, recipe cards, timer', expectedOutputs: 'Students observe that uniform instructions are faster than mixed instructions within a group.', rubric: 'Demonstration clarity 50%, student engagement 30%, correct analogy mapping 20%.', learningOutcomes: 'Understand that warps execute in lockstep and divergence wastes cycles.', time: '10 minutes', materials: 'Recipe cards, timer, whiteboard' },
-      { level: 2, levelName: 'Teacher + Student Together', objective: 'Calculate GPU occupancy for different block configurations.', instructions: 'Given a GPU with 64 SMs, max 48 warps per SM, max 2048 threads per SM. Compute occupancy for block sizes 64, 128, 256, 512 threads. Plot occupancy vs block size. Identify the optimal configuration.', inputs: 'GPU specification handout, calculator', expectedOutputs: 'Occupancy values for four block sizes showing which maximizes warp utilization.', rubric: 'Correct calculations 40%, correct plot 30%, meaningful interpretation 30%.', learningOutcomes: 'Connect block size choice to hardware occupancy limits.', time: '15 minutes', materials: 'Handout, calculator, graph paper' },
-      { level: 3, levelName: 'All Students Do', objective: 'Write and run a simple CUDA kernel for vector addition.', instructions: 'In groups of 3, write a CUDA C program that adds two vectors of 1 million elements. Launch with block sizes of 128, 256, and 512. Measure and report execution time and calculate occupancy for each.', inputs: 'CUDA development environment, starter code template', expectedOutputs: 'Working vector addition kernel, timing results for three configurations, occupancy calculation.', rubric: 'Correct kernel code 30%, correct timing 30%, occupancy analysis 20%, discussion of results 20%.', learningOutcomes: 'Experience writing and launching a GPU kernel and connecting configuration to performance.', time: '25 minutes', materials: 'Laptop with CUDA toolkit, starter template' },
-      { level: 4, levelName: 'Individual Student Do', objective: 'Analyze GPU architecture specifications and predict kernel performance.', instructions: 'Given the specifications of two GPUs (e.g., RTX 3060 vs RTX 4090), compare their SM counts, cores per SM, memory bandwidth, and clock speed. Predict which GPU achieves higher speedup for a given kernel and explain why.', inputs: 'GPU specification comparison sheet', expectedOutputs: 'Written comparison with occupancy predictions and architectural bottleneck analysis.', rubric: 'Correct specification extraction 25%, accurate prediction 30%, quality of reasoning 30%, clarity 15%.', learningOutcomes: 'Apply architectural understanding to real GPU hardware comparison.', time: '20 minutes', materials: 'Specification handout, calculator' }
+    numericalExample: 'First-time setup walkthrough and execution calculation: Vector size N = 10,000,000 single-precision floats (40 MB per array; 120 MB total for A, B, and C). Host memory allocation: 3x 40 MB = 120 MB in Host RAM. Device allocation: `cudaMalloc(&d_a, 40MB); cudaMalloc(&d_b, 40MB); cudaMalloc(&d_c, 40MB);` (120 MB VRAM used). PCIe Gen3 x16 transfer bandwidth = 12 GB/s effective. Upload time for A and B = 80 MB / 12 GB/s = 6.67 ms. Kernel launch configuration: `int B = 256; int G = (10,000,000 + 255) / 256 = 39,063 blocks; vecAdd<<<G, B>>>(d_a, d_b, d_c, 10000000);`. Pure GPU kernel execution time on Tesla T4 (320 GB/s bandwidth) = 120 MB / 260 GB/s achieved = 0.46 ms. Download time for C = 40 MB / 12 GB/s = 3.33 ms. Total wall-clock runtime = 6.67 + 0.46 + 3.33 = 10.46 ms. Pure GPU computation is over 20x faster than CPU single-thread runtime (~10 ms vs ~200 ms).',
+    metrics: [
+      'GPU Driver and CUDA Toolkit Version Verification',
+      'Compute Capability Identification (sm_XX)',
+      '1D / 2D Grid and Block Launch Dimension Validity',
+      'Host-to-Device and Device-to-Host Transfer Time (ms)',
+      'Pure Kernel Execution Duration (via cudaEvent_t)',
+      'Effective VRAM Bandwidth Utilization (GB/s)',
+      'Runtime Error Status (`cudaSuccess` vs Error Codes)'
     ],
-    projectScope: 'Build a CUDA vector operations benchmark that launches kernels with varying block and grid configurations, measures execution time, and computes occupancy for each configuration.',
-    projectFeasibility: 'Requires a CUDA-capable GPU (NVIDIA GTX 1060 or newer) and the CUDA toolkit. No cloud cost if local GPU is available. Fallback: use CPUsim or NSight Compute for profiling without a GPU.',
-    projectObjectives: ['Implement a vector addition kernel in CUDA C', 'Experiment with block sizes of 64, 128, 256, and 512 threads', 'Measure kernel execution time using CUDA events', 'Calculate occupancy for each configuration using CUDA occupancy API', 'Identify the optimal block size and explain why'],
-    projectOutcomes: ['Working CUDA vector addition program', 'Timing results table for four block sizes', 'Occupancy vs block size plot', 'One-page analysis of the optimal configuration'],
-    projectMethodology: 'Question: How does block size affect GPU kernel performance? Hypothesis: Occupancy peaks at a specific block size determined by SM register and shared memory limits. Experiment: Launch kernels with varying configurations. Compare: Plot time and occupancy. Reflect: Match results to architecture theory.',
-    projectRoles: ['Kernel Lead: writes the CUDA kernel', 'Benchmark Lead: designs measurement protocol and timing', 'Analyst: computes occupancy and creates plots', 'Writer: documents findings and recommendations'],
+    optimizationPossibilities: 'Select block sizes that are multiples of 32 (128 or 256 threads) for 100% warp utilization, wrap all CUDA runtime calls in a reusable `CUDA_CHECK` error macro, reuse device VRAM buffers across multiple kernel launches to amortize PCIe transfer overhead, and explore Unified Memory (`cudaMallocManaged`) for automatic page migration.',
+    futureEnhancements: 'Unified coherent CPU-GPU memory architectures (NVIDIA Grace Hopper NVLink-C2C), C++23 standard parallel algorithms running natively on GPU without boilerplate, and AI-assisted kernel code generators.',
+    activities: [
+      {
+        level: 1,
+        levelName: 'Teacher Do: Step-by-Step Environment Setup & Verification Demo',
+        objective: 'Demonstrate first-time GPU setup verification on both Google Colab (Zero-Install) and Local Terminal.',
+        instructions: 'Part 1 (Google Colab): Open Colab notebook -> Select "Runtime" -> "Change runtime type" -> Choose "T4 GPU". In a cell, run `!nvidia-smi` and explain GPU name, driver version, CUDA version, and VRAM. Run `!nvcc --version`. Part 2 (Local Terminal): Show how to check driver version, verify `PATH` environment variable, and compile a minimal `deviceQuery.cu` program that prints SM count, warp size, and max threads per block using `cudaGetDeviceProperties()`.',
+        inputs: 'Browser with Google Colab / Local Terminal with NVIDIA GPU, deviceQuery.cu source code',
+        expectedOutputs: 'Live terminal output showing verified GPU driver, NVCC compiler version, and detailed hardware property printout.',
+        rubric: 'Environment setup clarity 40%, technical accuracy in explaining hardware properties 40%, student engagement 20%.',
+        learningOutcomes: 'Understand how to set up, access, and verify a working GPU programming environment on cloud or local systems.',
+        time: '15 minutes',
+        materials: 'Projector/Terminal, Google Colab account, deviceQuery.cu code'
+      },
+      {
+        level: 2,
+        levelName: 'Teacher + Student Together: Build, Compile & Run Your First Vector Addition App',
+        objective: 'Step-by-step collaborative coding of a complete Vector Addition CUDA C application from scratch with error checking.',
+        instructions: 'Walk students through writing `first_cuda_app.cu` in 5 distinct code blocks: Block 1: Include `<cuda_runtime.h>` and `<stdio.h>`. Block 2: Write kernel `__global__ void vecAdd(float *a, float *b, float *c, int n)` computing `idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) c[idx] = a[idx] + b[idx];`. Block 3: In `main()`, allocate host memory and initialize arrays. Block 4: Allocate device memory with `cudaMalloc`, copy with `cudaMemcpyHostToDevice`, launch `vecAdd<<<(n+255)/256, 256>>>(d_a, d_b, d_c, n)`, check error with `cudaGetLastError()`, and copy back with `cudaMemcpyDeviceToHost`. Block 5: Verify results and call `cudaFree`. Compile with `nvcc -O3 first_cuda_app.cu -o first_cuda_app` and execute.',
+        inputs: 'first_cuda_app.cu template skeleton, nvcc compiler, problem size N = 1,000,000',
+        expectedOutputs: 'Working executable that compiles cleanly, runs on GPU, and prints "Vector Addition Succeeded! 1,000,000 elements verified."',
+        rubric: 'Correct 5-step memory lifecycle 35%, correct kernel indexing syntax 35%, error checking inclusion 30%.',
+        learningOutcomes: 'Master the complete end-to-end workflow of writing, compiling, and running a CUDA C/C++ application.',
+        time: '25 minutes',
+        materials: 'VS Code / Colab Notebook, NVCC compiler, C++ environment'
+      },
+      {
+        level: 3,
+        levelName: 'All Students Do: Develop AXPY Kernel & Benchmark Block Size Sweeps',
+        objective: 'Independently develop an AXPY (Y = alpha * X + Y) kernel, instrument high-precision CUDA event timing, and sweep block sizes.',
+        instructions: 'Working in pairs, implement `axpy_benchmark.cu` for N = 5,000,000 floats. Step 1: Write `__global__ void axpyKernel(float alpha, const float *x, float *y, int n)`. Step 2: Use `cudaEventCreate(&start)`, `cudaEventRecord(start)`, `cudaEventRecord(stop)`, and `cudaEventElapsedTime(&ms, start, stop)` to measure pure GPU execution time. Step 3: Run the kernel with block sizes of 32, 64, 128, 256, 512, and 1024 threads. Step 4: Record execution time for each block size and calculate effective memory bandwidth in GB/s. Identify which block size gives optimal performance.',
+        inputs: 'Starter AXPY code template, problem size N = 5 million elements',
+        expectedOutputs: 'Working AXPY program, execution time benchmark table across 6 block sizes, and calculated bandwidth (GB/s).',
+        rubric: 'Correct AXPY kernel logic 25%, accurate CUDA event timing 25%, block size sweep completion 25%, bandwidth analysis 25%.',
+        learningOutcomes: 'Gain hands-on experience developing, compiling, timing, and tuning execution parameters for real GPU applications.',
+        time: '25 minutes',
+        materials: 'CUDA development environment (local or Colab), C++ compiler'
+      },
+      {
+        level: 4,
+        levelName: 'Individual Student Do: Build a Defensive CUDA Error-Checking Utility',
+        objective: 'Develop a reusable defensive CUDA error-handling macro header and test it by injecting deliberate runtime errors.',
+        instructions: 'Create `cuda_safe_utils.h` containing a robust macro: `#define CUDA_CHECK(call) ...` that evaluates `cudaError_t err = (call)`, prints error message, file name, line number with `cudaGetErrorString(err)`, and calls `exit(EXIT_FAILURE)` if an error occurs. In `test_errors.cu`, write tests that intentionally trigger: (1) an invalid launch configuration (`<<<1, 2048>>>`), (2) allocating more VRAM than exists (e.g. 100 GB), and (3) an invalid memory copy direction. Verify that your macro cleanly catches and reports all three errors with meaningful diagnostics.',
+        inputs: 'Blank header file, CUDA Toolkit runtime API documentation',
+        expectedOutputs: 'Robust header file `cuda_safe_utils.h` with tested error trapping across launch configuration and allocation failures.',
+        rubric: 'Macro design quality 35%, error injection test coverage 35%, clarity of diagnostic output 30%.',
+        learningOutcomes: 'Develop professional-grade defensive CUDA programming practices essential for production GPU engineering.',
+        time: '20 minutes',
+        materials: 'CUDA toolkit, text editor, terminal'
+      }
+    ],
+    projectScope: 'Develop a First-Time CUDA Developer Starter Suite comprising a hardware verification tool, modular Vector Addition and AXPY applications with CUDA Event timing, and a reusable defensive error checking library.',
+    projectFeasibility: '100% accessible to first-time students on free Google Colab (Tesla T4 GPU) or any student laptop with NVIDIA graphics. Requires zero commercial licenses.',
+    projectObjectives: [
+      'Set up and verify the CUDA development toolchain using nvidia-smi and nvcc',
+      'Implement modular, well-documented CUDA kernels for Vector Addition and AXPY',
+      'Implement high-resolution timing with cudaEvent_t to measure pure kernel time vs PCIe copy time',
+      'Develop and test a reusable defensive CUDA error checking macro (CUDA_CHECK)',
+      'Benchmark performance scaling across problem sizes (10K to 20M elements) and block sizes (32 to 1024)'
+    ],
+    projectOutcomes: [
+      'Clean, beginner-friendly GitHub repository with Makefile and README setup guide',
+      'Working CLI benchmark executable printing device properties and execution metrics',
+      'Comparative runtime plots (PCIe transfer overhead vs pure kernel execution time)',
+      'One-page developer setup guide for first-time CUDA programmers'
+    ],
+    projectMethodology: 'Question: How does problem size affect whether a GPU application is faster than CPU, given PCIe transfer overhead? Hypothesis: GPU execution will be slower than CPU for small problem sizes (<100K elements) due to PCIe transfer latency, but will achieve 10x-50x speedup for large sizes (>5M elements). Experiment: Benchmark execution times across 6 problem sizes measuring PCIe transfer vs kernel time. Compare: Plot wall-clock speedup vs kernel-only speedup. Reflect: Understand when to offload workloads to GPU.',
+    projectRoles: [
+      'Environment & Setup Lead: writes setup instructions, Makefiles, and device query utilities',
+      'Kernel Developer: writes and comments CUDA kernels and indexing formulas',
+      'Timing & Benchmark Lead: implements CUDA events and executes parameter sweeps',
+      'Documentation Lead: drafts the beginner-friendly setup guide and speedup report'
+    ],
     projectTimeline: [
-      { milestone: 'Setup', duration: 'Day 1', deliverable: 'CUDA environment verified, problem defined' },
-      { milestone: 'Kernel', duration: 'Days 2-3', deliverable: 'Working vector addition kernel with timing' },
-      { milestone: 'Sweep', duration: 'Days 4-5', deliverable: 'Results for four block sizes collected' },
-      { milestone: 'Analysis', duration: 'Day 6', deliverable: 'Occupancy plot and optimal configuration identified' },
-      { milestone: 'Report', duration: 'Day 7', deliverable: 'Final report with architecture recommendations' }
+      { milestone: 'Environment Setup & Verification', duration: 'Day 1', deliverable: 'Verified Colab/Local GPU environment and deviceQuery output' },
+      { milestone: 'Kernel & Memory Implementation', duration: 'Days 2-3', deliverable: 'Working VecAdd and AXPY kernels with 5-step memory lifecycle' },
+      { milestone: 'Timing & Error Handling', duration: 'Days 4-5', deliverable: 'Integrated CUDA_CHECK macro and high-resolution CUDA Event timers' },
+      { milestone: 'Benchmarking & Scaling Sweeps', duration: 'Day 6', deliverable: 'Runtime measurements across block sizes and problem sizes' },
+      { milestone: 'Final Report & Submission', duration: 'Day 7', deliverable: 'Complete GitHub repository, README setup guide, and technical report' }
     ],
     projectRisks: [
-      { risk: 'No CUDA-capable GPU available on student laptop', severity: 'High', mitigation: 'Use Google Colab with GPU runtime or university lab machines' },
-      { risk: 'Driver version incompatibility', severity: 'Medium', mitigation: 'Document tested driver/CUDA version combinations before starting' },
-      { risk: 'Small problem size hides GPU benefits due to launch overhead', severity: 'Medium', mitigation: 'Use at least 1 million elements and report both absolute time and throughput' }
+      { risk: 'First-time students getting stuck on local driver/toolkit installation', severity: 'High', mitigation: 'Provide pre-tested zero-install Google Colab notebooks as primary development path' },
+      { risk: 'Missing boundary check `if (idx < N)` causing silent memory crashes', severity: 'Medium', mitigation: 'Emphasize boundary checks in starter templates and test with non-power-of-two array sizes' },
+      { risk: 'Host/Device pointer confusion causing segmentation faults', severity: 'Medium', mitigation: 'Adopt strict naming convention prefixing device pointers with `d_` (e.g. `d_array`) and host pointers with `h_`' }
     ],
-    projectBudget: 'Student time: ~12 hours. GPU compute cost: $0 (Google Colab free tier or local GPU). CUDA toolkit: free. Documentation: ~3 hours.',
-    projectTRL: 'TRL 3 — Experimental demonstration of GPU kernel performance across block configurations.',
+    projectBudget: 'Student effort: ~10 hours. Compute cost: $0 (Google Colab free tier or local GPU). Software: CUDA Toolkit (Free).',
+    projectTRL: 'TRL 3 — Hands-on experimental demonstration of GPU environment setup, compilation, and basic application development.',
     questions: [
-      { type: 'conceptual', question: 'What is a warp in GPU computing and why does it matter?', answer: 'A warp is a group of 32 threads that execute the same instruction simultaneously on NVIDIA GPUs. It matters because all threads in a warp must follow the same execution path — if they diverge (take different branches), the hardware serializes the branches, wasting cycles on inactive threads.', explanation: 'The SIMT execution model means hardware manages threads in warps, not individually. This is why GPU programming requires thinking about groups of threads, not individual threads.', commonMistakes: 'Assuming each CUDA core runs an independent thread. In reality, 32 cores in an SM execute one warp together.', tip: 'Think of a warp as a school of fish — they all turn together or the school splits, which is slow.' },
-      { type: 'numerical', question: 'A GPU has 80 SMs, each supporting a maximum of 2048 threads. You launch 400 blocks of 256 threads each. What is the occupancy?', answer: 'Total threads = 400 × 256 = 102,400. Max concurrent threads = 80 × 2048 = 163,840. Occupancy = 102,400 / 163,840 = 62.5%. Alternatively: blocks per SM = 400/80 = 5. Warps per block = 256/32 = 8. Active warps per SM = 5 × 8 = 40. Max warps per SM = 2048/32 = 64. Occupancy = 40/64 = 62.5%.', explanation: 'Occupancy can be calculated from thread count or warp count — both give the same result. 62.5% is reasonable but leaves room for improvement.', commonMistakes: 'Forgetting to divide block count by SM count when computing per-SM occupancy.', tip: 'Always compute occupancy per SM, not globally — each SM operates independently.' },
-      { type: 'application', question: 'When should you prefer a GPU over a CPU for a computational task?', answer: 'When the task is data-parallel (same operation on many data points), has high arithmetic intensity (many FLOP/s per byte of data), and does not require complex control flow (few branches). Deep learning training, image processing, and large matrix operations are classic GPU workloads.', explanation: 'GPUs excel at throughput-oriented workloads where thousands of threads do the same thing. CPUs excel at latency-oriented workloads with complex branching and sequential dependencies.', commonMistakes: 'Assuming GPUs are always faster. For serial tasks with complex logic, a CPU is 10-100x faster.', tip: 'GPU = many simple workers doing the same thing. CPU = one skilled worker doing complex work.' },
-      { type: 'problemSolving', question: 'You launch a CUDA kernel with 1 million threads in blocks of 64. The kernel runs slowly. What are three possible causes and fixes?', answer: '(1) Low occupancy: blocks of 64 may not fill the SM. Fix: increase block size to 256. (2) Excessive kernel launch overhead: many small blocks mean many launches. Fix: increase work per thread, reduce total blocks. (3) Global memory bottleneck: threads may access memory in scattered patterns. Fix: use shared memory and restructure data access.', explanation: 'Slow GPU kernels usually stem from one of three issues: underutilized hardware (occupancy), overhead dominance (too many small blocks), or memory bottleneck (poor access patterns).', commonMistakes: 'Jumping to code optimization without first profiling to identify the actual bottleneck.', tip: 'Profile first — the GPU profiler will tell you whether the bottleneck is compute, memory, or launch overhead.' }
+      {
+        type: 'conceptual',
+        question: 'Explain the difference between Host (CPU) and Device (GPU) in CUDA, and list the 5 fundamental steps in a standard CUDA application workflow.',
+        answer: 'In CUDA, the Host refers to the CPU and system RAM, which runs the main program, manages file I/O, and coordinates execution. The Device refers to the GPU and dedicated VRAM, which executes massive data-parallel kernels across thousands of cores.\n\nThe 5 Fundamental Steps:\n1. Memory Allocation: Allocate Host memory (`malloc`/`vector`) and Device memory (`cudaMalloc`).\n2. Host-to-Device Copy: Transfer input data from Host RAM to Device VRAM using `cudaMemcpy(..., cudaMemcpyHostToDevice)`.\n3. Kernel Launch: Execute the `__global__` kernel on GPU threads using `kernel<<<gridDim, blockDim>>>(d_args...)`.\n4. Device-to-Host Copy: Transfer computed output from Device VRAM back to Host RAM using `cudaMemcpy(..., cudaMemcpyDeviceToHost)`.\n5. Cleanup: Release GPU memory using `cudaFree` and Host memory using `free`.',
+        explanation: 'Because CPU and GPU have separate physical memory spaces, data must be explicitly moved across the PCIe bus before and after GPU execution.',
+        commonMistakes: 'Attempting to dereference a device pointer directly in CPU `printf()` code on the host, which immediately causes a segmentation fault.',
+        tip: 'Always remember: `d_` variables live in GPU VRAM and can ONLY be dereferenced inside GPU `__global__` or `__device__` functions!'
+      },
+      {
+        type: 'numerical',
+        question: 'A first-time developer wants to process an audio signal of N = 500,000 samples on a GPU. If they choose a block size of 256 threads, calculate: (a) the required grid size (number of blocks), (b) total threads launched, and (c) the number of inactive boundary threads.',
+        answer: '(a) Grid Size calculation using ceiling division:\n`gridDim.x = (N + blockDim.x - 1) / blockDim.x = (500,000 + 255) / 256 = 500,255 / 256 = 1,954 blocks.`\n(b) Total threads launched = `1,954 blocks × 256 threads/block = 500,224 threads.`\n(c) Inactive boundary threads = `Total threads launched - Active samples = 500,224 - 500,000 = 224 threads.`\n(These 224 trailing threads are safely skipped by the boundary check `if (idx < N)`).',
+        explanation: 'Because 500,000 is not evenly divisible by 256 (500,000 = 1953 × 256 + 32), integer ceiling division provisions 1954 blocks to cover all samples.',
+        commonMistakes: 'Using integer truncation `500,000 / 256 = 1953 blocks`, which leaves the final 32 audio samples completely uncomputed!',
+        tip: 'Always use formula `int gridSize = (N + blockSize - 1) / blockSize;` to prevent truncating boundary elements.'
+      },
+      {
+        type: 'application',
+        question: 'Write a complete, minimal C++ macro `#define CUDA_CHECK(call)` that checks the return code of any CUDA API function, prints an informative error message with file name, line number, and error string if it fails, and terminates execution.',
+        answer: '```cpp\n#include <stdio.h>\n#include <stdlib.h>\n#include <cuda_runtime.h>\n\n#define CUDA_CHECK(call)                                                    \\\ndo {                                                                        \\\n    cudaError_t err = (call);                                               \\\n    if (err != cudaSuccess) {                                               \\\n        fprintf(stderr, "CUDA Error in file \'%s\' on line %d: %s (Code: %d)\\n",\\\n                __FILE__, __LINE__, cudaGetErrorString(err), err);          \\\n        exit(EXIT_FAILURE);                                                 \\\n    }                                                                       \\\n} while (0)\n\n// Usage example:\n// CUDA_CHECK(cudaMalloc(&d_array, size));\n// CUDA_CHECK(cudaMemcpy(d_array, h_array, size, cudaMemcpyHostToDevice));\n```',
+        explanation: 'Wrapping CUDA API calls in a defensive macro ensures that any memory allocation failure, driver error, or invalid parameter is caught immediately with the exact file and line location.',
+        commonMistakes: 'Ignoring return codes from `cudaMalloc` or `cudaMemcpy`. When an allocation fails (e.g. out of VRAM), subsequent kernel calls fail silently, making debugging very difficult.',
+        tip: 'Place `CUDA_CHECK(...)` around every single `cudaMalloc`, `cudaMemcpy`, and `cudaFree` in your code!'
+      },
+      {
+        type: 'problemSolving',
+        question: 'A student sets up CUDA on Google Colab, compiles `vecAdd.cu` without errors, and runs `./vecAdd`. However, the output array on the CPU contains all zeros instead of computed sums. List the three most common beginner mistakes that cause this and how to fix each.',
+        answer: '1. Missing `cudaMemcpyDeviceToHost`: The student launched the kernel on the GPU, but forgot to copy the result array `d_c` back to host array `h_c` using `cudaMemcpy(h_c, d_c, size, cudaMemcpyDeviceToHost)`. Host memory still contains initial zeros.\n   Fix: Add `cudaMemcpy(h_c, d_c, size, cudaMemcpyDeviceToHost);` after the kernel launch.\n\n2. Asynchronous Kernel Launch Failure: The kernel launch failed (e.g. invalid arguments or grid size 0) and exited without computing. Because kernel launches are asynchronous, the CPU immediately proceeded to check results before discovering the failure.\n   Fix: Add error check and sync after launch:\n   `CUDA_CHECK(cudaGetLastError());`\n   `CUDA_CHECK(cudaDeviceSynchronize());`\n\n3. Passing Host Pointers to Kernel: The student launched `vecAdd<<<grid, block>>>(h_a, h_b, h_c, n);` passing host RAM pointers instead of device pointers `d_a, d_b, d_c`. The GPU threads failed to access host memory.\n   Fix: Ensure device pointers allocated via `cudaMalloc` are passed into the kernel execution arguments.',
+        explanation: 'These three issues account for over 90% of first-time CUDA developer bugs where code compiles cleanly but returns zeroed or garbage results.',
+        commonMistakes: 'Assuming the compiler will warn if host pointers are passed to a kernel or if `cudaMemcpy` is omitted. Both are runtime logic errors.',
+        tip: 'Checklist for zeroes: (1) Did you copy D2H? (2) Did you pass `d_` pointers? (3) Did you check `cudaGetLastError()`?'
+      }
     ],
     labType: 'cuda-basics',
-    keyInsights: ['GPU throughput comes from massive parallelism, not individual core speed', 'Warp-level execution means all 32 threads in a warp must follow the same instruction path', 'Block size directly affects occupancy and should be tuned for each GPU architecture', 'CPU and GPU are complementary — the CPU handles serial work, the GPU handles parallel throughput'],
-    advantages: ['Massive throughput for data-parallel workloads (TFLOP/s at consumer prices)', 'Excellent energy efficiency per FLOP compared to CPUs', 'Mature programming ecosystem (CUDA, OpenCL, SYCL)', 'Widely available in cloud platforms and workstations'],
-    disadvantages: ['Programming model requires restructuring algorithms into thread blocks', 'CPU-GPU data transfer overhead penalizes small problems', 'Warp divergence can dramatically reduce effective throughput', 'Memory constraints (shared memory, registers) limit kernel complexity'],
-    improvements: ['Use warp-level primitives (shuffles, ballot) to reduce shared memory usage', 'Overlap computation and data transfer using CUDA streams', 'Employ mixed precision (FP16/BF16) to double throughput on tensor cores', 'Use persistent kernels to amortize launch overhead'],
-    futureScope: 'Grace Hopper superchips (CPU+GPU on one die), chiplet-based GPU designs, unified memory architectures, and photonic interconnects between GPU clusters are the next frontiers.',
-    industrialApplications: ['Deep learning training (NVIDIA A100/H100 clusters at OpenAI, Google)', 'Autonomous vehicle perception (NVIDIA DRIVE platform)', 'Drug discovery molecular simulation (AMBER, GROMACS on GPU)', 'Real-time ray tracing in gaming (NVIDIA RTX, Unreal Engine 5)', 'Financial Monte Carlo simulations on GPU clusters'],
-    researchOpportunities: ['Automatic GPU kernel generation from high-level descriptions', 'Memory-efficient attention mechanisms for large language models', 'GPU architecture for graph and sparse workloads', 'Heterogeneous CPU+GPU+FPGA scheduling'],
-    careerRelevance: ['GPU Software Engineer', 'CUDA Developer', 'Machine Learning Infrastructure Engineer', 'HPC Application Developer', 'Graphics Rendering Engineer']
+    keyInsights: [
+      'First-time setup can be done in 60 seconds with zero installation using Google Colab with GPU runtime',
+      'The CUDA programming model is a 5-step conversation between CPU (Host) and GPU (Device)',
+      'Grid and block dimensions map data elements directly to hardware thread coordinates using ceiling division',
+      'Always use defensive error-checking macros (`CUDA_CHECK`) and boundary guards (`if (idx < N)`)'
+    ],
+    advantages: [
+      'Accessible on free cloud platforms (Google Colab, Kaggle) without requiring expensive local hardware',
+      'Delivers 10x to 100x acceleration on data-parallel arithmetic workloads compared to single-core CPUs',
+      'Standard C/C++ syntax extension makes learning CUDA intuitive for programmers with basic C++ knowledge',
+      'Directly applicable to modern high-demand AI, graphics, and scientific computing careers'
+    ],
+    disadvantages: [
+      'Separate memory spaces require explicit data transfer across PCIe, creating overhead for small arrays',
+      'Requires thinking in parallel thread groups (Warps and Blocks) rather than sequential loops',
+      'Asynchronous kernel launches can mask runtime errors unless explicitly checked with `cudaGetLastError()`',
+      'Hardware version dependencies require understanding Compute Capabilities (sm_XX)'
+    ],
+    improvements: [
+      'Use Unified Memory (`cudaMallocManaged`) to simplify memory management into a single shared pointer for CPU and GPU',
+      'Adopt high-resolution `cudaEvent_t` timers instead of CPU clock timers to accurately measure pure GPU execution time',
+      'Structure applications to keep data resident in GPU VRAM across multiple kernel passes',
+      'Use `-arch=native` or target specific compute capabilities during compilation to enable modern hardware instructions'
+    ],
+    futureScope: 'Single-memory CPU-GPU chips (NVIDIA Grace Hopper NVLink-C2C), C++ standard parallelism (`std::execution::par`) compiling directly to GPU, and AI-assisted CUDA kernel code generation.',
+    industrialApplications: [
+      'Deep learning training and inference acceleration (PyTorch, TensorRT)',
+      'Computer vision and real-time video filtering (OpenCV CUDA)',
+      'Medical imaging 3D volume reconstruction (CT/MRI scanners)',
+      'Physics and scientific simulations (Computational Fluid Dynamics, Molecular Dynamics)',
+      'Financial risk modeling and real-time options pricing'
+    ],
+    researchOpportunities: [
+      'Automated GPU thread block tuning and code synthesis using machine learning',
+      'Zero-copy memory management for heterogeneous CPU-GPU embedded devices',
+      'Energy-efficient GPU kernel scheduling on edge computing nodes',
+      'Formal verification tools for proving memory safety in CUDA kernels'
+    ],
+    careerRelevance: [
+      'CUDA / GPU Software Developer',
+      'HPC Application Engineer',
+      'AI / Deep Learning Infrastructure Engineer',
+      'Computer Vision & Graphics Systems Engineer',
+      'Quantitative Computing Developer'
+    ]
   },
   {
     id: 2,
-    title: 'Memory Coalescing and Occupancy',
-    description: 'Master GPU memory access patterns and thread scheduling to extract maximum throughput from the memory hierarchy.',
-    prerequisites: ['Topic 1: GPU architecture, warps, and CUDA basics', 'Unit 1: Memory hierarchy and cache concepts', 'Basic understanding of C pointers and array indexing', 'Familiarity with GPU memory types (global, shared, registers)'],
-    dependencies: ['Profiling (Topic 3) uses coalescing and occupancy metrics introduced here', 'Cloud HPC (Topic 4) deploys optimized kernels on cloud GPUs', 'All GPU optimization depends on understanding memory access patterns', 'Deep learning frameworks optimize these patterns automatically but understanding helps customization'],
-    preparationPlan: 'Review how cache lines work from Unit 1, read about GPU memory coalescing rules, and understand the difference between row-major and column-major array layouts in C.',
-    story: 'You are a very organized grocery shopper with a very specific rule: when you enter aisle one, you must pick up items in multiples of thirty-two, and those thirty-two items must be on consecutive shelves. If items one through thirty-two are all on the same shelf, you grab them all in one swipe — fast and clean. But if item one is at the far left of the shelf, item two is at the far right, and item three is on a completely different shelf in the next aisle, you have to walk back and forth thirty-two times for what should have been one grab. This is memory coalescing. The GPU equivalent: when 32 threads in a warp each request one element from global memory, the hardware can combine those 32 requests into a single memory transaction if the elements are consecutive in memory. If the elements are scattered, the hardware issues multiple transactions, wasting bandwidth. Now imagine your grocery store has a loyalty program: the more items you grab in one transaction, the bigger the discount. If you grab 32 consecutive items, you pay for one bag. If you grab 32 random items, you pay for 32 bags. The store manager (GPU memory controller) loves you when you shop in order. Now suppose the store has two floors. The first floor (shared memory) is small but you can grab anything on it in one step. The second floor (global memory) is massive but you have to take the elevator, which takes 400 steps worth of time. A smart shopper buys a basket on the first floor, fills it with everything they need for the current recipe (block), and only takes the elevator once per basket load. This is the shared memory tiling pattern: load a tile of data from global memory into shared memory, cooperate with your shopping group to use it, then load the next tile. But there is a trap: two shoppers (threads) reaching for the same item at the same time on the first floor can cause a conflict. If shopper A and shopper B both grab the same bottle of olive oil at the same time, they collide. This is a bank conflict — shared memory is divided into banks, and if two threads in the same warp access different addresses that map to the same bank, the accesses are serialized. The store manager (shared memory controller) says: "You cannot both have the same shelf at the same time. Shopper B, wait one turn." The remedy: each shopper should aim for different banks. The store layout has 32 shelves (banks). If shoppers are spaced 32 apart, no two shoppers ever collide. The principal walks in and says: "This is way too complicated. Can\'t I just buy everything online?" The engineer says: "That is what optimized CUDA libraries like cuBLAS do. But if your recipe is custom, you need to understand the store layout yourself."',
+    title: 'Memory Coalescing, Shared Memory Tiling & Building Optimized GPU Applications',
+    description: 'Understand why naive GPU code runs slowly due to memory bottlenecks, master memory coalescing rules, implement high-performance Shared Memory Tiling for 2D Matrix Multiplication (GEMM) and image stencils, and eliminate shared memory bank conflicts.',
+    prerequisites: [
+      'Topic 1: GPU architecture, first-time environment setup, and the 5-step CUDA lifecycle',
+      'Unit 1: Memory hierarchy, cache lines, and spatial locality',
+      'C/C++ 2D array indexing and pointer arithmetic (`matrix[row * N + col]`)'
+    ],
+    dependencies: [
+      'Profiling & Bottleneck Analysis (Topic 3) measures memory throughput, bank conflicts, and coalescing efficiency',
+      'Cloud HPC & AI Accelerators (Topic 4) relies on shared memory tiling in Tensor Core matrix engines',
+      'All high-performance GPU library implementations (cuBLAS, cuDNN, cuFFT) depend on memory hierarchy optimization'
+    ],
+    preparationPlan: 'Review row-major matrix storage in C (`A[row * N + col]`), understand cache line fetching (128-byte transactions), and study the difference between `__shared__` and global `__device__` memory.',
+    story: 'Imagine walking into a massive wholesale warehouse with a shopping list of 32 items. In Scenario A (Coalesced Access), the 32 items are arranged side-by-side in consecutive slots along Shelf 1. You walk up with a wide pallet cart and sweep all 32 items into your cart in one single, fluid motion taking 5 seconds. In Scenario B (Uncoalesced Stride), the 32 items are scattered: item 1 is in aisle 1, item 2 in aisle 2, item 3 in aisle 3... up to aisle 32. You must now push your cart back and forth 32 separate times across the warehouse, taking 160 seconds for the exact same 32 items! This is GPU memory coalescing: when 32 threads in a warp access consecutive 4-byte floating-point addresses, the hardware memory controller merges the 128 bytes of requests into a single 128-byte DRAM transaction. If the threads access strided or random addresses, the hardware issues up to 32 separate transactions, wasting 96.8% of memory bandwidth! Now imagine the warehouse introduces a fast on-site workbench (Shared Memory / `__shared__`). Instead of walking to the back warehouse for every single calculation, a group of workers (Thread Block) cooperatively loads a batch of items (a Tile) onto the workbench, performs 100 calculations on that tile at lightning speed, and then loads the next tile. But there is a catch: the workbench has 32 separate drawers (Shared Memory Banks). If two workers reach for different items in Drawer 0 at the exact same moment (a Bank Conflict), one worker must freeze and wait. By simply adding an extra dummy slot (padding arrays by +1), the drawers stay unaligned and every worker grabs their item simultaneously!',
     cartoonPanels: [
       {
         scene: 1,
@@ -145,402 +325,873 @@ export const unit3Topics = [
         tag: "Coalesced Access",
         caption: "32 threads reading 32 consecutive array items in 1 single 128-byte DRAM transaction!",
         concept: "Coalesced Memory Access: 32 threads accessing contiguous addresses merged into 1 memory request.",
-        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="40" y="50" width="240" height="40" rx="6" fill="#1e293b" stroke="#22c55e" stroke-width="2"/><text x="160" y="75" fill="#22c55e" font-size="12" font-weight="bold" text-anchor="middle">[0] [1] [2] ... [31] Consecutive</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">1 Single 128-Byte DRAM Transaction</text></svg>`
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="35" y="45" width="250" height="45" rx="6" fill="#1e293b" stroke="#22c55e" stroke-width="2"/><text x="160" y="72" fill="#22c55e" font-family="monospace" font-size="11" font-weight="bold" text-anchor="middle">[0] [1] [2] [3] ... [31] Contiguous</text><path d="M 45 105 L 275 105" stroke="#38bdf8" stroke-width="3"/><text x="160" y="125" fill="#38bdf8" font-size="10" text-anchor="middle">Merged into 1x 128-Byte Transaction (100% Efficiency)</text><text x="160" y="160" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Optimal Coalesced Memory Access</text></svg>`
       },
       {
         scene: 2,
-        title: "Uncoalesced Scavenger Hunt",
+        title: "Uncoalesced Strided Penalty",
         avatar: "💥",
-        tag: "Uncoalesced Stride",
-        caption: "32 threads grabbing items from 32 random memory locations, forcing 32 separate transactions!",
-        concept: "Uncoalesced Memory Access: Strided access forces up to 32 separate memory transactions per warp.",
-        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g fill="#ef4444" font-size="18"><text x="30" y="70">📦</text><text x="100" y="70">📦</text><text x="170" y="70">📦</text><text x="240" y="70">📦</text></g><path d="M 40 85 L 40 120 M 110 85 L 110 120 M 180 85 L 180 120 M 250 85 L 250 120" stroke="#ef4444" stroke-width="2" stroke-dasharray="4"/><text x="160" y="155" text-anchor="middle" font-size="11" fill="#ef4444" font-weight="bold">32 Separate Transactions (32x Penalty)</text></svg>`
+        tag: "Strided Penalty",
+        caption: "32 threads requesting strided addresses force up to 32 separate DRAM fetches!",
+        concept: "Uncoalesced Access: Non-contiguous access pattern serializes into 32 memory transactions per warp.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g fill="#ef4444" font-size="16"><text x="35" y="65">📦[0]</text><text x="105" y="65">📦[32]</text><text x="175" y="65">📦[64]</text><text x="245" y="65">📦[96]</text></g><path d="M 50 78 L 50 115 M 120 78 L 120 115 M 190 78 L 190 115 M 260 78 L 260 115" stroke="#ef4444" stroke-width="2" stroke-dasharray="3,3"/><text x="160" y="135" fill="#ef4444" font-size="10" text-anchor="middle">32 Separate Transactions (3.1% Bus Utilization)</text><text x="160" y="160" text-anchor="middle" font-size="11" fill="#ef4444" font-weight="bold">Uncoalesced Stride Bottleneck</text></svg>`
       },
       {
         scene: 3,
-        title: "Shared Memory Fast Basket",
+        title: "Shared Memory Tiled GEMM Matrix Multiplication",
         avatar: "📦",
         tag: "__shared__ Tiling",
-        caption: "Thread block loading global array tiles into fast shared memory for 10x compute reuse!",
-        concept: "Shared Memory Tiling: Load tile into __shared__ memory to bypass global DRAM latency.",
-        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="80" y="45" width="160" height="60" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="160" y="80" font-size="18" text-anchor="middle">📦 __shared__ Tile</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">1.5 TB/s On-Chip Shared Memory Tiling</text></svg>`
+        caption: "Loading square sub-matrix tiles into fast on-chip shared memory for 10x-50x compute reuse!",
+        concept: "Shared Memory Tiling: Blocks cooperatively load tiles into on-chip SRAM, synchronizing with __syncthreads().",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(30, 35)"><rect x="0" y="0" width="110" height="75" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="55" y="30" fill="#38bdf8" font-size="10" font-weight="bold" text-anchor="middle">Tile A [16x16]</text><text x="55" y="55" fill="#94a3b8" font-size="9" text-anchor="middle">__shared__</text></g><g transform="translate(170, 35)"><rect x="0" y="0" width="110" height="75" rx="6" fill="#1e293b" stroke="#22c55e" stroke-width="2"/><text x="55" y="30" fill="#22c55e" font-size="10" font-weight="bold" text-anchor="middle">Tile B [16x16]</text><text x="55" y="55" fill="#94a3b8" font-size="9" text-anchor="middle">__shared__</text></g><text x="160" y="135" fill="#f59e0b" font-family="monospace" font-size="11" text-anchor="middle">__syncthreads(); // Barrier</text><text x="160" y="160" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">On-Chip Shared Memory Tiling</text></svg>`
       },
       {
         scene: 4,
-        title: "32-Bank Collision Lock",
+        title: "Shared Memory Bank Conflict & Padding Solution",
         avatar: "🏛️",
-        tag: "Bank Conflict",
-        caption: "2 threads accessing addresses mapping to the same shared memory bank collide, serializing access!",
-        concept: "Shared Memory Bank Conflict: Accesses to same bank serialize. Fix by padding arrays by +1.",
-        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="110" y="45" width="100" height="60" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="2"/><text x="160" y="80" font-size="20" text-anchor="middle">🏛️ Bank 0</text><path d="M 60 75 L 110 75 M 260 75 L 210 75" stroke="#ef4444" stroke-width="3"/><text x="160" y="155" text-anchor="middle" font-size="11" fill="#ef4444" font-weight="bold">Serialized Bank Conflict (Pad by +1)</text></svg>`
+        tag: "Bank Conflicts",
+        caption: "Threads accessing the same bank serialize; padding 2D array by +1 `s_data[16][17]` eliminates conflicts!",
+        concept: "Shared Memory Banks: 32 banks (4 bytes wide). Padding array dimensions eliminates bank conflicts entirely.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="50" y="35" width="220" height="50" rx="6" fill="#1e293b" stroke="#ef4444" stroke-width="2"/><text x="160" y="58" fill="#ef4444" font-size="11" font-weight="bold" text-anchor="middle">s_data[16][16] -> Bank 0 Collision!</text><text x="160" y="75" fill="#94a3b8" font-size="10" text-anchor="middle">Threads 0, 16 hit Bank 0 simultaneously</text><rect x="50" y="95" width="220" height="40" rx="6" fill="#1e293b" stroke="#22c55e" stroke-width="2"/><text x="160" y="120" fill="#22c55e" font-family="monospace" font-size="11" font-weight="bold" text-anchor="middle">s_data[16][17] -> Zero Conflicts!</text><text x="160" y="160" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Array Padding Eliminates Bank Conflicts</text></svg>`
       }
     ],
     storyQuestions: [
-      'Why does the store give you a discount for grabbing 32 consecutive items but charge you more for 32 random items?',
-      'What happens to your shopping speed when two shoppers try to grab from the same shelf simultaneously?',
-      'How does buying a basket on the first floor reduce your elevator trips?',
-      'If you know your recipe requires flour, sugar, and eggs (all on different aisles), how would you reorganize your shopping trip?'
+      'Why does accessing consecutive memory addresses `a[idx]` achieve up to 32x higher bandwidth than strided access `a[idx * 32]`?',
+      'How does cooperative tile loading into `__shared__` memory reduce roundtrips to global VRAM in matrix multiplication?',
+      'What critical role does `__syncthreads()` play during shared memory tile computation?',
+      'Why does declaring a 2D shared array with a padded column `__shared__ float s_matrix[TILE_DIM][TILE_DIM + 1]` eliminate bank conflicts?'
     ],
-    storyBridge: 'Memory coalescing is the grocery store discount for buying in order. Occupancy is how many shoppers can be in the store simultaneously without blocking each other. Bank conflicts are two shoppers reaching for the same shelf. Shared memory tiling is the shopping basket strategy. Together, these concepts determine whether your GPU kernel uses its bandwidth efficiently or wastes cycles walking back and forth.',
-    terminology: ['Memory coalescing', 'Coalesced access', 'Uncoalesced access', 'Global memory bandwidth', 'Shared memory banks', 'Bank conflict', 'Occupancy', 'Register pressure', 'Shared memory size', 'L2 cache', 'DRAM bandwidth', 'Transaction size', 'Cache line', 'Streaming multiprocessor (SM)', 'Thread block'],
-    mathNeed: 'Memory bandwidth is the primary bottleneck in most GPU kernels. We need formulas to predict the minimum number of memory transactions for a given data access pattern.',
-    mathMotivation: 'Coalesced access reduces memory transactions by up to 32x compared to uncoalesced access. Quantifying this difference guides data layout decisions.',
-    realWorldChallenges: ['Matrix operations naturally have one coalesced dimension and one uncoalesced dimension', 'Struct-of-Arrays vs Array-of-Structures layout dramatically affects coalescing', 'Shared memory bank conflicts silently reduce throughput by up to 32x'],
-    technicalChallenges: ['Coalescing requires threads in a warp to access consecutive addresses, which conflicts with some algorithmic patterns', 'Register pressure from large kernels limits occupancy, but spilling registers to local memory kills performance', 'Shared memory is limited (48-164 KB per SM), requiring careful tiling strategies'],
+    storyBridge: 'Just as warehouse efficiency depends on sweeping full contiguous pallets and staging heavy items onto a fast local workbench with separate drawers, GPU performance depends on memory coalescing for global VRAM and bank-conflict-free shared memory tiling for on-chip data reuse.',
+    terminology: [
+      'Memory Coalescing',
+      'Global Memory (DRAM/HBM)',
+      'Shared Memory (__shared__)',
+      'L1 / L2 Cache Hierarchy',
+      'DRAM Transaction (32B / 128B)',
+      'Memory Stride',
+      'Shared Memory Banks (32 Banks)',
+      'Bank Conflict',
+      'Matrix Multiplication (GEMM)',
+      'Tiling / Blocking',
+      '__syncthreads() Barrier',
+      'Array Padding (Stride + 1)',
+      'Structure of Arrays (SoA)',
+      'Array of Structures (AoS)',
+      'Occupancy',
+      'Register Spilling'
+    ],
+    mathNeed: 'Mathematical models are required to calculate memory transaction counts, effective memory bandwidth, arithmetic intensity of tiled algorithms, and the exact speedup gained by caching data in shared memory.',
+    mathMotivation: 'Most GPU kernels are memory-bound. By mathematically modeling the reduction in global memory traffic achieved through tiling, developers can design algorithms that operate near the GPU’s physical speed-of-light bandwidth.',
+    realWorldChallenges: [
+      'Translating textbook algorithms (which naturally use row-by-column iteration) into coalesced GPU access patterns',
+      'Array of Structures (AoS) data layouts in legacy codebases destroying coalescing efficiency',
+      'Shared memory size constraints (48 KB to 164 KB per SM) limiting tile dimensions',
+      'Invisible shared memory bank conflicts causing unexplained 2x-8x kernel slowdowns'
+    ],
+    technicalChallenges: [
+      'Ensuring both Matrix A and Matrix B accesses are coalesced during tiled multiplication',
+      'Inserting `__syncthreads()` barriers in the correct locations to prevent data races during tile reuse',
+      'Balancing register allocation per thread against shared memory usage to avoid killing SM occupancy',
+      'Padding shared memory arrays without exceeding SM memory capacity limits'
+    ],
     equations: [
       {
-        name: 'Memory Transaction Count',
-        latex: 'T_{access} = \\frac{N_{requests}}{B_{width}}',
-        symbols: 'T_access is the number of memory transactions, N_requests is the number of byte requests from a warp, B_width is the transaction width (typically 32 or 128 bytes).',
-        meaning: 'The hardware groups scattered memory requests into the minimum number of transactions, but scattered requests require more transactions.',
-        whyNeeded: 'It quantifies the bandwidth waste from uncoalesced access patterns.',
-        interpretation: 'If 32 threads each request 4 bytes from consecutive addresses (128 bytes total), one 128-byte transaction suffices. If they request from 32 different cache lines, 32 transactions are needed — a 32x waste.'
+        name: 'Memory Coalescing Efficiency',
+        latex: 'E_{coalesce} = \\frac{N_{useful\\_bytes}}{N_{transactions} \\times B_{transaction\\_size}} \\times 100\\%',
+        symbols: 'N_useful_bytes is bytes requested by active threads in a warp (e.g. 32 × 4 = 128 bytes), N_transactions is actual memory transactions issued, B_transaction_size is transaction width (128 bytes).',
+        meaning: 'The percentage of transferred memory bus bytes that represent useful application data.',
+        whyNeeded: 'Directly quantifies the bandwidth waste caused by strided or irregular memory access patterns.',
+        interpretation: 'For consecutive access: 128 / (1 × 128) = 100% efficiency. For stride-32 access: 128 / (32 × 128) = 3.125% efficiency (96.875% of bandwidth is wasted on unused data).'
       },
       {
-        name: 'Effective Bandwidth',
-        latex: 'BW_{eff} = \\frac{N_{bytes\\_accessed}}{T_{kernel}}',
-        symbols: 'BW_eff is effective bandwidth achieved by the kernel, N_bytes_accessed is total bytes read/written, T_kernel is kernel execution time.',
-        meaning: 'The actual data rate achieved by the kernel, compared to the hardware peak bandwidth.',
-        whyNeeded: 'It directly measures whether the memory system is being used efficiently.',
-        interpretation: 'An RTX 4090 has 1008 GB/s peak bandwidth. If a kernel achieves 600 GB/s, utilization is 59.5%, suggesting room for coalescing optimization.'
+        name: 'Tiled Matrix Multiply Global Memory Access Reduction',
+        latex: 'R_{traffic} = \\frac{N_{naive}}{N_{tiled}} = TILE\\_DIM',
+        symbols: 'N_naive is total global memory reads in naive GEMM (2N^3 floats), N_tiled is global reads in tiled GEMM (2N^3 / TILE_DIM floats), TILE_DIM is the tile width (e.g. 16 or 32).',
+        meaning: 'The factor by which shared memory tiling reduces slow global DRAM reads.',
+        whyNeeded: 'Proves mathematically why tiled matrix multiplication runs 10x to 32x faster than naive implementations.',
+        interpretation: 'With a tile dimension of 32x32: Global memory reads are reduced by 32x, transforming a memory-starved kernel into a high-throughput compute engine.'
       },
       {
-        name: 'Occupancy Formula',
-        latex: '\\eta = \\frac{N_{active\\_warps}}{N_{max\\_warps}}',
-        symbols: 'eta is occupancy, N_active_warps is the number of warps concurrently resident on an SM, N_max_warps is the hardware maximum warps per SM.',
-        meaning: 'The fraction of maximum concurrent warps that are actually resident and eligible to execute.',
-        whyNeeded: 'Higher occupancy hides memory latency by having more warps available when one stalls.',
-        interpretation: 'An SM with max 48 warps and 32 active warps has occupancy 66.7%. The remaining 33.3% means the SM has room for more warps that could hide latency.'
-      },
-      {
-        name: 'Bank Conflict Penalty',
-        latex: 'T_{bank} = N_{conflicts} \\times T_{bank\\_access}',
-        symbols: 'T_bank is total shared memory access time, N_conflicts is the number of serialized bank accesses, T_bank_access is the time per bank access (1 cycle for no conflict).',
-        meaning: 'When multiple threads in a warp access different addresses that map to the same bank, the accesses are serialized, multiplying the access time.',
-        whyNeeded: 'Bank conflicts can reduce shared memory throughput by up to 32x, making them as devastating as uncoalesced global memory.',
-        interpretation: 'If 4 threads hit the same bank, the access takes 4 cycles instead of 1 — a 4x penalty on that shared memory operation.'
+        name: 'Effective Memory Bandwidth',
+        latex: 'BW_{effective} = \\frac{Bytes_{read} + Bytes_{written}}{T_{kernel} \\times 10^9} \\text{ (GB/s)}',
+        symbols: 'Bytes_read and Bytes_written are total application bytes transferred to/from global memory, T_kernel is execution time in seconds.',
+        meaning: 'The actual useful data throughput achieved by the kernel compared to hardware peak bandwidth.',
+        whyNeeded: 'Provides the standard benchmark metric for evaluating memory-bound GPU applications.',
+        interpretation: 'A 2D convolution reading 100 MB and writing 100 MB in 0.25 ms achieves BW = 200 MB / 0.00025 s = 800 GB/s (79.4% of an RTX 4090 peak 1008 GB/s bandwidth).'
       }
     ],
-    numericalExample: 'A matrix of 4096×4096 single-precision floats (64 MB) is accessed row by row. Each row has 4096 elements × 4 bytes = 16,384 bytes. A 128-byte cache line holds 32 floats. Sequential access: 4096/32 = 128 cache lines per row. Each warp (32 threads) accesses 32 consecutive floats = 128 bytes = one cache line = one transaction. Perfectly coalesced. Column access: threads in a warp access elements 4096 apart in memory. Each element is in a different cache line. 32 threads → 32 transactions. 32x worse. Effective bandwidth for row access: 16,384 bytes / T_row. For column access: 16,384 bytes × 32 / T_col. If T_row ≈ T_col (same number of memory operations but 32x more transactions), column access throughput is 32x lower.',
-    metrics: ['Memory coalescing efficiency', 'Effective bandwidth vs peak bandwidth', 'Occupancy percentage', 'Shared memory bank conflicts', 'Register usage per thread', 'L2 cache hit rate'],
-    optimizationPossibilities: 'Restructure data layouts for coalesced access (Structure of Arrays instead of Array of Structures), pad shared memory arrays to avoid bank conflicts, tune block size to balance occupancy and register pressure, and use shared memory tiling to reuse data from global memory.',
-    futureEnhancements: 'Asynchronous memory copy (cp.async in Hopper), distributed shared memory across SMs, tensor memory accelerator (TMA) for bulk data movement, and hardware-accelerated memory compression.',
-    activities: [
-      { level: 1, levelName: 'Teacher Do', objective: 'Demonstrate coalesced vs uncoalesced access using a classroom analogy.', instructions: 'Line up 32 students (a warp). Give each a number. For coalesced access: student i picks up item i from a shelf (consecutive). Time it. For uncoalesced access: student i picks up item (i × 100) mod 3200 (scattered). Time it. Show the dramatic slowdown.', inputs: '32 students, shelf with labeled items, timer', expectedOutputs: 'Scattered access is visibly slower, demonstrating the coalescing principle.', rubric: 'Demonstration clarity 50%, analogy accuracy 30%, student engagement 20%.', learningOutcomes: 'See that consecutive thread access patterns are faster.', time: '10 minutes', materials: 'Labeled items, shelf, timer' },
-      { level: 2, levelName: 'Teacher + Student Together', objective: 'Calculate coalescing efficiency for different access patterns.', instructions: 'Given a warp of 32 threads each requesting 4 bytes, compute the number of 128-byte transactions for: (a) consecutive addresses, (b) stride-2 access, (c) stride-32 access, (d) random access. Plot transactions vs stride.', inputs: 'Calculator, transaction formula', expectedOutputs: 'Transaction counts: 1, 1, 32, 32 for the four patterns respectively.', rubric: 'Correct calculations 40%, meaningful plot 30%, interpretation 30%.', learningOutcomes: 'Quantify the cost of non-coalesced access.', time: '15 minutes', materials: 'Calculator, graph paper' },
-      { level: 3, levelName: 'All Students Do', objective: 'Measure coalescing impact on a real GPU kernel.', instructions: 'In groups of 3, implement two versions of a vector-scalar multiply: (a) coalesced (threads access consecutive elements), (b) strided (threads access every 32nd element). Measure bandwidth for both on a CUDA GPU.', inputs: 'CUDA environment, starter code', expectedOutputs: 'Two bandwidth measurements showing coalesced access achieves near-peak bandwidth.', rubric: 'Correct implementations 30%, accurate measurements 30%, coalescing analysis 40%.', learningOutcomes: 'Experience the measurable impact of coalescing on real hardware.', time: '25 minutes', materials: 'Laptop with CUDA, starter code' },
-      { level: 4, levelName: 'Individual Student Do', objective: 'Optimize a matrix transpose for coalescing and bank conflicts.', instructions: 'Implement a naive NxN matrix transpose (uncoalesced output). Then implement a shared-memory tiled transpose that achieves coalesced access in both read and write. Pad shared memory to avoid bank conflicts. Measure both.', inputs: 'Matrix transpose code skeleton', expectedOutputs: 'Two implementations with timing comparison and bank conflict analysis.', rubric: 'Correct implementations 25%, correct measurements 25%, coalescing analysis 25%, bank conflict analysis 25%.', learningOutcomes: 'Apply coalescing and bank conflict optimization to a classic GPU problem.', time: '20 minutes', materials: 'Code skeleton, CUDA environment' }
+    numericalExample: 'Matrix Multiplication GEMM for N = 4096 x 4096 single-precision floats (4096^2 × 4 bytes = 67.1 MB per matrix). Naive GEMM: Each output element calculates a dot product of 4096 elements. Total global memory reads = 4096 × 4096 × 4096 × 2 × 4 bytes = 549.75 GB of DRAM traffic! On an RTX 3080 (760 GB/s bandwidth), theoretical minimum time = 549.75 / 760 = 0.723 seconds (Achieving ~190 GFLOPS). Tiled GEMM with TILE_DIM = 32: Tiles of 32x32 floats are loaded into `__shared__ float s_A[32][33]` and `s_B[32][33]` (padded to prevent bank conflicts). Global memory reads are reduced by 32x to 17.18 GB! Minimum memory time = 17.18 / 760 = 0.0226 seconds. Achieved compute throughput surges from 190 GFLOPS to over 6,100 GFLOPS (a 32x speedup!).',
+    metrics: [
+      'Global Memory Load/Store Efficiency (%)',
+      'Effective Memory Bandwidth (GB/s) vs Peak Bandwidth',
+      'Shared Memory Bank Conflicts per Warp',
+      'Theoretical vs Achieved SM Occupancy (%)',
+      'Registers per Thread and Local Memory Spill (Bytes)',
+      'L1 / L2 Cache Hit Rate (%)'
     ],
-    projectScope: 'Build a GPU memory access benchmark that systematically measures the impact of coalescing, stride patterns, and bank conflicts on kernel bandwidth and occupancy.',
-    projectFeasibility: 'Requires a CUDA-capable GPU and CUDA toolkit. Uses simple kernels that measure bandwidth across different access patterns. No complex library dependencies.',
-    projectObjectives: ['Implement coalesced and uncoalesced vector access patterns', 'Measure effective bandwidth for stride-1, stride-2, stride-32, and random access', 'Implement a shared memory benchmark with and without bank conflicts', 'Compute occupancy for different block sizes and register counts', 'Generate a report ranking optimization techniques by impact'],
-    projectOutcomes: ['CUDA bandwidth benchmark program', 'Bandwidth vs stride plot', 'Bank conflict impact measurement', 'Occupancy vs block/register configuration chart', 'One-page optimization guide'],
-    projectMethodology: 'Question: How do coalescing and occupancy affect GPU kernel bandwidth? Hypothesis: Coalesced access will achieve near-peak bandwidth; bank conflicts will reduce shared memory throughput proportionally. Experiment: Timed bandwidth measurements. Compare: Plot results against peak hardware bandwidth. Reflect: Identify the dominant optimization target.',
-    projectRoles: ['Kernel Lead: writes the CUDA kernels', 'Measurement Lead: designs timing protocol', 'Analyst: creates bandwidth and occupancy plots', 'Writer: documents optimization recommendations'],
+    optimizationPossibilities: 'Convert Array of Structures (AoS) to Structure of Arrays (SoA), apply 2D shared memory tiling for matrix and stencil algorithms, pad shared memory arrays by +1 (`s_data[TILE][TILE+1]`) to eliminate bank conflicts, and use vectorized loads (`float4`) to fetch 16 bytes per instruction.',
+    futureEnhancements: 'NVIDIA Hopper Tensor Memory Accelerator (TMA) for asynchronous hardware-driven global-to-shared memory transfers, Distributed Shared Memory (DSM) across SM clusters, and unified cache architecture with dynamic L1/shared partitioning.',
+    activities: [
+      {
+        level: 1,
+        levelName: 'Teacher Do: Demonstrate Coalesced vs Strided Access & Bank Conflicts',
+        objective: 'Demonstrate live benchmarking of coalesced vs strided memory reads and visualize bank conflicts.',
+        instructions: 'Project and run a side-by-side benchmark of two kernels: Kernel A reads `d_in[idx]` (coalesced stride-1), Kernel B reads `d_in[(idx * 32) % N]` (stride-32 uncoalesced). Show that Kernel A is 20x-30x faster. Next, display a shared memory access pattern and demonstrate how changing `__shared__ float tile[32][32]` to `__shared__ float tile[32][33]` eliminates bank conflicts in Nsight Compute metrics.',
+        inputs: 'Coalescing benchmark source code, Nsight Compute profiler / timing harness',
+        expectedOutputs: 'Direct timing comparison showing 25x bandwidth disparity between coalesced and strided access.',
+        rubric: 'Demonstration clarity 40%, technical accuracy in explaining transaction merging 40%, student engagement 20%.',
+        learningOutcomes: 'Visually understand the severe hardware penalty of uncoalesced memory access and the power of shared memory padding.',
+        time: '15 minutes',
+        materials: 'Projector, CUDA workstation, coalescing comparison code'
+      },
+      {
+        level: 2,
+        levelName: 'Teacher + Student Together: Develop Tiled Matrix Multiplication (GEMM)',
+        objective: 'Step through writing a full Tiled Matrix Multiplication kernel in CUDA C using shared memory.',
+        instructions: 'Guide students to construct `tiled_gemm.cu`. Step 1: Declare `__shared__ float s_A[TILE_DIM][TILE_DIM]` and `__shared__ float s_B[TILE_DIM][TILE_DIM]`. Step 2: Loop over tiles `for (int t = 0; t < N/TILE_DIM; ++t)`. Step 3: Cooperatively load elements into shared memory. Step 4: Call `__syncthreads()`. Step 5: Accumulate partial dot product. Step 6: Call `__syncthreads()` before loading the next tile. Compile and verify correctness against CPU matrix multiply.',
+        inputs: 'tiled_gemm.cu skeleton with verification harness, TILE_DIM = 16 or 32',
+        expectedOutputs: 'Working tiled GEMM kernel that produces numerically identical output to CPU matrix multiply at 20x+ speedup.',
+        rubric: 'Correct tile indexing 30%, proper barrier placement (__syncthreads) 40%, successful validation 30%.',
+        learningOutcomes: 'Master the shared memory tiling pattern: cooperative load -> __syncthreads() -> compute -> __syncthreads().',
+        time: '25 minutes',
+        materials: 'C++ IDE/VS Code, nvcc compiler, starter skeleton'
+      },
+      {
+        level: 3,
+        levelName: 'All Students Do: Build a 2D Gaussian Image Blur Kernel with Shared Memory Halo Cells',
+        objective: 'Develop a 2D 5x5 stencil image convolution filter utilizing shared memory with boundary halo management.',
+        instructions: 'Working in pairs, implement `image_blur_gpu.cu`. Allocate shared memory of size `(TILE_DIM + 4) x (TILE_DIM + 4)` to store the interior tile plus 2-pixel halo cells on all four borders. Cooperatively load pixel data from global memory into shared memory, handle out-of-bounds image clamps, call `__syncthreads()`, apply the 5x5 Gaussian convolution weight matrix from constant memory (`__constant__`), and write the blurred pixel to output. Benchmark against naive global memory convolution.',
+        inputs: 'Image data array (1024x1024 floats or PPM image), 5x5 Gaussian kernel weights',
+        expectedOutputs: 'Working shared-memory stencil kernel running 5x-10x faster than naive global implementation, outputting valid blurred image.',
+        rubric: 'Halo boundary management 35%, shared memory indexing 35%, performance benchmark comparison 30%.',
+        learningOutcomes: 'Implement real-world stencil and image convolution applications using shared memory halo caching.',
+        time: '25 minutes',
+        materials: 'CUDA development environment, sample test image / array data'
+      },
+      {
+        level: 4,
+        levelName: 'Individual Student Do: Optimize Matrix Transpose with Bank-Conflict-Free Padding',
+        objective: 'Implement, benchmark, and eliminate bank conflicts in a 2D Matrix Transpose application.',
+        instructions: 'Implement two versions of 2D Matrix Transpose in CUDA C: (1) `transpose_naive`: reads coalesced, writes uncoalesced (strided). (2) `transpose_shared`: reads coalesced into `__shared__ float tile[32][33]`, synchronizes, and writes coalesced to output. Measure effective bandwidth for both versions for a 4096 x 4096 matrix. Explain why padding the shared array column by +1 eliminates shared memory bank conflicts on the read phase.',
+        inputs: 'Matrix transpose code template, problem size N = 4096',
+        expectedOutputs: 'Complete matrix transpose program with timing comparison showing shared-memory tiled version achieving near-peak bandwidth.',
+        rubric: 'Correct transpose logic 25%, coalesced write implementation 25%, bank conflict padding analysis 30%, benchmark reporting 20%.',
+        learningOutcomes: 'Apply coalescing and bank conflict avoidance to solve classic memory alignment challenges.',
+        time: '20 minutes',
+        materials: 'CUDA environment, terminal, profiling script'
+      }
+    ],
+    projectScope: 'Develop a High-Performance GPU Linear Algebra and Image Processing Library containing optimized Tiled Matrix Multiplication (GEMM), 2D Stencil Convolutions, and Matrix Transpose, complete with bandwidth profiling and bank conflict analysis.',
+    projectFeasibility: 'Requires standard CUDA development environment (local GPU or Colab). Can be implemented using standard C++ and CUDA runtime API without commercial library dependencies.',
+    projectObjectives: [
+      'Implement Naive vs Shared-Memory Tiled GEMM (General Matrix Multiply) in CUDA C',
+      'Implement 2D Image Stencil Convolution with shared memory halo exchange',
+      'Implement coalesced 2D Matrix Transpose with bank-conflict-free array padding',
+      'Measure effective bandwidth and GFLOPS across matrix sizes from 512x512 to 8192x8192',
+      'Validate numerical accuracy against CPU reference implementations within floating-point tolerance'
+    ],
+    projectOutcomes: [
+      'Modular CUDA C++ source code with optimized kernels for GEMM, Stencils, and Transpose',
+      'Comprehensive benchmark suite measuring effective bandwidth (GB/s) vs theoretical peak',
+      'Bank conflict analysis demonstrating the impact of array padding',
+      'Technical report detailing memory access patterns and architectural design decisions'
+    ],
+    projectMethodology: 'Question: How much speedup does shared memory tiling and bank conflict elimination yield over naive global memory access? Hypothesis: Tiling will reduce global memory traffic by TILE_DIM (16x-32x), increasing compute throughput proportionally. Experiment: Benchmark execution times across naive, unpadded tiled, and padded tiled implementations. Compare: Graph effective bandwidth vs problem size. Reflect: Connect empirical results to DRAM and SRAM hardware physics.',
+    projectRoles: [
+      'Algorithm Architect: designs shared memory tiling and thread index mapping equations',
+      'Kernel Optimization Lead: implements halo cells, array padding, and loop unrolling',
+      'Validation & Benchmark Lead: develops test harnesses, verification checkers, and timing suites',
+      'Documentation Specialist: compiles speedup graphs, bank conflict charts, and technical documentation'
+    ],
     projectTimeline: [
-      { milestone: 'Setup', duration: 'Day 1', deliverable: 'CUDA environment and problem definition' },
-      { milestone: 'Kernels', duration: 'Days 2-3', deliverable: 'Coalesced, strided, and bank conflict kernels' },
-      { milestone: 'Measurement', duration: 'Days 4-5', deliverable: 'Full bandwidth sweep data' },
-      { milestone: 'Analysis', duration: 'Day 6', deliverable: 'Bandwidth and occupancy plots' },
-      { milestone: 'Report', duration: 'Day 7', deliverable: 'Optimization guide with recommendations' }
+      { milestone: 'Algorithm Design & Naive Baselines', duration: 'Day 1', deliverable: 'Working naive GEMM and Transpose with CPU verification checkers' },
+      { milestone: 'Tiled GEMM Implementation', duration: 'Days 2-3', deliverable: 'Shared memory tiled GEMM with __syncthreads() barriers' },
+      { milestone: 'Stencil & Transpose Optimization', duration: 'Days 4-5', deliverable: '2D Stencil with halo cells and padded Matrix Transpose' },
+      { milestone: 'Profiling & Performance Sweeps', duration: 'Day 6', deliverable: 'Bandwidth sweep data and bank conflict measurements' },
+      { milestone: 'Final Report & Submission', duration: 'Day 7', deliverable: 'Complete GitHub repository and TRL 4 technical report' }
     ],
     projectRisks: [
-      { risk: 'GPU hardware variations affect bandwidth numbers', severity: 'Low', mitigation: 'Record GPU model, driver version, and repeat all measurements' },
-      { risk: 'L2 cache effects mask uncoalesced access at small sizes', severity: 'Medium', mitigation: 'Use problem sizes large enough to exceed L2 cache capacity' },
-      { risk: 'Occupancy limits vary by SM architecture and are hard to predict', severity: 'Medium', mitigation: 'Use CUDA occupancy API to compute exact occupancy, do not estimate' }
+      { risk: 'Shared memory bank conflicts degrading performance without clear error messages', severity: 'Medium', mitigation: 'Always pad 2D shared memory arrays by +1 (e.g. `s_tile[32][33]`) and profile with Nsight' },
+      { risk: 'Missing `__syncthreads()` causing intermittent race conditions', severity: 'High', mitigation: 'Run `compute-sanitizer --tool racecheck` on all compiled executables' },
+      { risk: 'VRAM exhaustion on large matrix sweeps', severity: 'Low', mitigation: 'Cap maximum matrix dimensions to fit within GPU VRAM' }
     ],
-    projectBudget: 'Student time: ~12 hours. GPU compute cost: $0 (Google Colab or local GPU). Documentation: ~3 hours.',
-    projectTRL: 'TRL 3 — Empirical measurement of coalescing and occupancy effects on GPU kernel bandwidth.',
+    projectBudget: 'Student effort: ~14 hours. Compute cost: $0 (Local GPU or Google Colab). Software: CUDA Toolkit (Free).',
+    projectTRL: 'TRL 3 — Empirical validation of memory hierarchy optimization, shared memory tiling, and bank conflict avoidance.',
     questions: [
-      { type: 'conceptual', question: 'What is memory coalescing and why does it matter on GPUs?', answer: 'Memory coalescing is the hardware mechanism that combines memory requests from 32 threads in a warp into the fewest possible transactions when the threads access consecutive addresses. It matters because global memory bandwidth is the primary bottleneck for most GPU kernels — uncoalesced access can waste up to 32x more memory transactions.', explanation: 'The memory controller detects when threads in a warp request consecutive addresses and merges those requests into a single wide transaction. Scattered requests require separate transactions.', commonMistakes: 'Assuming the programmer must explicitly merge requests. Coalescing is automatic — the programmer\'s job is to write access patterns that the hardware CAN coalesce.', tip: 'Thread i should access array[i], not array[i × stride].' },
-      { type: 'numerical', question: 'A warp reads 32 single-precision values. If all are in the same 128-byte cache line, how many memory transactions occur? If they span 32 different cache lines?', answer: 'Same cache line: 1 transaction (128 bytes covers all 32 × 4-byte values). Different cache lines: 32 transactions (one per cache line, each returning 128 bytes but only 4 bytes useful).', explanation: 'When all values are in one cache line, the hardware issues one transaction. When scattered, each value requires its own transaction — 32x more memory traffic for the same useful data.', commonMistakes: 'Forgetting that each cache line fetch returns 128 bytes even if only 4 bytes are useful.', tip: 'Coalescing success = 1 transaction per warp. Failure = 32 transactions per warp.' },
-      { type: 'application', question: 'You have an Array of Structures (AoS): structs {float x, y, z, w;} data[N]. Threads access data[threadIdx].x. Is this coalesced? How do you fix it?', answer: 'Not coalesced. Each struct is 16 bytes, and consecutive structs are 16 bytes apart. Thread 0 accesses offset 0, thread 1 accesses offset 16 — these are NOT in the same 128-byte cache line (they are, but the y, z, w fields between them waste bandwidth). Fix: use Structure of Arrays (SoA): float x[N], y[N], z[N], w[N]. Now thread 0 accesses x[0], thread 1 accesses x[1] — consecutive 4-byte values, perfectly coalesced.', explanation: 'AoS wastes bandwidth because the hardware fetches the entire struct (16 bytes) but only uses one field (4 bytes). SoA packs all values of one field contiguously.', commonMistakes: 'Thinking AoS is coalesced because the structs are contiguous — the individual field accesses are strided.', tip: 'AoS = 25% bandwidth utilization. SoA = 100%. Always prefer SoA for GPU.' },
-      { type: 'problemSolving', question: 'A kernel achieves only 20% of peak memory bandwidth. List three possible causes and one diagnostic for each.', answer: '(1) Uncoalesced access: diagnose with nsight compute memory throughput chart. (2) Shared memory bank conflicts: diagnose with shared memory replay counter. (3) Insufficient occupancy: diagnose with occupancy calculator. Other causes include register spill to local memory and L2 cache thrashing.', explanation: 'Low bandwidth utilization usually traces to one of these three memory issues. The GPU profiler quantifies each independently.', commonMistakes: 'Blaming the GPU hardware when the issue is the access pattern.', tip: 'Profile, don\'t guess — the profiler will tell you exactly which memory level is the bottleneck.' }
+      {
+        type: 'conceptual',
+        question: 'Explain what a shared memory bank conflict is, how many banks exist in modern NVIDIA GPUs, and how array padding eliminates bank conflicts.',
+        answer: 'Shared memory is divided into 32 equally sized memory modules called "banks" (each 4 bytes wide). Successive 32-bit words map to successive banks: Bank = (Address / 4) % 32. A bank conflict occurs when two or more threads within the same warp access different addresses that map to the SAME bank simultaneously; the hardware must serialize these requests, multiplying access latency by the degree of the conflict. By padding 2D shared memory arrays by one element (e.g. `__shared__ float s_data[32][33]` instead of `[32][32]`), column elements shift to consecutive banks, allowing all 32 threads in a column to access distinct banks simultaneously with zero conflicts.',
+        explanation: 'Shared memory is on-chip SRAM designed for single-cycle throughput, but concurrent multi-port access requires spreading requests across independent physical banks.',
+        commonMistakes: 'Thinking all threads reading the EXACT SAME address causes a bank conflict. (When all threads read the same address, it is a broadcast and executes in 1 cycle). Bank conflicts occur when threads access DIFFERENT addresses in the SAME bank.',
+        tip: 'Broadcasting (same address) = 1 cycle (Fast). Bank conflict (different addresses, same bank) = Serialized (Slow).'
+      },
+      {
+        type: 'numerical',
+        question: 'A CUDA kernel processes single-precision floating-point numbers (4 bytes each). A warp of 32 threads accesses array elements with a stride of 4: Thread 0 accesses `data[0]`, Thread 1 accesses `data[4]`, Thread 2 accesses `data[8]`... Thread 31 accesses `data[124]`. If the GPU fetches memory in 128-byte cache transactions, how many transactions are required, and what is the coalescing efficiency?',
+        answer: 'Span of accessed memory = 124 - 0 + 1 = 125 elements × 4 bytes = 500 bytes.\n128-byte aligned cache lines spanned = ceil(500 / 128) = 4 memory transactions (each fetching 128 bytes = 512 bytes total).\nUseful data requested = 32 threads × 4 bytes = 128 bytes.\nCoalescing Efficiency = (Useful Bytes / Transferred Bytes) × 100% = (128 / 512) × 100% = 25.0%.\n(75% of transferred memory bus bandwidth is wasted).',
+        explanation: 'Because data is strided across 500 bytes, the memory controller must issue 4 separate 128-byte transactions to service the single warp request.',
+        commonMistakes: 'Assuming stride-4 requires 32 transactions. It requires 4 transactions because 500 bytes fit across four 128-byte cache lines.',
+        tip: 'Coalescing efficiency = (32 * sizeof(type)) / (Transactions * 128).'
+      },
+      {
+        type: 'application',
+        question: 'You have a particle simulation where each particle is represented by `struct Particle { float x, y, z, vx, vy, vz, mass; }; Particle particles[N];`. Explain why this Array of Structures (AoS) format causes poor GPU memory coalescing when updating positions, and rewrite the data layout as Structure of Arrays (SoA).',
+        answer: 'Why AoS causes poor coalescing: Each `struct Particle` is 28 bytes. When Thread 0 accesses `particles[0].x` (offset 0) and Thread 1 accesses `particles[1].x` (offset 28), consecutive threads access memory spaced 28 bytes apart. To fetch 32 floats (128 bytes useful), the GPU must span 32 × 28 = 896 bytes (requiring 7-8 separate 128-byte DRAM transactions = ~14% efficiency).\n\nStructure of Arrays (SoA) refactoring:\n```cuda\nstruct ParticleSystem {\n    float* x;   // Contiguous array of N floats\n    float* y;\n    float* z;\n    float* vx;\n    float* vy;\n    float* vz;\n    float* mass;\n};\n```\nIn SoA format, Thread 0 accesses `x[0]`, Thread 1 accesses `x[1]`... Thread 31 accesses `x[31]`. All 32 floats are perfectly contiguous in memory (128 bytes), fetched in exactly ONE 128-byte transaction (100% coalescing efficiency).',
+        explanation: 'Converting AoS to SoA is one of the single most impactful refactorings for GPU performance, turning strided struct access into contiguous cache-line sweeps.',
+        commonMistakes: 'Keeping AoS format and trying to fix the issue using shared memory. Refactoring to SoA in host memory before transfer is the clean architectural solution.',
+        tip: 'Always remember: CPU objects prefer AoS (object-oriented); GPU SIMT kernels demand SoA (vector-oriented).'
+      },
+      {
+        type: 'problemSolving',
+        question: 'A developer implements Tiled Matrix Multiplication using `__shared__` memory, but the output contains random numerical errors on 10% of runs. Profiling shows no memory leaks. Identify the missing synchronization primitive, explain why errors occur non-deterministically, and provide the code fix.',
+        answer: 'Root Cause: Missing `__syncthreads()` barrier before loading the NEXT tile.\nExplanation: In tiled GEMM, threads perform two phases per tile iteration: (1) Load data into `s_A` and `s_B`, (2) Compute partial dot products. While the developer included `__syncthreads()` after the load phase, they FORGOT the `__syncthreads()` after the compute phase! Faster threads in the block moved to iteration `t+1` and overwrote `s_A` and `s_B` with new tile data while slower threads were STILL reading iteration `t` data (a classic Read-After-Write data race). This causes non-deterministic numerical corruption depending on thread warp scheduling.\n\nCode Fix: Ensure BOTH synchronization barriers are present in the loop:\n```cuda\nfor (int t = 0; t < numTiles; ++t) {\n    // Phase 1: Load tile cooperatively\n    s_A[threadIdx.y][threadIdx.x] = d_A[...];\n    s_B[threadIdx.y][threadIdx.x] = d_B[...];\n    __syncthreads(); // Barrier 1: Wait until tile is loaded\n\n    // Phase 2: Compute with tile\n    for (int k = 0; k < TILE_DIM; ++k)\n        sum += s_A[threadIdx.y][k] * s_B[k][threadIdx.x];\n    __syncthreads(); // Barrier 2: MANDATORY! Wait until all threads finish computing before overwriting tile!\n}\n```',
+        explanation: 'Shared memory is shared across all threads in a block. Without barrier synchronization after consumption, write-after-read hazards corrupt shared state.',
+        commonMistakes: 'Assuming one `__syncthreads()` per loop iteration is sufficient. Double-buffered or tiled loops require synchronizing both after production and after consumption.',
+        tip: 'Rule of thumb: 1 shared memory load + 1 shared memory compute = 2 `__syncthreads()` calls per iteration.'
+      }
     ],
     labType: 'memory-coalescing',
-    keyInsights: ['Coalesced access reduces memory transactions by up to 32x compared to uncoalesced access', 'Shared memory bank conflicts are as devastating as uncoalesced global memory access', 'Occupancy hides memory latency but is limited by registers, shared memory, and block size', 'Data layout (SoA vs AoS) is the single most impactful GPU optimization decision'],
-    advantages: ['Dramatic bandwidth improvement from coalescing (up to 32x)', 'Shared memory tiling reduces global memory traffic by orders of magnitude', 'Bank conflict avoidance is simple (pad arrays by one element)', 'Occupancy tuning is well-supported by CUDA profiling tools'],
-    disadvantages: ['Coalescing constraints often conflict with natural data structures', 'Shared memory is limited per SM (48-164 KB), requiring careful tiling', 'Register pressure from complex kernels limits occupancy', 'Bank conflict diagnosis requires specialized tools (nsight compute)'],
-    improvements: ['Use CUDA memory hints (cudaMemAdvise) for NUMA-aware access', 'Apply swizzling techniques to eliminate bank conflicts algorithmically', 'Use asynchronous copy (cp.async) to overlap global→shared memory transfer with computation', 'Leverage L2 cache residency control (cudaAccessPolicyWindow) for persistent data'],
-    futureScope: 'Hardware-accelerated memory compression, CXL-attached GPU memory pools, and software-managed cache hierarchies are extending the memory system beyond current limits.',
-    industrialApplications: ['Deep learning matrix multiplication (cuBLAS GEMM optimization)', 'Image processing convolution kernels (cuDNN)', 'Sparse matrix operations (cuSPARSE)', 'Ray tracing BVH traversal (optimal memory access patterns)', 'Molecular dynamics force calculations (coalesced atom access)'],
-    researchOpportunities: ['Automatic data layout transformation for GPU coalescing', 'Bank-conflict-free shared memory design', 'Compiler-driven occupancy optimization', 'Memory-aware auto-tuning for GPU kernels'],
-    careerRelevance: ['GPU Performance Engineer', 'HPC Optimization Specialist', 'CUDA Library Developer', 'Machine Learning Compiler Engineer', 'Graphics Engine Programmer']
+    keyInsights: [
+      'Global memory coalescing merges 32 thread accesses into single 128-byte transactions, increasing throughput by up to 32x',
+      'Shared memory (`__shared__`) acts as a programmer-controlled on-chip L1 cache with over 10x higher bandwidth and 10x lower latency than global DRAM',
+      'Tiling algorithms reduces global memory traffic by a factor of `TILE_DIM`, converting memory-bound bottlenecks into compute throughput',
+      'Always insert `__syncthreads()` both after loading shared memory and after computing to prevent data race corruption'
+    ],
+    advantages: [
+      'Enables GPU applications to achieve near-peak hardware compute performance on linear algebra and stencil workloads',
+      'Shared memory tiling dramatically reduces energy-consuming global DRAM memory traffic',
+      'Array padding provides a zero-overhead software solution to eliminate hardware bank conflicts',
+      'Structure of Arrays (SoA) layout enables maximal memory bus saturation across all CUDA architectures'
+    ],
+    disadvantages: [
+      'Shared memory capacity per SM is limited (48 KB - 164 KB), constraining maximum tile sizes',
+      'Excessive shared memory or register usage per thread lowers SM occupancy',
+      'Complex halo cell boundary conditions in stencils increase code complexity',
+      'Missing synchronization barriers (`__syncthreads`) cause elusive, non-deterministic race conditions'
+    ],
+    improvements: [
+      'Use asynchronous copy (`cuda::memcpy_async` / `cp.async`) to overlap global-to-shared memory transfers with ALU compute',
+      'Employ warp-level primitives (`__shfl_sync`, `__ballot_sync`) to exchange data directly across registers without shared memory',
+      'Apply register tiling in combination with shared memory tiling for maximum arithmetic intensity',
+      'Use vectorized data types (`float4`, `int4`) to issue 128-bit memory instructions (`LDG.128`)'
+    ],
+    futureScope: 'Hardware-managed asynchronous tensor memory accelerators (TMA), cross-SM cluster shared memory sharing, and automatic compiler data layout transformations (AoS to SoA synthesis).',
+    industrialApplications: [
+      'Deep learning matrix multiplication engines (cuBLAS GEMM, FlashAttention-2)',
+      'Computer vision and video processing (2D/3D image convolution filters in OpenCV CUDA)',
+      'Scientific PDE stencil solvers (Computational Fluid Dynamics, Seismic imaging)',
+      'High-performance molecular dynamics simulations (neighbor-list shared memory caching)',
+      'Ray tracing bounding volume hierarchy (BVH) traversal'
+    ],
+    researchOpportunities: [
+      'Automated compile-time bank conflict detection and tensor swizzling',
+      'Polyhedral compiler loop transformations for multi-level GPU cache hierarchies',
+      'Memory-efficient attention mechanisms for trillion-parameter Large Language Models',
+      'Auto-tuning shared memory tile dimensions using reinforcement learning'
+    ],
+    careerRelevance: [
+      'GPU Kernel Optimization Specialist',
+      'Deep Learning Systems Engineer (ML Infra)',
+      'HPC Performance Engineer',
+      'Graphics Engine Programmer',
+      'Scientific Computing Architect'
+    ]
   },
   {
     id: 3,
-    title: 'Profiling and Bottleneck Analysis',
-    description: 'Identify performance bottlenecks in GPU kernels using profiling tools and systematic analysis to guide optimization decisions.',
-    prerequisites: ['Topic 1: GPU architecture and CUDA basics', 'Topic 2: Memory coalescing and occupancy', 'Familiarity with Linux command line and performance metrics', 'Basic understanding of hardware counters and bottlenecks'],
-    dependencies: ['Cloud HPC (Topic 4) uses profiling to optimize cloud GPU workloads', 'All optimization efforts depend on identifying the correct bottleneck first', 'Performance engineering careers require profiling as a core skill', 'Deep learning framework optimization uses similar profiling techniques'],
-    preparationPlan: 'Review GPU memory hierarchy from Topic 1, understand the difference between compute-bound and memory-bound kernels, and install NVIDIA nsight compute or nsight systems if possible.',
-    story: 'You are a doctor at Sunnybrook General Hospital. A patient walks in complaining of headaches, fatigue, and difficulty concentrating. The inexperienced doctor immediately prescribes three different medications: one for headaches, one for fatigue, and one for concentration. The patient gets worse. A senior doctor arrives, examines the patient, and runs a systematic diagnostic: blood tests (are iron levels low?), sleep study (is the patient sleeping poorly?), eye exam (is vision straining?), stress evaluation (is work overwhelming?). The results reveal the root cause: chronic iron deficiency causing anemia, which produces ALL three symptoms. One treatment — iron supplements — resolves everything. The inexperienced doctor treated symptoms. The senior doctor treated the cause. Now imagine the hospital has a new MRI machine (profiling tool). The MRI reveals not just the brain structure but the actual blood flow, oxygen levels, and electrical activity in real time. The senior doctor can now see exactly which region of the brain is underperforming, rather than guessing from external symptoms. This is GPU profiling. A developer writes a slow CUDA kernel and immediately assumes the problem is "not enough GPU cores" (the headaches symptom). They buy a bigger GPU (prescribe more medication). The kernel is still slow. The profiler (MRI) reveals the real problem: the kernel is spending 85% of its time waiting for global memory (anemia — the root cause). The "not enough cores" was a symptom; the memory bandwidth was the disease. The profiling tools are like different diagnostic instruments. nsight systems (blood test) shows a high-level timeline of CPU and GPU activity — you can see if the GPU is idle waiting for data from the CPU. nsight compute (MRI) shows detailed hardware metrics per kernel — cache hit rates, memory throughput, compute throughput, warp occupancy. Nsight compute even has a "speed of light" analysis that tells you what fraction of peak compute or memory bandwidth you are using, like the MRI telling you what fraction of your brain is getting oxygen. The senior doctor now teaches the resident: "Before you prescribe any treatment, always run the diagnostic first. The symptoms will mislead you. Only the measurement tells the truth." The resident asks: "What if the measurement itself takes longer than the treatment?" The senior doctor smiles: "Good question. That is why we use sampling and selective instrumentation — only measure what matters, when it matters."',
+    title: 'First-Time GPU Debugging, compute-sanitizer & Nsight Profiling Telemetry',
+    description: 'A practical diagnostic guide for first-time GPU developers: detect illegal memory accesses and race conditions using compute-sanitizer and cuda-gdb, visualize execution timelines with NVIDIA Nsight Systems, and analyze hardware counters and Roofline models with NVIDIA Nsight Compute.',
+    prerequisites: [
+      'Topic 1: GPU architecture, first-time environment setup, and CUDA compilation lifecycle',
+      'Topic 2: Memory coalescing, shared memory hierarchy, and occupancy limits',
+      'Basic command line proficiency and understanding of performance metrics (GFLOPS, Bandwidth)'
+    ],
+    dependencies: [
+      'Cloud HPC & AI Accelerators (Topic 4) uses profiling to tune containerized and multi-GPU distributed workloads',
+      'All commercial GPU software development requires continuous profiling and automated sanitation testing',
+      'Performance engineering roles require deep expertise in interpreting Nsight metrics and Roofline models'
+    ],
+    preparationPlan: 'Install or access NVIDIA Nsight Systems (`nsys`) and NVIDIA Nsight Compute (`ncu`) locally or on Google Colab, and review the concept of arithmetic intensity (FLOP/byte) from Unit 1.',
+    story: 'You are the chief diagnostic physician at Sunnybrook General Hospital. A patient walks into the clinic complaining of general exhaustion. An inexperienced doctor immediately orders three random treatments: energy drinks, caffeine pills, and extra sleep. The patient collapses. A senior physician arrives, sets aside guesswork, and performs a systematic three-stage clinical diagnostic: Stage 1 (Blood Sanitation Screen): Run an automated lab panel to detect hidden toxins or internal bleeding (`compute-sanitizer`). The scan instantly reveals a severe internal leak (out-of-bounds array access). Stage 2 (Whole-Body Ultrasound & Timeline): Place the patient in a full-body scanner to map the timeline of organ activity (`Nsight Systems`). The timeline shows the heart is healthy, but it spends 80% of its time idling, waiting for oxygen from blocked arteries (CPU-GPU PCIe transfer bottleneck). Stage 3 (Cellular MRI & Roofline Analysis): Perform high-resolution cellular telemetry (`Nsight Compute`). The MRI plots the cell’s metabolic rate against its theoretical maximum (the Roofline Model), pinpointing that the cell is entirely starved of glucose flow (Memory Bandwidth Bound), not mitochondria speed (Compute Bound). One targeted vascular stent (Shared Memory Tiling & Vectorization) instantly cures the patient! The senior physician turns to the medical resident: "In GPU engineering, never guess the bottleneck. If your code is slow or crashing, run compute-sanitizer to find memory corruption, nsys to see the execution timeline, and ncu to plot the Roofline. Only the hardware counters tell the truth!"',
     cartoonPanels: [
       {
         scene: 1,
-        title: "Roofline Telemetry Diagnostic",
-        avatar: "🏎️",
-        tag: "Roofline Model",
-        caption: "Profiler telemetry checking whether engine speed (Compute) or fuel hose flow rate (Memory) caps speed!",
-        concept: "Roofline Analysis: Quantifies maximum attainable GFLOPS/s based on arithmetic intensity.",
-        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><path d="M 40 130 L 140 50 L 280 50" stroke="#38bdf8" stroke-width="3" fill="none"/><circle cx="110" cy="74" r="6" fill="#ef4444"/><text x="125" y="78" font-size="11" fill="#ef4444" font-weight="bold">Memory Bound!</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">Compute-Bound vs Memory-Bound Ceiling</text></svg>`
+        title: "compute-sanitizer Bug Shield",
+        avatar: "🛡️",
+        tag: "Sanitizer Tools",
+        caption: "compute-sanitizer detecting out-of-bounds memory accesses, illegal addresses, and race conditions!",
+        concept: "GPU Memory Sanitation: compute-sanitizer --tool memcheck/racecheck isolates memory bugs at the exact source line.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="25" y="30" width="270" height="100" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="2"/><text x="40" y="55" fill="#ef4444" font-family="monospace" font-size="11" font-weight="bold">$ compute-sanitizer ./app</text><text x="40" y="75" fill="#f59e0b" font-family="monospace" font-size="10">========= Invalid __global__ write of size 4</text><text x="40" y="93" fill="#e2e8f0" font-family="monospace" font-size="10">========= at 0x1a0 in vecAdd(float*, int)</text><text x="40" y="111" fill="#38bdf8" font-family="monospace" font-size="10">========= by thread (256,0,0) in block (3906,0,0)</text><text x="160" y="160" text-anchor="middle" font-size="11" fill="#ef4444" font-weight="bold">Zero-Tolerance Automated Memory Bug Detection</text></svg>`
       },
       {
         scene: 2,
-        title: "Nsight Compute Kernel MRI",
-        avatar: "🩺",
-        tag: "Nsight Compute",
-        caption: "Nsight Compute MRI scanning warp stall reasons, cache hit rates, and Speed of Light metrics.",
-        concept: "Hardware Counter Profiling: Pinpoints memory stall cycles, register pressure, and warp occupancy.",
-        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="80" y="45" width="160" height="60" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="2"/><text x="160" y="78" font-size="18" text-anchor="middle">🩺 Nsight MRI 85%</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Nsight Compute Speed of Light Analysis</text></svg>`
+        title: "Nsight Systems (nsys) Timeline Diagnostic",
+        avatar: "📊",
+        tag: "nsys Timeline",
+        caption: "nsys tracing CPU host execution, PCIe memory copies, and GPU kernel duration on a unified timeline.",
+        concept: "System-Wide Profiling: nsys profile identifies CPU overhead, idle GPU gaps, and un-overlapped transfers.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="30" y="35" width="260" height="85" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="40" y="55" fill="#38bdf8" font-size="10" font-weight="bold">CPU Main:</text><rect x="100" y="45" width="60" height="12" fill="#38bdf8" rx="2"/><text x="40" y="75" fill="#f59e0b" font-size="10" font-weight="bold">PCIe Memcpy:</text><rect x="100" y="65" width="80" height="12" fill="#f59e0b" rx="2"/><text x="40" y="95" fill="#22c55e" font-size="10" font-weight="bold">GPU Kernel:</text><rect x="185" y="85" width="95" height="12" fill="#22c55e" rx="2"/><text x="160" y="160" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">Unified CPU-GPU Execution Timeline</text></svg>`
       },
       {
         scene: 3,
-        title: "Vectorized 128-Bit Loads (float4)",
-        avatar: "⚡",
-        tag: "Vectorized IO",
-        caption: "Carrying 4 values in 1 wide armful (float4) instead of 4 separate trips across the bus!",
-        concept: "Vectorized Memory Access (`LDG.128`): Fetches 16 bytes in a single instruction to maximize bandwidth.",
-        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="70" y="50" width="180" height="45" rx="6" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/><text x="160" y="78" font-size="14" fill="#f59e0b" font-weight="bold" text-anchor="middle">float4 {x, y, z, w} [128-bit]</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#f59e0b" font-weight="bold">Single-Instruction Vectorized Fetch</text></svg>`
+        title: "Nsight Compute (ncu) Roofline Model",
+        avatar: "📈",
+        tag: "Roofline Model",
+        caption: "ncu Roofline plotting Operational Intensity (FLOP/byte) against Memory Bandwidth and Compute Ceilings.",
+        concept: "Roofline Bottleneck Analysis: Classifies kernels as Memory-Bound (below knee) vs Compute-Bound (on plateau).",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><path d="M 40 130 L 140 50 L 280 50" stroke="#38bdf8" stroke-width="3" fill="none"/><circle cx="100" cy="82" r="6" fill="#ef4444"/><text x="115" y="85" font-size="11" fill="#ef4444" font-weight="bold">Kernel: Memory-Bound!</text><text x="60" y="110" fill="#94a3b8" font-size="9">Bandwidth Slope</text><text x="200" y="42" fill="#22c55e" font-size="9" font-weight="bold">Peak Compute Roof</text><text x="160" y="160" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">Nsight Compute Roofline Classification</text></svg>`
       },
       {
         scene: 4,
-        title: "Kernel Fusion Assembly",
-        avatar: "🔥",
-        tag: "Kernel Fusion",
-        caption: "Fusing 3 separate math operations into 1 single combined kernel to eliminate intermediate DRAM writes!",
-        concept: "Kernel Fusion: Combines adjacent element-wise kernels, saving global memory roundtrips.",
-        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(40, 50)"><rect x="0" y="0" width="240" height="45" rx="6" fill="#1e293b" stroke="#ec4899" stroke-width="2"/><text x="120" y="28" font-size="14" fill="#ec4899" font-weight="bold" text-anchor="middle">Fused: Scale + Add + ReLU</text></g><text x="160" y="155" text-anchor="middle" font-size="11" fill="#ec4899" font-weight="bold">Fused Single-Pass Execution</text></svg>`
+        title: "Vectorized 128-Bit Loads (float4)",
+        avatar: "⚡",
+        tag: "Vectorized Fetch",
+        caption: "Replacing 4 separate 32-bit float loads with 1 single 128-bit `float4` instruction to maximize bus saturation!",
+        concept: "Vectorized Memory Access: `LDG.128` instructions maximize memory-level parallelism and reduce instruction overhead.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="50" y="45" width="220" height="50" rx="6" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/><text x="160" y="70" font-family="monospace" font-size="12" fill="#f59e0b" font-weight="bold" text-anchor="middle">float4 val = reinterpret_cast&lt;float4*&gt;(d_in)[idx];</text><text x="160" y="88" font-size="10" fill="#22c55e" text-anchor="middle">16 Bytes in 1 Single Instruction (LDG.128)</text><text x="160" y="160" text-anchor="middle" font-size="11" fill="#f59e0b" font-weight="bold">Vectorized Memory Bandwidth Optimization</text></svg>`
       }
     ],
     storyQuestions: [
-      'Why did treating all three symptoms separately make the patient worse instead of better?',
-      'What does the MRI reveal that the patient\'s description of symptoms cannot?',
-      'How does a GPU profiler like nsight compute tell you whether a kernel is compute-bound or memory-bound?',
-      'If profiling takes significant time, how do you decide what to profile and what to skip?'
+      'Why is guessing the cause of poor GPU performance ineffective compared to hardware counter profiling?',
+      'How does `compute-sanitizer` pinpoint the exact line number of an out-of-bounds memory access or race condition?',
+      'What does a long gap between CPU API calls and GPU kernel execution on an Nsight Systems (`nsys`) timeline indicate?',
+      'How does the Roofline Model determine whether an optimization should focus on arithmetic throughput or memory bandwidth?'
     ],
-    storyBridge: 'GPU profiling is the diagnostic process for kernel performance. Without profiling, developers guess at bottlenecks and waste time optimizing the wrong thing. With profiling, they identify the root cause — whether it is memory bandwidth, compute throughput, occupancy, or instruction overhead — and apply targeted fixes. The profiler is the stethoscope, blood test, and MRI of GPU performance engineering.',
-    terminology: ['Profiling', 'Bottleneck analysis', 'Compute-bound', 'Memory-bound', 'Latency-bound', 'Nsight Systems', 'Nsight Compute', 'Hardware counters', 'SM activity', 'Memory throughput', 'Compute throughput', 'Occupancy', 'Warp stall reasons', 'Speed of light (SOL)', 'Roofline model'],
-    mathNeed: 'The roofline model provides a mathematical framework to determine whether a kernel is limited by compute capacity or memory bandwidth, given its arithmetic intensity.',
-    mathMotivation: 'Profiling data is only useful when interpreted through a performance model. The roofline model turns raw numbers into actionable optimization targets.',
-    realWorldChallenges: ['Real kernels have mixed bottlenecks that shift with input size and GPU architecture', 'Profiling overhead can distort measurements for short-running kernels', 'Production kernels running at scale may exhibit different bottlenecks than in profiling runs'],
-    technicalChallenges: ['Hardware counters are limited and cannot all be read simultaneously', 'Memory-level parallelism and cache effects make bottleneck analysis non-trivial', 'Dynamic behavior (warp scheduling, cache eviction) means profiling results vary between runs'],
+    storyBridge: 'Just as clinical medicine requires an automated lab screen (compute-sanitizer), a whole-body timeline scan (Nsight Systems), and cellular telemetry (Nsight Compute Roofline), GPU performance engineering requires a disciplined diagnostic toolchain to eliminate bugs, visualize system overhead, and optimize hardware bottlenecks.',
+    terminology: [
+      'compute-sanitizer',
+      'cuda-gdb Debugger',
+      'NVIDIA Nsight Systems (nsys)',
+      'NVIDIA Nsight Compute (ncu)',
+      'Roofline Model',
+      'Arithmetic / Operational Intensity (FLOP/byte)',
+      'Speed-of-Light (SOL) Metrics',
+      'Compute-Bound vs Memory-Bound',
+      'Warp Stall Reasons (Long Scoreboard, Barrier, Wait)',
+      'SM Active Cycles',
+      'Memory Level Parallelism (MLP)',
+      'Vectorized Memory Loads (float4 / LDG.128)',
+      'Kernel Fusion',
+      'cudaEvent_t High-Resolution Timing',
+      'NVTX (NVIDIA Tools Extension Markers)'
+    ],
+    mathNeed: 'The Roofline Model provides a quantitative mathematical framework mapping arithmetic intensity to achievable performance ceilings, determining whether hardware execution is capped by peak FLOPS or peak memory bandwidth.',
+    mathMotivation: 'Without calculating operational intensity, developers often waste days attempting compute optimizations (e.g. unrolling loops) on kernels that are fundamentally bottlenecked by DRAM memory bandwidth.',
+    realWorldChallenges: [
+      'Silent out-of-bounds memory corruption in CUDA kernels that only crashes sporadically in production',
+      'Profiling overhead from hardware performance counters distorting measurements on micro-benchmarks',
+      'Kernels operating near the "knee point" of the Roofline where bottlenecks shift between memory and compute dynamically',
+      'Interpreting complex warp stall breakdown metrics across thousands of concurrent execution threads'
+    ],
+    technicalChallenges: [
+      'Compiling with `-G` enables `cuda-gdb` source debugging but disables compiler optimizations, distorting performance analysis',
+      'Memory race conditions occurring non-deterministically across different GPU architectures and driver versions',
+      'Identifying warp stalls caused by "Long Scoreboard" (waiting for global memory) vs "MIO Throttle" (memory instruction queue full)',
+      'Structuring kernel code to enable the compiler to automatically generate 128-bit vectorized load instructions (`LDG.128`)'
+    ],
     equations: [
       {
-        name: 'Roofline Model',
-        latex: 'P = \\min(P_{peak}, R \\times AI)',
-        symbols: 'P is achievable performance (FLOP/s), P_peak is peak compute throughput (FLOP/s), R is peak memory bandwidth (bytes/s), AI is arithmetic intensity (FLOP/s per byte).',
-        meaning: 'A kernel\'s performance is the minimum of its compute ceiling and its memory ceiling. Below a critical arithmetic intensity, memory is the bottleneck; above it, compute is the bottleneck.',
-        whyNeeded: 'It provides a clear, quantitative answer to "should I optimize compute or memory?"',
-        interpretation: 'If a kernel has AI = 2 FLOP/byte and the GPU has P_peak = 10 TFLOPS and R = 1 TB/s, then memory ceiling = 1 × 2 = 2 TFLOPS, compute ceiling = 10 TFLOPS. The kernel is memory-bound at 2 TFLOPS.'
+        name: 'The Roofline Model Equation',
+        latex: 'P_{achievable} = \\min\\left( P_{peak\\_compute}, \\; BW_{peak\\_memory} \\times AI \\right)',
+        symbols: 'P_achievable is maximum achievable performance (GFLOP/s), P_peak_compute is GPU peak compute capability (GFLOP/s), BW_peak_memory is peak memory bandwidth (GB/s), AI is Arithmetic Intensity (FLOP/byte).',
+        meaning: 'Performance is strictly bounded by the minimum of two physical ceilings: the memory bandwidth slope or the peak compute plateau.',
+        whyNeeded: 'Provides an unambiguous mathematical test: if AI is below the critical ridge point (P_peak / BW_peak), the kernel is memory-bound; if above, it is compute-bound.',
+        interpretation: 'For an RTX 4090 (P_peak = 82,600 GFLOPS, BW_peak = 1,008 GB/s): Ridge point = 82,600 / 1,008 = 81.9 FLOP/byte. A vector add kernel with AI = 0.25 FLOP/byte is heavily memory-bound, capping maximum theoretical performance at 1,008 × 0.25 = 252 GFLOPS (0.3% of peak compute).'
       },
       {
-        name: 'Arithmetic Intensity',
-        latex: 'AI = \\frac{N_{FLOP}}{N_{bytes}}',
-        symbols: 'AI is arithmetic intensity (FLOP/byte), N_FLOP is the number of floating-point operations, N_bytes is the number of bytes transferred from memory.',
-        meaning: 'The ratio of compute work to memory traffic. Higher AI means more compute per byte fetched.',
-        whyNeeded: 'It characterizes the fundamental compute-to-memory balance of an algorithm, independent of the hardware.',
-        interpretation: 'Matrix multiplication has AI = O(N) for NxN matrices (high AI, compute-bound). Vector addition has AI = 2/8 = 0.25 FLOP/byte (low AI, memory-bound).'
+        name: 'Arithmetic Intensity (Operational Intensity)',
+        latex: 'AI = \\frac{\\text{Total Floating-Point Operations (FLOPs)}}{\\text{Total Global DRAM Bytes Transferred (Bytes)}}',
+        symbols: 'AI is arithmetic intensity (FLOP/byte), FLOPs is count of adds, multiplies, and FMAs executed, Bytes is total DRAM traffic read and written.',
+        meaning: 'Quantifies how much mathematical compute is performed for every byte of data transferred across the memory bus.',
+        whyNeeded: 'Serves as the X-axis coordinate on the Roofline chart, characterizing the fundamental algorithm efficiency independent of hardware.',
+        interpretation: 'Vector Add: 1 FLOP per 8 bytes read + 4 bytes written = 1 / 12 = 0.083 FLOP/byte (Extreme memory-bound). Matrix Multiply (N=4096): 2N^3 FLOPs / (3 × 4N^2 bytes) = 4096 / 6 ≈ 682 FLOP/byte (Deep compute-bound).'
       },
       {
-        name: 'Kernel Throughput Ratio',
-        latex: '\\rho = \\frac{T_{achieved}}{T_{peak}}',
-        symbols: 'rho is the throughput ratio (SOL percentage), T_achieved is achieved FLOP/s or bandwidth, T_peak is the hardware peak.',
-        meaning: 'What percentage of the hardware peak the kernel actually achieves, for either compute or memory.',
-        whyNeeded: 'It gives a single number that quantifies optimization headroom.',
-        interpretation: 'rho_compute = 60% means 40% of peak compute is unused. rho_memory = 85% means the memory system is well-utilized. Optimization should target the lower ratio.'
-      },
-      {
-        name: 'Warp Stall Cycles',
-        latex: 'CPI = C_{exec} + C_{stall}',
-        symbols: 'CPI is cycles per instruction, C_exec is cycles spent executing instructions, C_stall is cycles spent stalled (waiting for memory, synchronization, or other reasons).',
-        meaning: 'The total CPI is the sum of execution time and stall time. High stall cycles indicate a bottleneck.',
-        whyNeeded: 'Decomposing CPI into execution and stall components reveals what the GPU is actually doing during each cycle.',
-        interpretation: 'A CPI of 4.0 where 3.5 cycles are stalls means the GPU spends 87.5% of its time waiting. Identifying the stall reason (memory, barrier, instruction fetch) pinpoints the bottleneck.'
+        name: 'Speed-of-Light (SOL) Utilization Metric',
+        latex: 'SOL_{metric} = \\frac{\\text{Achieved Metric Value}}{\\text{Hardware Peak Theoretical Metric Value}} \\times 100\\%',
+        symbols: 'SOL_metric is percentage of theoretical maximum achieved, measured independently for Compute Throughput (SM SOL%) and Memory Bandwidth (DRAM SOL%).',
+        meaning: 'Indicates how close the kernel is to extracting 100% of the physical hardware capacity.',
+        whyNeeded: 'The dominant bottleneck is immediately identified by whichever SOL metric is closest to 100% (or whichever is severely lower than expected).',
+        interpretation: 'If Nsight Compute reports SM SOL = 12% and Memory SOL = 86%, the kernel is operating near the speed-of-light limit of the memory subsystem; compute optimizations will have zero effect.'
       }
     ],
-    numericalExample: 'A kernel processes 1 million single-precision elements. It performs 4 FLOP/s per element (multiply + add) = 4 MFLOP. It reads 4 MB of data (1M × 4 bytes). Arithmetic intensity = 4M FLOP / 4M bytes = 1 FLOP/byte. GPU peak: P_peak = 10 TFLOPS, R = 1 TB/s. Roofline: P_compute_ceiling = 10 TFLOPS. P_memory_ceiling = R × AI = 1 TB/s × 1 = 1 TFLOPS. Kernel is memory-bound, limited to 1 TFLOPS maximum. nsight compute shows 0.85 TFLOPS achieved. SOL memory = 85%. SOL compute = 0.85/10 = 8.5%. Optimization target: increase arithmetic intensity (e.g., tile the computation to reuse data from shared memory, increasing AI from 1 to 10). New ceiling: 10 TFLOPS, which is now compute-bound.',
-    metrics: ['Achieved compute throughput (FLOP/s) vs peak', 'Achieved memory bandwidth (GB/s) vs peak', 'Arithmetic intensity (FLOP/byte)', 'Occupancy percentage', 'Warp stall reasons breakdown', 'Cache hit rates (L1, L2)', 'SM activity percentage'],
-    optimizationPossibilities: 'Use roofline analysis to identify whether compute or memory is the bottleneck, then apply targeted optimizations: increase arithmetic intensity through tiling for memory-bound kernels, use mixed precision for compute-bound kernels, reduce warp stalls through instruction-level optimization.',
-    futureEnhancements: 'Automated optimization recommendations from profiling tools, machine learning-based bottleneck prediction, continuous profiling in production GPU workloads, and cross-architecture profiling portability (MAP, ExtraP).',
-    activities: [
-      { level: 1, levelName: 'Teacher Do', objective: 'Walk through nsight compute output for a simple kernel.', instructions: 'Project nsight compute summary for a vector addition kernel. Identify: SOL metric (memory vs compute), occupancy, cache hit rate, and warp stall reasons. Explain each metric and what it tells you about the bottleneck.', inputs: 'Nsight compute output screenshot', expectedOutputs: 'Students can identify the bottleneck type from profiler output.', rubric: 'Correct identification 40%, clear explanation 30%, student engagement 30%.', learningOutcomes: 'Read and interpret basic GPU profiler output.', time: '10 minutes', materials: 'Projector, nsight compute output' },
-      { level: 2, levelName: 'Teacher + Student Together', objective: 'Apply the roofline model to classify two kernels.', instructions: 'Provide arithmetic intensity and hardware specs for two kernels: vector addition (AI=0.25) and matrix multiply (AI=N). Compute the roofline ceiling for each. Classify each as compute-bound or memory-bound.', inputs: 'Roofline equation, hardware specs', expectedOutputs: 'Vector addition classified as memory-bound, matrix multiply as compute-bound (for large N).', rubric: 'Correct calculations 40%, correct classification 30%, meaningful discussion 30%.', learningOutcomes: 'Use the roofline model as a diagnostic tool.', time: '15 minutes', materials: 'Calculator, hardware specs handout' },
-      { level: 3, levelName: 'All Students Do', objective: 'Profile a slow kernel and identify the bottleneck.', instructions: 'In groups of 3, run a provided intentionally slow CUDA kernel through nsight compute. Identify the primary bottleneck from the roofline chart and warp stall analysis. Propose one optimization. Implement it. Re-profile to verify improvement.', inputs: 'Nsight compute, slow kernel code, CUDA environment', expectedOutputs: 'Before/after profiling comparison showing identified bottleneck and speedup from fix.', rubric: 'Correct bottleneck identification 30%, quality of optimization 30%, measured improvement 20%, documentation 20%.', learningOutcomes: 'Complete the profile-identify-optimize-reprofile loop.', time: '25 minutes', materials: 'Laptop with nsight compute, starter kernel' },
-      { level: 4, levelName: 'Individual Student Do', objective: 'Build a roofline plot for a GPU and classify three kernels.', instructions: 'Given GPU peak FLOP/s and bandwidth, construct a roofline plot. Plot three kernels with different arithmetic intensities. For each, determine the performance ceiling and suggest the highest-impact optimization.', inputs: 'GPU specs, three kernel descriptions with AI and achieved FLOP/s', expectedOutputs: 'Roofline plot with three kernels, performance ceilings, and optimization recommendations.', rubric: 'Correct roofline construction 25%, correct classification 25%, quality of recommendations 30%, clarity 20%.', learningOutcomes: 'Use the roofline model for systematic performance analysis.', time: '20 minutes', materials: 'Graph paper or plotting tool, kernel descriptions' }
+    numericalExample: 'Profiling a 2D image filter kernel on an NVIDIA RTX 3080 (Peak Compute = 29.77 TFLOPS, Peak Memory Bandwidth = 760 GB/s). Kernel processes an 8K image (7680 x 4320 pixels; 33.18 million pixels). The filter performs 15 FLOPs per pixel and reads/writes 16 bytes per pixel. Total compute = 33.18M × 15 = 497.7 MFLOPs. Total DRAM traffic = 33.18M × 16 bytes = 530.8 MB. Arithmetic Intensity AI = 497.7 MFLOPs / 530.8 MB = 0.938 FLOP/byte. Roofline Ceilings: Memory Ceiling = 760 GB/s × 0.938 FLOP/byte = 712.9 GFLOPS. Compute Ceiling = 29,770 GFLOPS. Ridge point = 29,770 / 760 = 39.17 FLOP/byte. Because AI (0.938) << 39.17, the kernel is strongly memory-bound. Nsight Compute benchmark: Achieved time = 0.78 ms -> Achieved Performance = 497.7 MFLOPs / 0.00078 s = 638 GFLOPS. SOL Memory = (638 / 712.9) × 100% = 89.5%! This confirms the kernel is executing at 89.5% of the theoretical physical limit of the GPU memory subsystem.',
+    metrics: [
+      'Nsight Compute Roofline Operational Intensity (FLOP/byte)',
+      'Speed-of-Light (SOL) Compute Throughput (%)',
+      'Speed-of-Light (SOL) Memory Throughput (%)',
+      'Warp Stall Breakdown (Long Scoreboard, Wait, Barrier, Math Pipe Throttle)',
+      'Theoretical vs Achieved SM Occupancy (%)',
+      'compute-sanitizer Memory Error Count (0 Errors Required)',
+      'Nsight Systems Kernel vs PCIe Duration (ms)'
     ],
-    projectScope: 'Build a profiling toolkit that runs a GPU kernel, collects hardware metrics, constructs a roofline plot, and generates a bottleneck analysis report with optimization recommendations.',
-    projectFeasibility: 'Requires a CUDA-capable GPU and nsight compute. Can be done on Google Colab with GPU runtime. Uses provided kernels and profiling scripts.',
-    projectObjectives: ['Run nsight compute on three GPU kernels (vector add, matrix multiply, convolution)', 'Extract compute throughput, memory bandwidth, and occupancy for each', 'Construct a roofline plot with hardware ceilings', 'Identify the bottleneck for each kernel', 'Generate an optimization report with targeted recommendations'],
-    projectOutcomes: ['Profiling script that collects GPU hardware metrics', 'Roofline plot for three kernels', 'Bottleneck analysis report', 'Optimization recommendations with predicted speedup'],
-    projectMethodology: 'Question: What is the primary bottleneck for each kernel? Hypothesis: Vector add is memory-bound, matrix multiply is compute-bound, convolution is mixed. Experiment: Profile with nsight compute. Compare: Construct roofline plot. Reflect: Match profiler data to theory.',
-    projectRoles: ['Profiling Lead: runs nsight compute and collects metrics', 'Analysis Lead: constructs roofline plot and interprets results', 'Optimization Lead: proposes targeted fixes', 'Writer: documents findings and recommendations'],
+    optimizationPossibilities: 'For memory-bound kernels: increase arithmetic intensity via shared memory tiling and kernel fusion (combining multiple passes into one), use vectorized 128-bit loads (`float4`), and apply memory coalescing. For compute-bound kernels: leverage fast math compiler flags (`--use_fast_math`), unroll loops (`#pragma unroll`), and use mixed-precision FP16/Tensor Cores.',
+    futureEnhancements: 'AI-guided autonomous kernel tuning in Nsight Compute, continuous production profiling with zero-overhead hardware sampling (NVIDIA CUPTI), and automated Roofline bottleneck triage integrated directly into IDEs.',
+    activities: [
+      {
+        level: 1,
+        levelName: 'Teacher Do: Demonstrate compute-sanitizer & Nsight Systems CLI',
+        objective: 'Demonstrate automated memory error detection with compute-sanitizer and timeline generation with Nsight Systems (nsys).',
+        instructions: 'Introduce an intentional out-of-bounds write in `vecAdd.cu` (e.g. `d_out[idx + 100000]`). Run standard `./vecAdd` (shows no error or silently corrupts memory). Then run `compute-sanitizer ./vecAdd`. Show students how compute-sanitizer catches the exact thread coordinate, block ID, and memory address. Next, run `nsys profile --stats=true ./vecAdd` and examine the terminal summary showing API time, memory transfer time, and kernel duration.',
+        inputs: 'Buggy CUDA program, compute-sanitizer, nsys CLI',
+        expectedOutputs: 'compute-sanitizer report highlighting illegal write, nsys terminal timeline summary.',
+        rubric: 'Demonstration of sanitizer accuracy 40%, clarity in explaining nsys timeline metrics 40%, student engagement 20%.',
+        learningOutcomes: 'Master command-line automated debugging and profiling tools essential for robust GPU engineering.',
+        time: '15 minutes',
+        materials: 'Projector, Linux/Windows terminal with CUDA toolkit installed'
+      },
+      {
+        level: 2,
+        levelName: 'Teacher + Student Together: Profile a Kernel with Nsight Compute (ncu) & Roofline',
+        objective: 'Profile a CUDA kernel using Nsight Compute CLI/GUI and analyze its position on the Roofline chart.',
+        instructions: 'Guide students to run `ncu --set full -o profile_report ./tiled_gemm`. Open the report in Nsight Compute (or inspect terminal section metrics `--metrics sm__throughput.avg.pct_of_peak_sustained_active,dram__throughput.avg.pct_of_peak_sustained_active`). Locate the Speed-of-Light section and the Roofline Chart. Determine whether the kernel is memory-bound or compute-bound and inspect the primary warp stall reason (e.g., `Stall Long Scoreboard`).',
+        inputs: 'Compiled tiled_gemm executable, Nsight Compute (ncu) CLI',
+        expectedOutputs: 'Generated Nsight Compute profile report with identified SOL percentages and Roofline classification.',
+        rubric: 'Correct tool invocation 30%, accurate SOL interpretation 40%, identification of dominant stall reason 30%.',
+        learningOutcomes: 'Interpret industry-standard GPU profiler telemetry and Roofline models.',
+        time: '20 minutes',
+        materials: 'Nsight Compute GUI/CLI, CUDA development system'
+      },
+      {
+        level: 3,
+        levelName: 'All Students Do: Diagnose, Optimize, and Re-Profile a Slow Memory-Bound Kernel',
+        objective: 'Take an intentionally slow image thresholding kernel, identify the memory bottleneck, apply 128-bit vectorization (float4), and measure the speedup.',
+        instructions: 'In pairs, take `slow_threshold.cu` (scalar float loads with low bandwidth). Profile with `ncu` to establish baseline memory SOL and execution time. Refactor the kernel to use vectorized 128-bit loads (`float4`) and loop unrolling (`#pragma unroll`). Re-compile and re-profile. Document the increase in achieved memory bandwidth (GB/s) and decrease in warp stall cycles.',
+        inputs: 'slow_threshold.cu starter code, Nsight Compute',
+        expectedOutputs: 'Refactored vectorized kernel achieving 2x-4x speedup with verified before/after Nsight profile metrics.',
+        rubric: 'Correct float4 vectorization 35%, accurate before/after profiling 35%, analysis of warp stall reduction 30%.',
+        learningOutcomes: 'Execute the complete diagnostic loop: Profile -> Identify Bottleneck -> Apply Optimization -> Re-Profile -> Verify Speedup.',
+        time: '25 minutes',
+        materials: 'CUDA environment, VS Code, Nsight Compute CLI/GUI'
+      },
+      {
+        level: 4,
+        levelName: 'Individual Student Do: Construct a Roofline Model & Performance Diagnostic Report',
+        objective: 'Construct a quantitative Roofline model for two distinct kernels and write an engineering optimization diagnosis.',
+        instructions: 'Given GPU hardware specifications (Peak FLOPS and Peak Bandwidth), mathematically plot the Roofline chart. Calculate the arithmetic intensity for (a) a Parallel Reduction kernel and (b) a 3D Stencil kernel. Plot both kernels on the Roofline. Write a one-page engineering diagnosis specifying the theoretical ceiling for each and prescribing the exact optimizations needed (e.g., shared memory vs warp shuffle vs loop unrolling).',
+        inputs: 'GPU hardware spec sheet, kernel arithmetic equations',
+        expectedOutputs: 'Hand-drawn or plotted Roofline model with two classified kernels and concrete optimization recommendations.',
+        rubric: 'Accurate Roofline construction 30%, correct AI calculation 30%, quality of engineering recommendations 40%.',
+        learningOutcomes: 'Apply performance modeling to prescribe targeted GPU optimizations with engineering rigor.',
+        time: '20 minutes',
+        materials: 'Plotting software/graph paper, calculator, specification handout'
+      }
+    ],
+    projectScope: 'Build an Automated CUDA Profiling and Sanitation CI/CD Toolkit that compiles user kernels, runs compute-sanitizer for memory bug detection, generates Nsight Systems timeline traces, computes arithmetic intensity, and generates an automated Roofline analysis report.',
+    projectFeasibility: 'Uses free tools bundled with the standard NVIDIA CUDA Toolkit (`compute-sanitizer`, `nsys`, `ncu`). Can be automated using Python scripts and executed on local GPUs or cloud instances.',
+    projectObjectives: [
+      'Integrate compute-sanitizer into an automated test harness to detect illegal memory access and race conditions',
+      'Automate Nsight Systems (nsys) tracing to measure CPU host overhead and PCIe transfer latency',
+      'Automate Nsight Compute (ncu) metric extraction (SOL Compute, SOL Memory, Warp Stalls)',
+      'Generate automated SVG/HTML Roofline plots mapping kernel operational intensity to hardware ceilings',
+      'Test the diagnostic toolkit against a suite of 5 diverse kernels (VecAdd, GEMM, Stencil, Reduction, Scan)'
+    ],
+    projectOutcomes: [
+      'Automated Python/Bash profiling and sanitation testing harness',
+      'Standardized Roofline visualization generator',
+      'Comprehensive bottleneck classification reports for 5 GPU workloads',
+      'Reproducible benchmarking pipeline with CSV/JSON telemetry output'
+    ],
+    projectMethodology: 'Question: How accurately does the Roofline model predict the real-world performance ceilings across diverse GPU algorithms? Hypothesis: Kernels with AI < Ridge Point will strictly track the memory bandwidth slope, while kernels with AI > Ridge Point will approach compute saturation. Experiment: Run automated profiling sweeps across 5 kernel families. Compare: Plot empirical throughput vs theoretical ceilings. Reflect: Categorize dominant warp stall reasons for each algorithmic class.',
+    projectRoles: [
+      'Sanitizer Lead: builds memory error injection tests and compute-sanitizer test runners',
+      'Profiler Automation Lead: scripts nsys and ncu CLI data extraction pipelines',
+      'Visualization & Roofline Lead: develops interactive Roofline model generators',
+      'Technical Report Lead: synthesizes performance analysis, bottleneck classifications, and tuning guides'
+    ],
     projectTimeline: [
-      { milestone: 'Setup', duration: 'Day 1', deliverable: 'Environment setup and kernel selection' },
-      { milestone: 'Profiling', duration: 'Days 2-3', deliverable: 'Metrics collected for all three kernels' },
-      { milestone: 'Roofline', duration: 'Days 4-5', deliverable: 'Roofline plot constructed and bottlenecks classified' },
-      { milestone: 'Analysis', duration: 'Day 6', deliverable: 'Bottleneck report with optimization recommendations' },
-      { milestone: 'Report', duration: 'Day 7', deliverable: 'Final report with before/after comparisons' }
+      { milestone: 'Sanitation Harness Setup', duration: 'Day 1', deliverable: 'Automated compute-sanitizer test suite with error trapping' },
+      { milestone: 'nsys & ncu Automation', duration: 'Days 2-3', deliverable: 'CLI extraction scripts collecting SOL metrics and timeline traces' },
+      { milestone: 'Roofline Generator Development', duration: 'Days 4-5', deliverable: 'Automated Roofline model plotting engine' },
+      { milestone: 'Benchmark Suite Validation', duration: 'Day 6', deliverable: 'Full profile telemetry across 5 distinct kernel families' },
+      { milestone: 'Final Report & Submission', duration: 'Day 7', deliverable: 'Complete open-source profiling toolkit repo and technical report' }
     ],
     projectRisks: [
-      { risk: 'Nsight compute requires specific driver versions', severity: 'Medium', mitigation: 'Test tool availability before starting, use fallback profiling if needed' },
-      { risk: 'Profiling overhead distorts measurements for short kernels', severity: 'Medium', mitigation: 'Use large problem sizes and multiple iterations to amortize overhead' },
-      { risk: 'Hardware counters may not be available on all GPUs', severity: 'Low', mitigation: 'Use software-based timing as fallback, document GPU capabilities' }
+      { risk: 'Nsight Compute permissions restricted on shared cloud/lab machines', severity: 'Medium', mitigation: 'Enable NVIDIA driver performance counter permissions (`modprobe nvidia NVreg_RestrictProfilingToAdminUsers=0`) or use fallback timing scripts' },
+      { risk: 'Profiling overhead distorting execution times of fast kernels', severity: 'Medium', mitigation: 'Run kernels in loop of 100 iterations inside timing brackets to amortize launch latency' },
+      { risk: 'Driver version incompatibilities with GUI profiler versions', severity: 'Low', mitigation: 'Use CLI tools (`ncu`, `nsys`) which match installed CUDA toolkit version' }
     ],
-    projectBudget: 'Student time: ~12 hours. GPU compute cost: $0 (Google Colab or local GPU). Nsight compute: free with CUDA toolkit. Documentation: ~3 hours.',
-    projectTRL: 'TRL 3 — Systematic profiling and bottleneck classification using industry-standard tools.',
+    projectBudget: 'Student effort: ~14 hours. Compute cost: $0 (Local GPU or Colab). Software: NVIDIA Nsight Tools (Free).',
+    projectTRL: 'TRL 4 — Laboratory-validated profiling automation toolkit providing systematic GPU bottleneck diagnosis.',
     questions: [
-      { type: 'conceptual', question: 'What is the difference between a compute-bound and a memory-bound kernel?', answer: 'A compute-bound kernel spends most of its time executing arithmetic instructions — increasing compute throughput (more cores, higher clock, tensor cores) would improve performance. A memory-bound kernel spends most of its time waiting for data from memory — increasing memory bandwidth or arithmetic intensity would improve performance.', explanation: 'The roofline model formalizes this: if the kernel\'s performance is at the compute ceiling, it is compute-bound; if at the memory ceiling, it is memory-bound.', commonMistakes: 'Assuming a kernel with low FLOP/s is always memory-bound. It might have high stalls from other reasons (synchronization, instruction fetch).', tip: 'Check the SOL metrics: the lower of (compute SOL%, memory SOL%) identifies the bottleneck.' },
-      { type: 'numerical', question: 'A kernel performs 8 FLOP/s per byte of data transferred. The GPU has 20 TFLOPS peak compute and 2 TB/s memory bandwidth. What is the roofline performance ceiling?', answer: 'Compute ceiling = 20 TFLOPS. Memory ceiling = 2 TB/s × 8 FLOP/byte = 16 TFLOPS. The kernel is memory-bound at 16 TFLOPS (min of 20 and 16).', explanation: 'The roofline model takes the minimum of the two ceilings. The kernel cannot exceed 16 TFLOPS regardless of how many cores are available, because memory cannot feed data fast enough.', commonMistakes: 'Computing 20 × 8 = 160 TFLOPS instead of 2 × 8 = 16 TFLOPS.', tip: 'Memory ceiling = bandwidth × AI, not peak compute × AI.' },
-      { type: 'application', question: 'A profiling tool shows that a kernel achieves only 15% of peak memory bandwidth. List three possible causes and one fix for each.', answer: '(1) Uncoalesced memory access: fix by restructuring data layout for consecutive thread access. (2) Low occupancy from high register usage: fix by reducing per-thread register demand or increasing block size. (3) Bank conflicts in shared memory: fix by padding shared memory arrays.', explanation: 'Low memory bandwidth utilization is one of the most common GPU performance issues. Each cause has a different optimization path.', commonMistakes: 'Assuming the fix is always "add more shared memory" without diagnosing the actual cause.', tip: 'Use the profiler to distinguish between coalescing issues, occupancy issues, and bank conflicts.' },
-      { type: 'problemSolving', question: 'You profile a kernel and find: 80% SOL memory, 12% SOL compute, occupancy = 50%. What do you optimize first and why?', answer: 'The kernel is clearly memory-bound (80% memory SOL vs 12% compute SOL). However, 80% memory utilization is already good, so the next target is occupancy (50%). Increasing occupancy from 50% to 75% would allow more warps to hide memory latency, potentially increasing effective bandwidth from 80% to 90%+. After occupancy, consider increasing arithmetic intensity through computation reuse.', explanation: 'The profiler reveals the hierarchy: memory-bound first, then occupancy limitation. Compute optimization would have negligible effect at 12% SOL.', commonMistakes: 'Optimizing compute because SOL compute is lowest — but the kernel is memory-bound, so compute SOL is irrelevant.', tip: 'Always optimize the BOTTLENECK, not the lowest metric. The bottleneck is the one closest to 100%.' }
+      {
+        type: 'conceptual',
+        question: 'Differentiate between the diagnostic roles of NVIDIA Nsight Systems (`nsys`) and NVIDIA Nsight Compute (`ncu`).',
+        answer: '`Nsight Systems` (`nsys`) is a system-wide application profiler that visualizes the end-to-end timeline across CPU threads, OS runtime calls, PCIe memory copies (`cudaMemcpy`), and GPU kernel executions, identifying high-level bottlenecks like CPU serialization, GPU idle bubbles, and un-overlapped transfers. `Nsight Compute` (`ncu`) is a deep kernel-level hardware profiler that analyzes individual GPU kernels cycle-by-cycle, collecting hardware performance counters, warp stall reasons, cache hit rates, Speed-of-Light (SOL) utilization, and Roofline model analysis to guide low-level kernel source optimizations.',
+        explanation: 'Think of Nsight Systems as a panoramic satellite view of the entire highway system (CPU-to-GPU data flow), while Nsight Compute is an under-the-hood engine diagnostic of an individual racing car (the CUDA kernel).',
+        commonMistakes: 'Using Nsight Compute to diagnose overall application runtime when the real bottleneck is a slow CPU loop or sequential PCIe transfer.',
+        tip: 'Workflow rule: Always run Nsight Systems first to find which kernel takes the most time, then run Nsight Compute on that specific kernel.'
+      },
+      {
+        type: 'numerical',
+        question: 'A GPU has a peak double-precision compute throughput of 10 TFLOPS and a peak memory bandwidth of 1.2 TB/s. Calculate the ridge point (knee point) of the Roofline model. If a scientific simulation kernel has an arithmetic intensity of 5 FLOP/byte, what is its maximum theoretical performance, and is it compute-bound or memory-bound?',
+        answer: 'Ridge Point = Peak Compute / Peak Bandwidth = 10,000 GFLOPS / 1,200 GB/s = 8.33 FLOP/byte.\nFor the kernel with AI = 5 FLOP/byte:\nSince AI (5.0) < Ridge Point (8.33), the kernel is MEMORY-BOUND.\nMaximum Theoretical Performance = Peak Bandwidth × AI = 1.2 TB/s × 5 FLOP/byte = 6.0 TFLOPS.\n(The remaining 4.0 TFLOPS of compute capability cannot be utilized because memory cannot supply data fast enough).',
+        explanation: 'The ridge point defines the boundary between memory-bound and compute-bound operational regimes. Below 8.33 FLOP/byte, memory bandwidth is the limiting factor.',
+        commonMistakes: 'Multiplying peak compute by AI (10 × 5 = 50 TFLOPS), which violates physical hardware limits.',
+        tip: 'Ceiling for memory-bound = Bandwidth × AI. Ceiling for compute-bound = Peak Compute.'
+      },
+      {
+        type: 'application',
+        question: 'Nsight Compute reports that a GPU kernel has `SM SOL = 15%`, `Memory SOL = 88%`, and the dominant warp stall reason is `Stall Long Scoreboard` (65% of active cycles). Explain what `Stall Long Scoreboard` means and prescribe two concrete code optimizations to resolve it.',
+        answer: 'Meaning of `Stall Long Scoreboard`: Warps are stalled waiting for data from high-latency global memory operations (DRAM/L2) to arrive at destination registers before the dependent arithmetic instruction can execute. Because Memory SOL is 88%, the kernel is saturated waiting for global memory loads.\n\nPrescribed Optimizations:\n1. Apply Shared Memory Tiling: Pre-load data tiles into fast on-chip `__shared__` memory so subsequent iterations read from low-latency SRAM rather than stalling on high-latency global DRAM.\n2. Vectorized 128-Bit Memory Loads (`float4`): Replace multiple scalar 32-bit loads with single `float4` (`LDG.128`) instructions. This increases Memory-Level Parallelism (MLP) and allows fewer memory instructions to fetch more data per cycle, reducing scoreboard stall frequency.',
+        explanation: 'Long Scoreboard stalls are the classic symptom of global memory latency. Mitigating them requires caching in shared memory, improving coalescing, or increasing occupancy to allow other warps to hide the latency.',
+        commonMistakes: 'Trying to fix Long Scoreboard stalls by unrolling arithmetic loops; if memory is stalled, adding more arithmetic instructions will not speed up the kernel.',
+        tip: 'Stall Long Scoreboard = Stalled waiting for global memory. Fix with shared memory, coalescing, or float4.'
+      },
+      {
+        type: 'problemSolving',
+        question: 'A developer runs `compute-sanitizer` on a parallel reduction kernel and receives a `Racecheck Error: Hazard RAW (Read-After-Write) between thread X and thread Y at shared memory address 0x...`. Explain what this hazard is and how to fix it.',
+        answer: 'Root Cause: A Read-After-Write (RAW) race condition in shared memory. Thread Y is reading a shared memory location before Thread X has finished writing its reduction result to that location, or Thread X overwrote a value while Thread Y was still reading it. This occurs because the developer omitted a necessary `__syncthreads()` barrier between reduction steps.\n\nCode Example Fix:\n```cuda\n// Incorrect (causes RAW hazard):\nfor (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {\n    if (threadIdx.x < s) {\n        s_data[threadIdx.x] += s_data[threadIdx.x + s]; // Hazard! No barrier!\n    }\n}\n\n// Corrected Fix:\nfor (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {\n    if (threadIdx.x < s) {\n        s_data[threadIdx.x] += s_data[threadIdx.x + s];\n    }\n    __syncthreads(); // MANDATORY! Ensures all active threads complete their addition before the next reduction stride\n}\n```',
+        explanation: 'Shared memory is shared across all warps in a block. Without explicit `__syncthreads()` barriers between reduction iterations, warps execute asynchronously and read stale or partially updated shared memory.',
+        commonMistakes: 'Assuming warps execute in lockstep across the entire block. Warps within an SM are scheduled independently; only threads WITHIN the same warp execute in lockstep without barriers.',
+        tip: 'Use `compute-sanitizer --tool racecheck` on all parallel reduction and stencil kernels to guarantee data-race freedom.'
+      }
     ],
     labType: 'roofline-profiling',
-    keyInsights: ['Always profile before optimizing — guessing the bottleneck wastes time', 'The roofline model provides a clear compute-vs-memory decision framework', 'Warp stall reasons reveal the root cause of underperformance', 'Profiling should be an iterative loop: profile, optimize, re-profile'],
-    advantages: ['Quantitative bottleneck identification eliminates guesswork', 'Industry-standard tools (nsight compute, nsight systems) provide comprehensive metrics', 'Roofline model gives actionable optimization targets', 'Profiling skills transfer across GPU architectures and programming frameworks'],
-    disadvantages: ['Profiling overhead can distort measurements for small kernels', 'Hardware counters are limited and architecture-specific', 'Interpreting profiler output requires significant experience', 'Tool output can be overwhelming for beginners'],
-    improvements: ['Use automated roofline analysis for quick bottleneck triage', 'Implement continuous profiling in production GPU workloads', 'Build profiling-guided auto-tuning systems', 'Develop cross-architecture profiling portability layers'],
-    futureScope: 'Machine learning-guided profiling, automated optimization prescription, production-grade GPU observability platforms, and cross-vendor profiling standards.',
-    industrialApplications: ['NVIDIA performance engineering (cuBLAS, cuDNN optimization)', 'Cloud GPU instance performance validation (AWS, Azure, GCP)', 'Game engine GPU profiling (Unreal, Unity profiler integration)', 'Autonomous vehicle perception pipeline optimization', 'Drug discovery molecular simulation performance tuning'],
-    researchOpportunities: ['Automated GPU kernel optimization from profiling data', 'Performance portability prediction across GPU architectures', 'Low-overhead production profiling for GPU clusters', 'ML-based performance prediction from static code analysis'],
-    careerRelevance: ['GPU Performance Engineer', 'Performance Profiling Specialist', 'HPC Performance Analyst', 'CUDA Library Developer', 'Cloud GPU Optimization Engineer']
+    keyInsights: [
+      'Never optimize GPU code by guesswork — use compute-sanitizer for correctness and Nsight tools for performance telemetry',
+      'The Roofline model establishes whether a kernel is bound by peak FLOPS or peak memory bandwidth based on arithmetic intensity',
+      'Nsight Systems (`nsys`) diagnoses high-level system timelines (CPU-GPU transfers, idle gaps); Nsight Compute (`ncu`) diagnoses low-level kernel hardware counters',
+      'Warp stall reasons (e.g. Long Scoreboard) directly pinpoint the physical hardware unit causing execution delays'
+    ],
+    advantages: [
+      'Eliminates wasted development effort by targeting the true hardware bottleneck with mathematical certainty',
+      'compute-sanitizer prevents elusive out-of-bounds memory bugs and race conditions before production deployment',
+      'Roofline analysis provides clear, quantitative bounds on achievable performance optimization headroom',
+      'Profiling skills and telemetry interpretation are directly transferable across all NVIDIA GPU architectures'
+    ],
+    disadvantages: [
+      'Hardware performance counter profiling introduces measurement overhead on short kernel executions',
+      'Interpreting hundreds of low-level hardware metrics in Nsight Compute requires deep architectural training',
+      'Compiling with debug symbols (`-G`) disables compiler optimization, necessitating separate debug and release profiling runs',
+      'Hardware counter access may require elevated system privileges on shared multi-user systems'
+    ],
+    improvements: [
+      'Incorporate NVIDIA Tools Extension (NVTX) markers to label application phases on Nsight Systems timelines',
+      'Automate Roofline generation and metric regression testing in continuous integration (CI/CD) pipelines',
+      'Utilize loop unrolling (`#pragma unroll`) and compiler hints (`__restrict__`) to maximize instruction-level parallelism',
+      'Apply kernel fusion to eliminate intermediate global DRAM roundtrips in multi-stage pipelines'
+    ],
+    futureScope: 'Machine-learning-driven auto-profiling with prescriptive compiler optimization synthesis, zero-overhead production GPU telemetry streaming, and automated cross-architecture roofline portability analysis.',
+    industrialApplications: [
+      'NVIDIA performance engineering (cuBLAS, TensorRT, cuDNN kernel optimization)',
+      'Autonomous vehicle real-time inference latency auditing (Waymo, Cruise, Tesla)',
+      'Large Language Model training throughput tuning (OpenAI, Anthropic, Meta GPU clusters)',
+      'Game engine frame-time optimization and GPU profiling (Unreal Engine, Unity)',
+      'Cloud service provider GPU instance validation and SLA benchmarking (AWS, Azure, GCP)'
+    ],
+    researchOpportunities: [
+      'Cross-architecture performance portability prediction between GPUs, TPUs, and specialized NPUs',
+      'Automated GPU memory race condition synthesis and formal verification',
+      'Dynamic power and thermal-aware profiling for exascale supercomputing clusters',
+      'AI compiler auto-tuning using hardware performance counter feedback loops'
+    ],
+    careerRelevance: [
+      'GPU Performance Profiling Specialist',
+      'HPC Optimization Engineer',
+      'Machine Learning Systems Engineer',
+      'CUDA Systems Architect',
+      'GPU Reliability & CI/CD Test Engineer'
+    ]
   },
   {
     id: 4,
-    title: 'Cloud HPC, Docker/Kubernetes, and AI Accelerators',
-    description: 'Deploy, scale, and optimize parallel workloads using Cloud HPC instances, Docker/Kubernetes containers, OpenCL/CUDA runtimes, and specialized Tensor Core AI accelerators.',
-    prerequisites: ['Topic 1: GPU architecture and CUDA basics', 'Topic 2: Memory coalescing and occupancy', 'Topic 3: Profiling and bottleneck analysis', 'Basic Linux command line and Docker familiarity'],
-    dependencies: ['All previous GPU topics provide the foundation for deployment decisions', 'Unit 1: Cluster basics and TOP500 concepts apply to cloud HPC', 'Unit 2: MPI concepts extend to cloud-based distributed GPU workloads', 'Industry deployment requires understanding of both performance and cost trade-offs'],
-    preparationPlan: 'Set up a free-tier cloud account (AWS, GCP, or Azure), install Docker locally if possible, and read one case study about cloud-based scientific computing or AI training.',
-    story: 'You own a small bakery that has grown so popular you cannot keep up with demand. You have three options. Option one: build a new permanent kitchen (on-premises HPC cluster). It costs $500,000 upfront, takes six months to build, seats fifty bakers, and you pay electricity and maintenance forever — even when business is slow on Tuesdays. Option two: rent a food truck (cloud GPU instance). It costs $50 per day, you can drive it to the busiest location each morning, and you only pay when it is running. On Monday you need a truck with a pizza oven (A100 GPU). On Tuesday you need a truck with a deep fryer (T4 GPU). On Wednesday you need five trucks simultaneously for a festival (multi-GPU cluster). The food truck is infinitely flexible but costs more per meal during busy periods. Option three: build a prefab kitchen in a shipping container (containers and Kubernetes). It is a standardized kitchen that you can drop into any food truck, any permanent building, or any rented warehouse. The recipe works exactly the same everywhere. If you built the kitchen yourself (native installation), you would discover it only works in your building, breaks when you move it, and every new chef must install every ingredient by hand. The shipping container kitchen (Docker) is the revolution: package the kitchen once, run it anywhere. Now the bakery faces a new challenge: a food critic (performance engineer) visits and says your croissants are slow because your ovens are not designed for croissants. You investigate and discover that general-purpose ovens (GPUs) are good at many things but not optimal for croissants. A specialized croissant oven (Google TPU, AWS Trainium) bakes croissants twice as fast at half the energy. But it cannot bake pizza or cakes. The food critic says: "If you bake 90% croissants, buy a croissant oven. If you bake 10% croissants, the general oven is fine." The bakery now has a portfolio: permanent kitchen for core products (on-premises cluster), food trucks for variable demand (cloud instances), prefab kitchens for portability (containers), and specialized ovens for dominant products (AI accelerators). The principal from Sunnybrook Elementary visits and says: "This is more complicated than managing kindergarteners." You reply: "But the principles are the same — match the tool to the workload, measure the cost, and optimize continuously."',
+    title: 'Containerized GPU Development (Docker), Asynchronous Pipelines & AI Accelerators',
+    description: 'A beginner-friendly guide to containerizing GPU applications using Docker and NVIDIA Container Toolkit, eliminating PCIe latency with asynchronous CUDA Streams, developing mixed-precision AI applications with hardware Tensor Cores (WMMA), and deploying cost-effective Cloud HPC clusters.',
+    prerequisites: [
+      'Topic 1: GPU architecture, first-time environment setup, and CUDA compilation lifecycle',
+      'Topic 2: Memory coalescing and shared memory optimization',
+      'Topic 3: Profiling and bottleneck analysis with Nsight tools',
+      'Basic Docker, Linux shell scripting, and Python / C++ familiarity'
+    ],
+    dependencies: [
+      'All previous GPU units culminate in production containerized deployment and multi-GPU scaling',
+      'Unit 1: Cluster architecture and TOP500/Green500 concepts apply directly to Cloud HPC infrastructure',
+      'Unit 2: Distributed MPI communication principles extend to multi-GPU NCCL and PyTorch DDP pipelines',
+      'Modern industry AI/ML deployments rely entirely on containerized GPU clusters and Tensor Core acceleration'
+    ],
+    preparationPlan: 'Install Docker and the NVIDIA Container Toolkit locally or set up a cloud GPU instance (AWS EC2 / GCP Compute Engine / Lambda Labs), and read about Automatic Mixed Precision (AMP).',
+    story: 'You own a rapidly growing bakery that has become an overnight sensation. You face a critical decision: Option 1: Build a massive on-premises kitchen (On-Premises HPC Cluster). It costs $500,000 upfront, takes 9 months to construct, and you must pay for electricity, air conditioning, and maintenance even when demand drops on slow Tuesdays. Option 2: Rent specialized high-tech food trucks by the hour (Cloud GPU Instances on AWS/GCP). You can rent a pizza truck with a standard oven (T4 GPU) for $0.50/hour, or a 100-rack industrial bakery truck (8x H100 cluster) for $30/hour during peak rushes, shutting them down to $0 the minute the rush ends. Option 3: Build a standardized prefab kitchen in a steel shipping container (Docker Container with NVIDIA Container Toolkit). You package your exact recipe, ovens, and chef utensils into the container once. Whether you drop that shipping container onto your local garage, an AWS cloud instance, or a university supercomputer, the kitchen starts in 5 seconds and cooks identically with zero dependency breakages! To top it off, you discover that standard ovens (traditional CUDA Cores) bake one pastry at a time, but installing a dedicated high-speed Matrix Pastry Engine (NVIDIA Tensor Cores) bakes 16 pastries in a single clock cycle using half-sized dough balls (FP16 Mixed Precision) while maintaining the exact same delicious flavor (FP32 accumulation). You now operate a modern, elastic, high-throughput cloud bakery!',
     cartoonPanels: [
       {
         scene: 1,
-        title: "Shipping Container Kitchen (Docker)",
+        title: "Standardized GPU Container (Docker)",
         avatar: "📦",
-        tag: "Apptainer / Docker",
-        caption: "Standardized container kitchen dropping onto any cloud host without dependencies breaking!",
-        concept: "Containerized HPC: Encapsulates CUDA drivers, MPI libraries, and code for 100% reproducible execution.",
-        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="80" y="45" width="160" height="65" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="160" y="78" font-size="20" text-anchor="middle">🐳 Docker Box</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">Portable Reproducible Execution Engine</text></svg>`
+        tag: "NVIDIA Container Toolkit",
+        caption: "Docker with nvidia-container-toolkit passing physical GPU hardware directly into containers!",
+        concept: "GPU Containerization: `docker run --gpus all nvidia/cuda:12.2.0-devel-ubuntu22.04` provides 100% reproducible environments.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="40" y="35" width="240" height="75" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="160" y="60" font-size="13" fill="#38bdf8" font-weight="bold" text-anchor="middle">🐳 Docker + nvidia-container-toolkit</text><text x="160" y="80" font-family="monospace" font-size="10" fill="#22c55e" text-anchor="middle">docker run --gpus all -it cuda-app</text><text x="160" y="98" font-size="9" fill="#94a3b8" text-anchor="middle">Near-Zero Virtualization Overhead (&lt;1.5%)</text><text x="160" y="160" text-anchor="middle" font-size="11" fill="#38bdf8" font-weight="bold">Portable Reproducible GPU Container Pipeline</text></svg>`
       },
       {
         scene: 2,
-        title: "NVIDIA Tensor Core Matrix Engine",
+        title: "NVIDIA Tensor Core 1-Cycle Matrix Engine",
         avatar: "⚡",
         tag: "Tensor Cores",
-        caption: "Dedicated hardware matrix engine computing D = A x B + C in 1 single clock cycle!",
-        concept: "NVIDIA Tensor Cores: Hardware matrix multiply-accumulate accelerators for AI & linear algebra.",
-        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="70" y="45" width="180" height="60" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="2"/><text x="160" y="80" font-size="16" fill="#22c55e" font-weight="bold" text-anchor="middle">D = A × B + C [FP16/INT8]</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">1-Cycle Matrix Multiplication Engine</text></svg>`
+        caption: "Dedicated hardware matrix engine computing D = A x B + C for 4x4 / 16x16 matrices in a single clock cycle!",
+        concept: "Hardware Tensor Cores: Specialized mixed-precision matrix multiply-accumulate hardware (FP16/INT8/FP8).",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="50" y="35" width="220" height="60" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="2"/><text x="160" y="65" font-size="14" fill="#22c55e" font-weight="bold" text-anchor="middle">D = A × B + C [1-Cycle MMA]</text><text x="160" y="85" font-size="10" fill="#f59e0b" text-anchor="middle">FP16 Inputs × FP16 Inputs + FP32 Accumulation</text><text x="160" y="160" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Hardware Tensor Core Matrix Acceleration</text></svg>`
       },
       {
         scene: 3,
-        title: "Automatic Mixed Precision (AMP)",
-        avatar: "🎛️",
-        tag: "AMP FP16/FP32",
-        caption: "Math computed in fast FP16 while master weights are kept in FP32 for numerical stability.",
-        concept: "Mixed Precision Arithmetic: Halves memory bandwidth footprint while preserving numerical accuracy.",
-        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(40, 50)"><rect x="0" y="0" width="110" height="45" rx="6" fill="#1e293b" stroke="#22c55e"/><text x="55" y="28" fill="#22c55e" font-size="12" font-weight="bold" text-anchor="middle">FP16 Fast Compute</text></g><g transform="translate(170, 50)"><rect x="0" y="0" width="110" height="45" rx="6" fill="#1e293b" stroke="#38bdf8"/><text x="55" y="28" fill="#38bdf8" font-size="12" font-weight="bold" text-anchor="middle">FP32 Master Weight</text></g><text x="160" y="155" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Automatic Mixed Precision (AMP) Pipeline</text></svg>`
+        title: "Asynchronous CUDA Streams Pipeline",
+        avatar: "🔀",
+        tag: "CUDA Streams",
+        caption: "Overlapping PCIe Host-to-Device transfer of Batch N+1 with GPU Kernel Execution of Batch N!",
+        concept: "CUDA Streams & Asynchronous Overlap: `cudaMemcpyAsync` overlaps communication with compute, hiding PCIe latency.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(30, 40)"><rect x="0" y="0" width="75" height="20" fill="#38bdf8" rx="3"/><text x="37" y="14" fill="#0f172a" font-size="9" font-weight="bold" text-anchor="middle">H2D (Chunk 1)</text><rect x="80" y="0" width="75" height="20" fill="#22c55e" rx="3"/><text x="117" y="14" fill="#0f172a" font-size="9" font-weight="bold" text-anchor="middle">Kernel (Chunk 1)</text><rect x="160" y="0" width="75" height="20" fill="#f59e0b" rx="3"/><text x="197" y="14" fill="#0f172a" font-size="9" font-weight="bold" text-anchor="middle">D2H (Chunk 1)</text></g><g transform="translate(30, 65)"><rect x="80" y="0" width="75" height="20" fill="#38bdf8" rx="3"/><text x="117" y="14" fill="#0f172a" font-size="9" font-weight="bold" text-anchor="middle">H2D (Chunk 2)</text><rect x="160" y="0" width="75" height="20" fill="#22c55e" rx="3"/><text x="197" y="14" fill="#0f172a" font-size="9" font-weight="bold" text-anchor="middle">Kernel (Chunk 2)</text></g><text x="160" y="160" text-anchor="middle" font-size="11" fill="#f59e0b" font-weight="bold">Zero-Bubble Asynchronous Stream Overlap</text></svg>`
       },
       {
         scene: 4,
-        title: "Cloud Fleet Elastic Auto-Scaling",
-        avatar: "☁️",
-        tag: "Cloud Auto-Scale",
-        caption: "Cluster automatically provisions 64 GPU instances during spikes and spins down to 0 to save money!",
-        concept: "Cloud Elasticity: Dynamic provisioning matching compute instances directly to active workload queues.",
-        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><rect x="80" y="45" width="160" height="60" rx="8" fill="#1e293b" stroke="#06b6d4" stroke-width="2"/><text x="160" y="80" font-size="20" text-anchor="middle">☁️ AWS / GCP Fleet</text><text x="160" y="155" text-anchor="middle" font-size="11" fill="#06b6d4" font-weight="bold">Pay-Per-Use Elastic Scaling Cluster</text></svg>`
+        title: "Multi-GPU Distributed Scaling (NCCL)",
+        avatar: "🌐",
+        tag: "Multi-GPU NCCL",
+        caption: "8x GPUs communicating over high-speed NVLink (900 GB/s) via NVIDIA Collective Communications Library (NCCL).",
+        concept: "Distributed Data Parallel (DDP): Scales deep learning and HPC across multi-GPU nodes with AllReduce ring communication.",
+        svg: `<svg viewBox="0 0 320 180" class="cartoon-svg"><rect width="320" height="180" rx="12" fill="#0f172a"/><g transform="translate(35, 40)"><circle cx="30" cy="30" r="18" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="30" y="34" fill="#38bdf8" font-size="10" font-weight="bold" text-anchor="middle">GPU 0</text><circle cx="125" cy="30" r="18" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="125" y="34" fill="#38bdf8" font-size="10" font-weight="bold" text-anchor="middle">GPU 1</text><circle cx="220" cy="30" r="18" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="220" y="34" fill="#38bdf8" font-size="10" font-weight="bold" text-anchor="middle">GPU 2</text><path d="M 50 30 L 105 30 M 145 30 L 200 30" stroke="#22c55e" stroke-width="3"/><text x="125" y="65" fill="#22c55e" font-size="9" text-anchor="middle">NVLink Ring (900 GB/s NCCL AllReduce)</text></g><text x="160" y="160" text-anchor="middle" font-size="11" fill="#22c55e" font-weight="bold">Multi-GPU Distributed Scaling with NVLink &amp; NCCL</text></svg>`
       }
     ],
     storyQuestions: [
-      'Why does the food truck cost more per meal during busy periods but save money during slow periods?',
-      'How does the shipping container kitchen solve the "works on my machine" problem?',
-      'When would you choose a specialized croissant oven over a general-purpose oven?',
-      'How do you decide the right mix of permanent kitchen, food trucks, and specialized ovens?'
+      'How does containerizing a CUDA application with Docker eliminate the "works on my machine" driver dependency problem?',
+      'Why do Tensor Cores achieve up to 8x higher throughput than standard CUDA cores on matrix operations?',
+      'How do CUDA Streams allow developers to completely hide slow PCIe memory transfers behind active GPU compute?',
+      'When should an organization choose Cloud Spot GPU instances over purchasing on-premises hardware?'
     ],
-    storyBridge: 'Cloud HPC is the food truck strategy: trade capital expense for operational flexibility. Containers are the shipping container kitchen: package once, run anywhere. AI accelerators are the specialized ovens: maximum throughput for specific workloads at the cost of generality. Together, they represent the modern deployment landscape for GPU computing.',
-    terminology: ['Cloud HPC', 'IaaS', 'PaaS', 'GPU instance', 'Spot instance', 'Docker', 'Container', 'Kubernetes', 'Kubernetes cluster', 'NVIDIA NGC', 'Tensor Processing Unit (TPU)', 'AWS Trainium', 'Inferentia', 'FPGA', 'MLOps', 'Serverless GPU', 'Elastic scaling', 'Cost optimization', 'Pay-per-use', 'Reserved instance'],
-    mathNeed: 'Cloud GPU cost optimization requires comparing total cost of ownership across on-premises, on-demand, spot, and reserved pricing models.',
-    mathMotivation: 'The choice between cloud and on-premises deployment depends on utilization rate, workload variability, and time-to-deploy — all of which can be modeled mathematically.',
-    realWorldChallenges: ['Cloud GPU costs can exceed $30/hour for high-end instances (A100, H100)', 'Spot instances offer 60-90% discount but can be interrupted with 2-minute notice', 'Container orchestration adds complexity but enables elastic scaling and reproducibility'],
-    technicalChallenges: ['GPU passthrough in containers requires NVIDIA Container Toolkit', 'Cross-cloud GPU performance varies due to virtualization overhead and NIC configuration', 'AI accelerators (TPU, Trainium) use different programming models than CUDA'],
+    storyBridge: 'Just as a modern industrial bakery scales by packaging modular kitchens into shipping containers (Docker), adopting specialized matrix ovens (Tensor Cores), overlapping prep work with baking (CUDA Streams), and renting food trucks during peak demand (Cloud HPC), modern GPU engineering scales parallel applications seamlessly across containerized, accelerated, and distributed cloud systems.',
+    terminology: [
+      'Docker & Containerization',
+      'NVIDIA Container Toolkit (nvidia-ctk)',
+      'NVIDIA NGC (GPU Cloud Registry)',
+      'NVIDIA Tensor Cores',
+      'Mixed Precision Arithmetic (FP16, BF16, INT8, FP8)',
+      'Warp Matrix Multiply and Accumulate (WMMA API)',
+      'CUDA Streams (`cudaStream_t`)',
+      'Asynchronous Transfers (`cudaMemcpyAsync`)',
+      'Pinned / Page-Locked Memory (`cudaHostAlloc`)',
+      'NVIDIA Collective Communications Library (NCCL)',
+      'Distributed Data Parallel (DDP)',
+      'NVLink Interconnect',
+      'Cloud Spot vs On-Demand GPU Instances',
+      'Total Cost of Ownership (TCO)',
+      'Kubernetes GPU Scheduling'
+    ],
+    mathNeed: 'Quantitative formulas are necessary to model Cloud TCO break-even utilization points, calculate Tensor Core mixed-precision speedup, and quantify the throughput gain from multi-stream asynchronous pipeline overlap.',
+    mathMotivation: 'Deploying GPU workloads in the cloud without mathematical cost and throughput modeling can lead to massive cloud bills or under-utilized multi-GPU clusters. Precise equations ensure cost-efficient architecture choices.',
+    realWorldChallenges: [
+      'Configuring host NVIDIA driver passthrough to Docker containers without permission or kernel version mismatches',
+      'Managing numerical underflow/overflow in FP16 mixed precision without loss scaling',
+      'Multi-GPU scaling stalling due to slow inter-node Ethernet/PCIe bottlenecks rather than high-speed NVLink',
+      'Handling sudden Cloud Spot instance terminations during long-running 100-hour training jobs'
+    ],
+    technicalChallenges: [
+      'Using pinned host memory (`cudaHostAlloc`) correctly to enable true hardware DMA for asynchronous `cudaMemcpyAsync`',
+      'Programming the CUDA C++ WMMA (Warp Matrix Multiply Accumulate) API for custom Tensor Core kernels',
+      'Minimizing NCCL AllReduce communication overhead in multi-node Distributed Data Parallel (DDP) training',
+      'Creating minimal Docker container images (using multi-stage builds) to avoid bloated 15GB base images'
+    ],
     equations: [
       {
-        name: 'Cloud vs On-Premises Break-Even',
-        latex: 'C_{cloud} \\times U_{hours} = C_{on\\_prem} \\div T_{payback}',
-        symbols: 'C_cloud is hourly cloud cost, U_hours is utilization hours per year, C_on_prem is the upfront on-premises cost, T_payback is the desired payback period in years.',
-        meaning: 'The cloud is cheaper when utilization is low; on-premises is cheaper when utilization is high and sustained.',
-        whyNeeded: 'It quantifies the break-even utilization rate that determines which deployment model is economically optimal.',
-        interpretation: 'If an H100 cloud instance costs $4/hr and an H100 GPU card costs $30,000, break-even at 3-year payback is 30000/(4 × 3 × 8760) = 28.5% utilization. Below that, cloud is cheaper.'
+        name: 'Mixed-Precision Tensor Core Speedup',
+        latex: 'S_{Tensor} = \\frac{OPS_{FP16\\_Tensor}}{OPS_{FP32\\_CUDA}} = \\frac{N_{Tensor\\_Units} \\times 64 \\text{ FMA/cycle}}{N_{CUDA\\_Cores} \\times 2 \\text{ FMA/cycle}} \\approx 4\\times \\text{ to } 8\\times',
+        symbols: 'OPS is operations per second, Tensor Cores execute 16x16x16 matrix multiply-accumulate operations per clock cycle in hardware.',
+        meaning: 'Quantifies the hardware throughput multiplication gained by shifting from standard 32-bit CUDA cores to dedicated Tensor Core matrix engines.',
+        whyNeeded: 'Justifies why modern deep learning and scientific matrix algorithms universally adopt mixed-precision FP16/BF16 arithmetic.',
+        interpretation: 'On an NVIDIA A100 GPU: Standard FP32 CUDA Core Peak = 19.5 TFLOPS. Tensor Core FP16 Peak = 312 TFLOPS (a 16x hardware throughput gain!).'
       },
       {
-        name: 'Spot Instance Cost Savings',
-        latex: 'S_{spot} = \\frac{C_{on\\_demand} - C_{spot}}{C_{on\\_demand}} \\times 100\\%',
-        symbols: 'S_spot is the percentage savings, C_on_demand is the on-demand price per hour, C_spot is the spot price per hour.',
-        meaning: 'The discount percentage offered by spot instances compared to on-demand pricing.',
-        whyNeeded: 'Spot instances can dramatically reduce cloud costs for interruptible workloads.',
-        interpretation: 'If on-demand is $4/hr and spot is $1.20/hr, savings = (4-1.2)/4 = 70%. For a 100-GPU training job running 1000 hours, that saves $280,000.'
+        name: 'Asynchronous Stream Pipeline Execution Time',
+        latex: 'T_{streamed} = T_{H2D}(1) + \\sum_{k=1}^{K-1} \\max\\left( T_{H2D}(k+1), \\; T_{kernel}(k), \\; T_{D2H}(k-1) \\right) + T_{kernel}(K) + T_{D2H}(K)',
+        symbols: 'K is total number of data chunks, T_H2D is host-to-device transfer time per chunk, T_kernel is execution time, T_D2H is device-to-host transfer time.',
+        meaning: 'When transfers and compute are overlapped across independent CUDA streams, the total wall-clock time is governed by the MAX of transfer and compute rather than their SUM.',
+        whyNeeded: 'Proves mathematically how pipelining eliminates PCIe transfer latency as a wall-clock bottleneck.',
+        interpretation: 'For 100 chunks where transfer takes 10 ms and kernel takes 10 ms: Sequential time = 100 × (10 + 10 + 10) = 3000 ms. Streamed pipeline time = 10 + (99 × 10) + 10 + 10 = 1020 ms (A ~3x wall-clock speedup with zero hardware modifications!).'
       },
       {
-        name: 'Container Overhead',
-        latex: 'O_{container} = \\frac{T_{container}}{T_{native}} \\times 100\\%',
-        symbols: 'O_container is the containerization overhead percentage, T_container is execution time in a container, T_native is execution time on bare metal.',
-        meaning: 'The performance overhead introduced by running in a container compared to bare metal.',
-        whyNeeded: 'Containers are designed for near-zero overhead, but GPU passthrough and storage layers can introduce measurable overhead.',
-        interpretation: 'A well-configured Docker container with NVIDIA GPU passthrough typically has less than 2% overhead. Network storage (NFS, EFS) can add 5-15% for I/O-heavy workloads.'
-      },
-      {
-        name: 'Total Cost of Ownership',
-        latex: 'TCO = C_{hardware} + C_{power} + C_{cooling} + C_{network} + C_{staff} + C_{depreciation}',
-        symbols: 'TCO is total cost of ownership over the system lifetime, C_hardware is acquisition cost, C_power is electricity, C_cooling is cooling overhead, C_network is networking equipment, C_staff is administration cost, C_depreciation is value lost over time.',
-        meaning: 'The true cost of owning and operating an on-premises GPU system over its lifetime (typically 3-5 years).',
-        whyNeeded: 'Hardware purchase price is typically only 40-50% of TCO. Power, cooling, and staffing costs dominate.',
-        interpretation: 'A $500K GPU cluster may cost $1.2M over 5 years when power ($250K), cooling ($100K), network ($50K), and staff ($300K) are included.'
+        name: 'Cloud vs On-Premises Break-Even Utilization',
+        latex: 'U_{breakeven} = \\frac{TCO_{OnPrem\\_Annual}}{8760 \\text{ hrs/year} \\times C_{Cloud\\_Hourly}} \\times 100\\%',
+        symbols: 'TCO_OnPrem_Annual is total amortized annual cost of hardware, power, cooling, and staff; C_Cloud_Hourly is on-demand cloud GPU cost per hour.',
+        meaning: 'The exact utilization threshold below which cloud rental is cheaper, and above which purchasing on-premises hardware is cheaper.',
+        whyNeeded: 'Prevents organizations from overpaying for under-utilized on-premises hardware or suffering massive cloud rental bills for sustained 24/7 workloads.',
+        interpretation: 'An 8x A100 server costs $200,000 amortized over 3 years ($66,666/yr + $20,000 power/admin = $86,666/yr). Cloud cost = $24/hr. U_breakeven = 86,666 / (8760 × 24) = 41.2%. If the team uses GPUs less than 41% of the time, Cloud is cheaper.'
       }
     ],
-    numericalExample: 'An AI startup needs 8× H100 GPUs for 6 months of model training. Option A: On-premises. Hardware cost = $250,000. Power = 10 kW × $0.10/kWh × 8760 hrs × 0.5 (50% utilization) × 5 years = $21,900. Cooling = $8,760. Staff = $50,000/year × 5 = $250,000. Total TCO over 5 years ≈ $530,000. Cost for 6 months of training ≈ $53,000 (amortized). Option B: Cloud (on-demand). 8× H100 instances at $12/hr × 24 hrs × 180 days = $414,720. Option C: Cloud (spot). 8× H100 at $3.60/hr × 24 × 180 = $124,416 (with ~15% interruption overhead = $143,079). For this specific scenario: spot is cheapest ($143K), on-premises amortized is middle ($53K amortized but $250K upfront), on-demand is most expensive ($415K). The right choice depends on whether the startup can handle spot interruptions and how long they will need GPUs beyond 6 months.',
-    metrics: ['Cost per GPU-hour (on-demand, spot, reserved)', 'Total Cost of Ownership (TCO)', 'Container overhead percentage', 'Spot instance interruption frequency', 'Elastic scaling latency', 'GPU utilization rate', 'Training time per epoch'],
-    optimizationPossibilities: 'Use spot instances for fault-tolerant training jobs with checkpointing, reserve instances for predictable workloads, optimize container images for fast startup, use Kubernetes for automatic GPU allocation, and select the right accelerator (GPU vs TPU) for the workload.',
-    futureEnhancements: 'Serverless GPU (AWS Lambda with GPU), confidential computing on GPU, photonic interconnects between cloud GPU nodes, carbon-aware scheduling that shifts workloads to green energy regions, and multi-accelerator orchestration frameworks.',
-    activities: [
-      { level: 1, levelName: 'Teacher Do', objective: 'Compare cloud vs on-premises cost models using a real-world example.', instructions: 'Project a spreadsheet comparing cloud GPU costs (on-demand, spot, reserved) vs on-premises costs (hardware, power, cooling, staff) for an AI training workload. Walk through each cost category.', inputs: 'Spreadsheet with cost data', expectedOutputs: 'Students understand that cloud is not always cheaper — utilization matters.', rubric: 'Cost accuracy 30%, clear explanation 40%, student engagement 30%.', learningOutcomes: 'Understand the economic trade-offs between deployment models.', time: '10 minutes', materials: 'Projector, spreadsheet' },
-      { level: 2, levelName: 'Teacher + Student Together', objective: 'Calculate break-even utilization for cloud vs on-premises.', instructions: 'Given an H100 GPU costing $30,000 (on-premises, 3-year life) and a cloud H100 at $4/hr, compute the utilization rate where cloud becomes more expensive. Plot cost vs utilization for both models.', inputs: 'Calculator, pricing data', expectedOutputs: 'Break-even utilization calculated and plotted.', rubric: 'Correct calculation 40%, meaningful plot 30%, interpretation 30%.', learningOutcomes: 'Quantify the economic decision between deployment models.', time: '15 minutes', materials: 'Calculator, graph paper' },
-      { level: 3, levelName: 'All Students Do', objective: 'Run a GPU workload in a Docker container on a cloud instance.', instructions: 'In groups of 3, launch a cloud GPU instance (AWS p3 or GCP T4), install Docker with NVIDIA Container Toolkit, run a simple CUDA kernel inside the container, and compare execution time to bare metal.', inputs: 'Cloud account (free tier), Docker, CUDA image', expectedOutputs: 'Working containerized GPU workload with timing comparison to bare metal.', rubric: 'Successful deployment 30%, timing comparison 30%, overhead analysis 20%, cost tracking 20%.', learningOutcomes: 'Experience containerized GPU deployment end-to-end.', time: '25 minutes', materials: 'Cloud account, laptop with Docker' },
-      { level: 4, levelName: 'Individual Student Do', objective: 'Design a cloud GPU deployment strategy for a given workload.', instructions: 'Given a workload description (e.g., 3-month ML training, variable batch inference), design a cloud deployment strategy: choose instance types, pricing model (on-demand/spot/reserved), container orchestration approach, and estimate total cost.', inputs: 'Workload description with compute and memory requirements', expectedOutputs: 'Deployment strategy document with cost estimate and risk assessment.', rubric: 'Appropriate instance selection 25%, pricing model justification 25%, cost accuracy 25%, risk assessment 25%.', learningOutcomes: 'Apply cloud GPU deployment knowledge to a realistic scenario.', time: '20 minutes', materials: 'Workload description, cloud pricing data' }
+    numericalExample: 'Deploying an asynchronous AI inference pipeline: Batch size = 1,000,000 items split into 4 independent chunks of 250,000 items across 4 CUDA streams. Per chunk: Pinned memory H2D transfer = 2.0 ms. Tensor Core FP16 inference kernel = 2.0 ms. D2H result transfer = 1.0 ms. Sequential execution: 4 chunks × (2.0 + 2.0 + 1.0) = 20.0 ms. 4-Stream Overlapped Execution: Chunk 1 H2D starts at t=0ms. At t=2ms, Chunk 1 Kernel starts while Chunk 2 H2D transfers concurrently. At t=4ms, Chunk 1 D2H transfers while Chunk 2 Kernel computes and Chunk 3 H2D transfers concurrently. Total pipeline runtime = 2.0 (initial fill) + 3 × 2.0 (steady state) + 2.0 (final kernel) + 1.0 (final drain) = 11.0 ms. Effective latency drops by 45% with near-100% GPU compute and PCIe bus saturation!',
+    metrics: [
+      'Container Startup Latency and Image Size (MB)',
+      'Tensor Core FP16 vs CUDA Core FP32 GFLOPS Speedup',
+      'CUDA Stream Overlap Concurrency Factor',
+      'Pinned Memory DMA Bandwidth (GB/s)',
+      'Multi-GPU NCCL AllReduce Bus Bandwidth (GB/s)',
+      'Cloud Cost per 1M Inferences ($)',
+      'Multi-GPU Weak and Strong Scaling Efficiency (%)'
     ],
-    projectScope: 'Build a cost-performance comparison tool that evaluates cloud GPU instances (on-demand, spot, reserved) vs on-premises deployment for a given workload, including container overhead analysis.',
-    projectFeasibility: 'Uses cloud free-tier credits (AWS $100, GCP $300) for hands-on testing. Docker and NVIDIA Container Toolkit are free. No hardware purchase needed.',
-    projectObjectives: ['Deploy a CUDA workload in a Docker container on a cloud GPU instance', 'Measure container overhead vs bare metal execution', 'Collect pricing data for on-demand, spot, and reserved instances', 'Build a cost model comparing cloud vs on-premises for a given workload', 'Generate a deployment recommendation report'],
-    projectOutcomes: ['Docker-based GPU workload deployment guide', 'Container overhead measurement results', 'Cost comparison model with interactive plots', 'Deployment recommendation report for a specific workload'],
-    projectMethodology: 'Question: What is the optimal deployment strategy for a GPU workload? Hypothesis: Spot instances with checkpointing offer the best cost/performance for training; reserved instances for inference. Experiment: Deploy and measure. Compare: Build cost models. Reflect: Match deployment to workload characteristics.',
-    projectRoles: ['Infrastructure Lead: sets up cloud instances and Docker environment', 'Benchmark Lead: measures container overhead and GPU performance', 'Cost Analyst: builds cost models and comparison plots', 'Writer: documents deployment strategy and recommendations'],
+    optimizationPossibilities: 'Use multi-stage Docker builds with minimal CUDA runtime images (`nvidia/cuda:12.x-runtime`), allocate pinned host memory (`cudaHostAlloc`) to enable asynchronous DMA transfers, employ Automatic Mixed Precision (AMP) with FP16/BF16 on Tensor Cores, and utilize NCCL for ring-based AllReduce in multi-GPU distributed training.',
+    futureEnhancements: 'Serverless GPU microVMs with sub-second cold starts, confidential computing on H100 Hopper GPUs with hardware encryption, optical inter-node interconnects, and dynamic AI-managed Spot instance migration.',
+    activities: [
+      {
+        level: 1,
+        levelName: 'Teacher Do: Build & Run a Dockerized CUDA Application with GPU Passthrough',
+        objective: 'Demonstrate writing a Dockerfile, building a CUDA container, and running it with NVIDIA Container Toolkit.',
+        instructions: 'Display a clean `Dockerfile` based on `nvidia/cuda:12.2.0-devel-ubuntu22.04`. Add build steps to compile `vecAdd.cu`. Build with `docker build -t my-cuda-app .`. Run first without GPU flags (`docker run my-cuda-app` -> fails to find GPU). Then run with GPU passthrough: `docker run --gpus all my-cuda-app`. Show that the container executes with native GPU performance.',
+        inputs: 'Dockerfile, vecAdd.cu source, Docker with NVIDIA Container Toolkit installed',
+        expectedOutputs: 'Containerized CUDA application successfully executing inside Docker container with GPU passthrough.',
+        rubric: 'Dockerfile clarity 35%, GPU passthrough demonstration 35%, explanation of runtime isolation 30%.',
+        learningOutcomes: 'Understand how to package and execute production GPU applications inside reproducible Docker containers.',
+        time: '15 minutes',
+        materials: 'Projector, workstation with Docker and NVIDIA Container Toolkit'
+      },
+      {
+        level: 2,
+        levelName: 'Teacher + Student Together: Implement Multi-Stream Asynchronous Pipeline',
+        objective: 'Step through developing a multi-stream CUDA C application that overlaps PCIe transfers with kernel execution.',
+        instructions: 'Guide students to build `stream_pipeline.cu`. Step 1: Allocate pinned host memory with `cudaHostAlloc(&h_pinned, size, cudaHostAllocDefault)`. Step 2: Create 4 CUDA streams with `cudaStreamCreate(&streams[i])`. Step 3: Loop over 4 chunks, issuing `cudaMemcpyAsync(..., streams[i])`, launching `kernel<<<..., streams[i]>>>`, and `cudaMemcpyAsync(..., streams[i])`. Step 4: Synchronize with `cudaDeviceSynchronize()`. Profile with Nsight Systems to visually verify transfer-compute overlap.',
+        inputs: 'stream_pipeline.cu skeleton, Nsight Systems CLI',
+        expectedOutputs: 'Working multi-stream pipeline showing clear overlap of H2D, Kernel, and D2H on the Nsight timeline.',
+        rubric: 'Correct stream creation and async calls 35%, pinned memory usage 35%, timeline overlap verification 30%.',
+        learningOutcomes: 'Master asynchronous GPU pipelining using CUDA Streams and pinned memory DMA.',
+        time: '25 minutes',
+        materials: 'C++ IDE/VS Code, nvcc compiler, Nsight Systems'
+      },
+      {
+        level: 3,
+        levelName: 'All Students Do: Develop a Mixed-Precision Tensor Core Kernel using WMMA',
+        objective: 'Write a CUDA C++ program utilizing the WMMA (Warp Matrix Multiply Accumulate) API to execute FP16 matrix operations on Tensor Cores.',
+        instructions: 'In pairs, implement `tensor_core_gemm.cu` using `#include <mma.h>` and `using namespace nvcuda::wmma;`. Declare fragments `fragment<matrix_a, 16, 16, 16, half, row_major> a_frag;`, `fragment<matrix_b, 16, 16, 16, half, col_major> b_frag;`, and `fragment<accumulator, 16, 16, 16, float> c_frag;`. Load tiles with `load_matrix_sync()`, compute with `mma_sync(c_frag, a_frag, b_frag, c_frag)`, and store with `store_matrix_sync()`. Compare GFLOPS against standard FP32 CUDA core GEMM.',
+        inputs: 'tensor_core_gemm.cu starter template, half-precision matrix inputs',
+        expectedOutputs: 'Working Tensor Core kernel achieving 4x-8x higher GFLOPS than standard FP32 CUDA core implementation.',
+        rubric: 'Correct WMMA API usage 35%, proper half-precision conversions 35%, performance speedup benchmark 30%.',
+        learningOutcomes: 'Program dedicated hardware Tensor Cores using the CUDA C++ WMMA API.',
+        time: '25 minutes',
+        materials: 'CUDA development system with Tensor Core GPU (T4, RTX 2060+, A100), nvcc'
+      },
+      {
+        level: 4,
+        levelName: 'Individual Student Do: Design a Cloud HPC Deployment Architecture & Cost Model',
+        objective: 'Design a complete Cloud HPC deployment plan for a given deep learning training pipeline including instance selection, spot checkpointing, and Docker specification.',
+        instructions: 'Given a workload specification (training a 7B parameter model requiring 500 GPU-hours), design an end-to-end cloud architecture: (1) Select the optimal cloud instance (e.g. 8x A100 or 8x H100 vs Spot), (2) Write the Dockerfile and entrypoint script with automated S3 checkpointing every 30 minutes to mitigate spot interruption, (3) Compute the total cost and TCO comparison against buying an on-premises workstation.',
+        inputs: 'Workload specification sheet, AWS/GCP cloud pricing tables',
+        expectedOutputs: 'Complete deployment architecture document including Dockerfile, checkpoint strategy, and economic TCO breakdown.',
+        rubric: 'Instance selection justification 25%, robustness of checkpointing strategy 25%, Dockerfile quality 25%, cost model accuracy 25%.',
+        learningOutcomes: 'Synthesize containerization, cloud economics, and fault-tolerant architecture for real-world GPU deployments.',
+        time: '20 minutes',
+        materials: 'Specification handout, cloud pricing reference'
+      }
+    ],
+    projectScope: 'Develop a Cloud-Ready Containerized Multi-GPU AI Acceleration Pipeline featuring Docker packaging with NVIDIA Container Toolkit, CUDA Stream asynchronous execution, Tensor Core WMMA mixed-precision acceleration, and automated Spot instance checkpointing.',
+    projectFeasibility: 'Can be developed locally on any NVIDIA GPU or cloud instance (Google Colab / AWS free tier credits). Uses standard Docker, CUDA Toolkit, and Python/C++ toolchains.',
+    projectObjectives: [
+      'Create production-grade multi-stage Dockerfiles with NVIDIA Container Toolkit GPU passthrough',
+      'Implement an asynchronous CUDA Streams pipeline with pinned memory DMA transfer overlap',
+      'Implement a hardware Tensor Core matrix acceleration kernel using CUDA WMMA C++ API',
+      'Implement an automated fault-tolerant checkpoint/restore mechanism for Cloud Spot instances',
+      'Benchmark GFLOPS, memory bandwidth, and cost-per-training-run across precision modes (FP32 vs FP16)'
+    ],
+    projectOutcomes: [
+      'Complete, containerized GitHub repository with Dockerfile, Makefile, and automated test scripts',
+      'Benchmarking suite comparing CUDA Core FP32 vs Tensor Core FP16 throughput',
+      'Nsight Systems trace visualization proving stream transfer-compute overlap',
+      'Cloud deployment guide and cost optimization spreadsheet'
+    ],
+    projectMethodology: 'Question: What combination of containerization, asynchronous streams, and Tensor Core mixed precision yields the lowest cost-per-inference in cloud deployments? Hypothesis: Tensor Cores will deliver 4x-8x compute speedup, while asynchronous streams will eliminate 90% of PCIe transfer overhead. Experiment: Run containerized benchmark sweeps across stream counts and precision formats. Compare: Measure latency, throughput, and cloud dollar cost. Reflect: Synthesize architectural recommendations for production MLOps.',
+    projectRoles: [
+      'DevOps & Container Lead: builds multi-stage Dockerfiles and container runtime configs',
+      'Tensor Core Kernel Developer: writes WMMA C++ kernels and precision conversions',
+      'Asynchronous Pipeline Lead: implements CUDA streams, pinned memory, and event synchronization',
+      'Cloud Economics Analyst: models Spot instance savings, checkpoint intervals, and TCO'
+    ],
     projectTimeline: [
-      { milestone: 'Setup', duration: 'Day 1', deliverable: 'Cloud account, Docker environment, workload defined' },
-      { milestone: 'Deploy', duration: 'Days 2-3', deliverable: 'Containerized GPU workload running on cloud instance' },
-      { milestone: 'Measure', duration: 'Days 4-5', deliverable: 'Overhead measurements and pricing data collected' },
-      { milestone: 'Analyze', duration: 'Day 6', deliverable: 'Cost comparison model and deployment strategy' },
-      { milestone: 'Report', duration: 'Day 7', deliverable: 'Final report with deployment recommendations' }
+      { milestone: 'Dockerization & GPU Passthrough', duration: 'Day 1', deliverable: 'Working Docker container running CUDA application on GPU host' },
+      { milestone: 'CUDA Streams Pipelining', duration: 'Days 2-3', deliverable: 'Asynchronous 4-stream pipeline with verified Nsight overlap trace' },
+      { milestone: 'Tensor Core WMMA Kernel', duration: 'Days 4-5', deliverable: 'Working FP16 Tensor Core matrix multiply kernel' },
+      { milestone: 'Cloud Deployment & Spot Testing', duration: 'Day 6', deliverable: 'Fault-tolerant checkpointing tested under simulated spot interruption' },
+      { milestone: 'Final Report & Submission', duration: 'Day 7', deliverable: 'Complete TRL 4 GitHub repository and technical engineering report' }
     ],
     projectRisks: [
-      { risk: 'Free-tier credits exhausted before measurements complete', severity: 'Medium', mitigation: 'Use minimal instance sizes and short test runs; track spending carefully' },
-      { risk: 'Spot instances interrupted during measurement', severity: 'Medium', mitigation: 'Run measurements multiple times and use checkpointing for long runs' },
-      { risk: 'Cloud pricing changes between project start and end', severity: 'Low', mitigation: 'Document pricing date and use relative comparisons rather than absolute costs' }
+      { risk: 'Local GPU lacks Tensor Core hardware (e.g. older Pascal GTX 10-series)', severity: 'Medium', mitigation: 'Use Google Colab T4 GPU runtime (Turing architecture with Tensor Cores) for Tensor Core modules' },
+      { risk: 'Docker daemon unable to access NVIDIA GPU inside WSL2 / Linux', severity: 'Medium', mitigation: 'Install `nvidia-container-toolkit` and configure `/etc/docker/daemon.json` with `nvidia-ctk runtime configure`' },
+      { risk: 'Numerical divergence in FP16 mixed precision', severity: 'Low', mitigation: 'Use FP32 master weight accumulation and scale loss dynamically' }
     ],
-    projectBudget: 'Student time: ~15 hours. Cloud cost: $0-50 (free-tier credits). Docker and toolkit: free. Documentation: ~3 hours.',
-    projectTRL: 'TRL 4 — Component validation of containerized GPU workload on cloud infrastructure.',
+    projectBudget: 'Student effort: ~15 hours. Cloud compute cost: $0-$10 (Google Colab free tier or AWS free tier). Software: Docker + NVIDIA Container Toolkit (Free).',
+    projectTRL: 'TRL 4 — Component validation of containerized, stream-pipelined, and Tensor-Core-accelerated GPU application.',
     questions: [
-      { type: 'conceptual', question: 'What is the advantage of running GPU workloads in containers instead of bare metal?', answer: 'Containers provide reproducibility (same environment everywhere), portability (move between cloud providers), isolation (no dependency conflicts), and rapid deployment (launch in seconds vs hours for bare-metal setup). They also enable elastic scaling through orchestration platforms like Kubernetes.', explanation: 'Docker packages the entire software stack — OS libraries, CUDA runtime, application code — into a portable image. NVIDIA Container Toolkit provides GPU passthrough with near-native performance.', commonMistakes: 'Assuming containers add significant GPU overhead. With proper GPU passthrough, overhead is typically under 2%.', tip: 'Containers are the "shipping containers" of software — standardized, portable, and stackable.' },
-      { type: 'numerical', question: 'An on-demand GPU instance costs $4/hr. A spot instance costs $1.20/hr with a 10% interruption rate. If a training job runs for 1000 hours, what is the total cost for on-demand vs spot (accounting for re-runs)?', answer: 'On-demand: 1000 × $4 = $4,000. Spot: 1000 × $1.20 = $1,200 base. With 10% interruption, ~100 hours of work must be re-run: 100 × $1.20 = $120 extra. Total spot: $1,320. Savings: ($4,000 - $1,320) / $4,000 = 67%.', explanation: 'Spot instances offer massive savings even with interruptions, provided the workload can checkpoint and resume.', commonMistakes: 'Forgetting to account for re-run costs from interruptions.', tip: 'Spot savings are real but require fault-tolerant checkpointing.' },
-      { type: 'application', question: 'When should you choose a TPU over a GPU for a workload?', answer: 'Choose a TPU when the workload is dominated by large matrix multiplications (e.g., Transformer training) that map to TPU matrix multiply units (MXU). TPUs offer better FLOP/s per watt and lower cost for these specific workloads. Choose GPUs for general-purpose compute, mixed workloads, or when CUDA ecosystem compatibility is required.', explanation: 'TPUs are domain-specific accelerators — they trade generality for efficiency on specific operations. The XLA compiler optimizes TensorFlow/JAX code for TPU architecture automatically.', commonMistakes: 'Assuming TPUs are universally faster than GPUs. For non-matrix workloads, GPUs often win.', tip: 'TPU = specialized croissant oven. GPU = general-purpose kitchen. Match the tool to the workload.' },
-      { type: 'problemSolving', question: 'A company is spending $50,000/month on cloud GPU instances for model training. Propose three cost-reduction strategies.', answer: '(1) Switch 60% of training to spot instances with checkpointing: saves ~$24,000/month. (2) Use reserved instances for the 40% of always-on inference workloads: saves ~$8,000/month. (3) Optimize training efficiency (mixed precision, gradient accumulation) to reduce total GPU hours by 30%: saves ~$15,000/month. Total potential savings: ~$47,000/month (94%).', explanation: 'Cloud cost optimization combines pricing strategy (spot/reserved), workload optimization (reduce GPU hours), and right-sizing (use appropriate instance types).', commonMistakes: 'Focusing only on instance type without addressing training efficiency.', tip: 'The cheapest GPU hour is the one you don\'t need — optimize the algorithm first.' }
+      {
+        type: 'conceptual',
+        question: 'Explain the technical prerequisites required to run a Docker container with direct access to physical host NVIDIA GPU hardware.',
+        answer: 'Running GPU-accelerated Docker containers requires three components:\n1. NVIDIA Host Driver: Installed on the host OS to communicate directly with physical GPU PCIe hardware.\n2. Docker Engine: Standard container runtime.\n3. NVIDIA Container Toolkit (`nvidia-container-toolkit` / `nvidia-ctk`): A container runtime hook that automatically maps host NVIDIA kernel modules, device nodes (`/dev/nvidia*`), and CUDA driver libraries (`libcuda.so`) into the container filesystem upon startup when invoked with `--gpus all`.\nInside the container, only the CUDA user-space runtime/libraries (e.g. from `nvidia/cuda:12.x-runtime`) are required; the physical driver is passed through from the host.',
+        explanation: 'Docker isolates operating system user-spaces, but GPUs require kernel-mode driver interaction. The NVIDIA Container Toolkit bridges the container boundary with near-zero virtualization overhead (<1.5%).',
+        commonMistakes: 'Trying to install the NVIDIA display driver INSIDE the Dockerfile. The driver must ONLY be installed on the host OS; the container only needs CUDA runtime libraries.',
+        tip: 'Host = Physical Driver. Container = CUDA Runtime Toolkit. Bridge = NVIDIA Container Toolkit (`--gpus all`).'
+      },
+      {
+        type: 'numerical',
+        question: 'An organization runs a continuous AI inference service requiring 100 million matrix multiplications per day. Using standard FP32 CUDA cores on an on-demand cloud GPU ($3.00/hr), the service requires 4 GPU instances running 24 hours/day. Switching to FP16 Tensor Cores provides a 4x throughput improvement per instance. Calculate the annual cloud cost savings achieved by switching to Tensor Cores.',
+        answer: 'Baseline (FP32 CUDA Cores):\nInstances needed = 4.\nDaily cost = 4 instances × 24 hrs × $3.00/hr = $288/day.\nAnnual cost = $288 × 365 = $105,120/year.\n\nWith FP16 Tensor Cores:\nThroughput per instance increases by 4x -> Only 1 instance needed (4 / 4 = 1 instance).\nDaily cost = 1 instance × 24 hrs × $3.00/hr = $72/day.\nAnnual cost = $72 × 365 = $26,280/year.\n\nAnnual Cost Savings = $105,120 - $26,280 = $78,840/year (a 75% total cost reduction!).',
+        explanation: 'Tensor Cores multiply compute density per watt and per dollar, allowing fewer cloud instances to service identical workload throughput.',
+        commonMistakes: 'Assuming faster execution does not change cloud bills unless instance counts or hours are actively downscaled.',
+        tip: 'Throughput gains translate to cloud savings only when you reduce instance counts or spin down idle nodes!'
+      },
+      {
+        type: 'application',
+        question: 'Why does `cudaMemcpyAsync()` require host memory to be allocated with `cudaHostAlloc()` (pinned/page-locked memory) rather than standard C++ `malloc()` to achieve true asynchronous transfer-compute overlap?',
+        answer: 'Standard host memory allocated via `malloc()` is pageable by the operating system: the OS virtual memory manager can move pages in physical RAM or swap them to disk at any moment. Because the GPU Direct Memory Access (DMA) hardware engine cannot safely access virtual memory that might be relocated or swapped out, the CUDA driver must first synchronously copy pageable memory into an internal pinned staging buffer before issuing the PCIe DMA transfer. This staging step blocks the CPU thread!\n\nWhen memory is allocated via `cudaHostAlloc()` (or registered with `cudaHostRegister()`), it is pinned (locked into physical RAM). The GPU DMA controller can read/write it directly in the background over PCIe without CPU intervention, allowing `cudaMemcpyAsync()` to return control to the host CPU immediately and execute concurrent GPU kernels on other streams.',
+        explanation: 'Page-locked (pinned) memory guarantees a stable physical address, enabling hardware DMA controllers to stream data across PCIe without CPU copying.',
+        commonMistakes: 'Calling `cudaMemcpyAsync()` on memory allocated with `malloc()` and wondering why Nsight Systems shows no concurrency with the kernel.',
+        tip: '`cudaMemcpyAsync` + `malloc()` = Synchronous blocking transfer. `cudaMemcpyAsync` + `cudaHostAlloc()` = True asynchronous non-blocking DMA!'
+      },
+      {
+        type: 'problemSolving',
+        question: 'A team trains a neural network on cloud Spot GPU instances to save 70% in compute costs. However, Spot instances can be terminated with a 2-minute warning. Design a robust fault-tolerant checkpointing and auto-resumption strategy to ensure zero loss of progress.',
+        answer: 'Architecture Strategy:\n1. Periodic Local & Cloud Checkpointing: Every N training steps (e.g. every 15 minutes), save model weights, optimizer states, and epoch counters to high-speed local SSD storage, and immediately asynchronously sync the snapshot to durable cloud object storage (e.g. AWS S3 / Google Cloud Storage) using a background thread.\n2. Spot Termination Signal Listener: Run a lightweight daemon inside the container polling the cloud metadata endpoint (e.g. `http://169.254.169.254/latest/meta-data/spot/instance-action` on AWS). Upon receiving the 2-minute termination notice:\n   - Instantly trigger an emergency checkpoint save of the current iteration.\n   - Flush and sync the checkpoint file to S3.\n   - Gracefully exit the container.\n3. Container Auto-Resumption: In the Docker entrypoint script, check S3 for the latest available checkpoint. If found, load weights with `model.load_state_dict()` and resume training from `checkpoint[\'step\']`; if not found, initialize from step 0.\n4. Cloud Orchestration: Deploy using Kubernetes (EKS/GKE) with an Auto-Scaling Group configured to automatically provision a replacement Spot node when one is reclaimed.',
+        explanation: 'Fault-tolerant checkpointing turns spot interruptions from fatal failures into minor 2-minute pause-and-resume events, locking in massive cost savings.',
+        commonMistakes: 'Saving checkpoints only to the local instance root disk, which gets permanently deleted when the Spot instance is reclaimed by the cloud provider.',
+        tip: 'Always sync checkpoints to external cloud object storage (S3/GCS) immediately!'
+      }
     ],
     labType: 'ai-accelerator',
-    keyInsights: ['Cloud GPUs offer flexibility but at a premium over on-premises for high-utilization workloads', 'Spot instances provide 60-90% discount for interruptible workloads with checkpointing', 'Containers provide near-native GPU performance with massive deployment benefits', 'AI accelerators (TPU, Trainium) offer better efficiency for specific workloads than general GPUs', 'The right deployment strategy depends on utilization rate, workload variability, and time-to-deploy'],
-    advantages: ['Elastic scaling — provision GPUs on demand, release when done', 'No upfront capital expenditure — pay-per-use pricing', 'Rapid experimentation with different GPU types and configurations', 'Global availability and low-latency edge deployment', 'Managed services (SageMaker, Vertex AI) simplify ML operations'],
-    disadvantages: ['Higher per-hour cost than on-premises for sustained high utilization', 'Spot instance interruptions require fault-tolerant workloads', 'Data transfer costs between regions and to/from cloud storage', 'Vendor lock-in through cloud-specific services and APIs', 'Networking overhead in multi-node GPU training on cloud instances'],
-    improvements: ['Adopt Kubernetes with GPU scheduling for automatic resource management', 'Use cloud-native profiling tools (CloudWatch, Cloud Monitoring) for production observability', 'Implement multi-cloud strategies to avoid vendor lock-in', 'Leverage carbon-aware scheduling to reduce energy costs and environmental impact'],
-    futureScope: 'Serverless GPU computing, confidential GPU computing for sensitive data, photonic GPU interconnects, quantum-GPU hybrid computing, and edge GPU inference on 5G networks.',
-    industrialApplications: ['OpenAI training GPT models on Azure GPU clusters', 'Amazon SageMaker for managed ML training and inference', 'Google Cloud TPUs for Transformer-based research', 'NVIDIA DGX Cloud for enterprise AI development', 'Autonomous vehicle perception on cloud-edge GPU pipelines', 'Pharmaceutical drug discovery on cloud GPU clusters (Schrödinger, Recursion)'],
-    researchOpportunities: ['Multi-cloud GPU scheduling optimization', 'Cost-aware training that adapts to spot pricing in real time', 'Federated learning on heterogeneous cloud accelerators', 'Energy-efficient cloud GPU deployment and carbon-aware scheduling', 'Performance portability across cloud GPU providers'],
-    careerRelevance: ['Cloud HPC Engineer', 'MLOps Engineer', 'GPU Infrastructure Architect', 'Cloud Cost Optimization Analyst', 'AI Platform Engineer', 'DevOps Engineer (GPU workloads)']
+    keyInsights: [
+      'Docker with NVIDIA Container Toolkit provides near-zero overhead (<1.5%) and eliminates software dependency mismatch',
+      'Tensor Cores provide 4x to 16x higher matrix throughput over standard CUDA cores via mixed-precision hardware acceleration',
+      'Asynchronous CUDA Streams with pinned host memory completely overlap slow PCIe transfers with active GPU computation',
+      'Cloud Spot instances offer 60-90% cost savings for fault-tolerant workloads with automated cloud checkpointing'
+    ],
+    advantages: [
+      'Elastic cloud provisioning allows scaling from 1 GPU to thousands of GPUs in minutes without capital expenditure',
+      'Containerized images run identically on local developer laptops, cloud VMs, and supercomputing clusters',
+      'Automatic Mixed Precision (AMP) cuts memory consumption in half while multiplying compute throughput',
+      'NCCL enables linear multi-GPU scaling over NVLink and high-speed InfiniBand interconnects'
+    ],
+    disadvantages: [
+      'Cloud GPU rental costs can become astronomical if instances are left running idle without auto-shutdown',
+      'Spot instance interruptions require robust fault-tolerant checkpointing logic in application code',
+      'Managing Docker GPU passthrough and CUDA driver compatibility requires DevOps infrastructure expertise',
+      'FP16 mixed precision can encounter numerical underflow without proper loss scaling techniques'
+    ],
+    improvements: [
+      'Implement multi-node Distributed Data Parallel (DDP) training with gradient bucket allreduce optimization',
+      'Utilize 8-bit floating point (FP8) and INT8 quantization for next-generation inference acceleration',
+      'Employ Kubernetes with NVIDIA GPU Operator for automated cluster resource allocation and health monitoring',
+      'Implement auto-shutdown scripts that terminate cloud instances when GPU utilization drops below 5% for 15 minutes'
+    ],
+    futureScope: 'Serverless GPU computing with sub-second cold starts, confidential hardware-encrypted GPU execution for sensitive data, multi-accelerator unified scheduling (GPUs + TPUs + NPUs), and photonic optical interconnects.',
+    industrialApplications: [
+      'Large Language Model distributed training and inference (ChatGPT, Claude, Gemini on cloud GPU clusters)',
+      'High-throughput cloud video transcoding and real-time streaming (YouTube, Twitch, Netflix)',
+      'Enterprise MLOps pipelines on Kubernetes (Kubeflow, MLflow with GPU node pools)',
+      'Pharmaceutical molecular screening on elastic cloud GPU clusters',
+      'Autonomous fleet simulation and synthetic data generation pipelines'
+    ],
+    researchOpportunities: [
+      'Zero-bubble asynchronous multi-GPU pipeline scheduling algorithms',
+      'Lossless low-bit quantization (FP4/INT4) for trillion-parameter foundation models',
+      'Carbon-aware and spot-pricing-aware dynamic workload migration across global cloud regions',
+      'Federated learning on heterogeneous edge-cloud GPU networks'
+    ],
+    careerRelevance: [
+      'MLOps & AI Platform Engineer',
+      'Cloud HPC Infrastructure Architect',
+      'Distributed Systems Engineer',
+      'GPU Cloud DevOps Engineer',
+      'AI Acceleration & Quantization Specialist'
+    ]
   }
 ];

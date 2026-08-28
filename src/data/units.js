@@ -1,7 +1,7 @@
 export const unitDetails = {
   1: { label: 'Foundations of HPC', outcomes: 'Explain architecture, memory behavior, performance metrics, and scalability.', activity: 'Model the system before changing the system.', lab: 'speedup' },
   2: { label: 'Parallel programming models', outcomes: 'Choose a programming model and reason about communication, synchronization, and load balance.', activity: 'Turn a sequential loop into a measured parallel workload.', lab: 'parallel' },
-  3: { label: 'GPU computing and optimization', outcomes: 'Map work to GPU hardware and identify memory, occupancy, and profiling bottlenecks.', activity: 'Tune a kernel by changing one hardware-facing variable at a time.', lab: 'gpu' },
+  3: { label: 'GPU computing and optimization', outcomes: 'Set up GPU development environments (local/cloud/containers), build and debug CUDA/GPU applications, and optimize performance through memory management and profiling.', activity: 'Set up the GPU toolchain, compile and debug a complete GPU application, and tune performance with profilers.', lab: 'gpu' },
   4: { label: 'Quantum computing', outcomes: 'Construct circuits, interpret measurement, and compare hybrid quantum-classical strategies.', activity: 'Build a circuit, observe its state, and connect it to an algorithm.', lab: 'quantum' }
 };
 
@@ -20,10 +20,10 @@ export const topicDetails = {
     ['Load balancing and Python multiprocessing', 'Distribute uneven work while accounting for process overhead.', 'Balance a mixed workload across workers.']
   ],
   3: [
-    ['GPU architecture and CUDA basics', 'Map grids, blocks, warps, and threads to a GPU execution model.', 'Step through a vector-add kernel from launch to result.'],
-    ['Memory coalescing and occupancy', 'Relate access patterns and active warps to throughput.', 'Tune coalescing and occupancy to improve a kernel score.'],
-    ['Profiling and bottleneck analysis', 'Read profiler signals and form a measurable optimization hypothesis.', 'Compare compute-bound and memory-bound traces.'],
-    ['Cloud HPC, containers, and AI accelerators', 'Evaluate portability, cost, and accelerator fit in deployment.', 'Choose an accelerator and deployment shape for a workload.']
+    ['GPU architecture and CUDA basics', 'Set up the CUDA environment, verify device properties, and develop your first GPU applications.', 'Configure nvcc, write and compile vector addition and AXPY kernels from launch to result.'],
+    ['Memory coalescing and occupancy', 'Master GPU memory hierarchies, develop tiled matrix multiplication (GEMM), and tune occupancy.', 'Eliminate uncoalesced memory strides and shared memory bank conflicts with array padding.'],
+    ['Profiling and bottleneck analysis', 'Debug with compute-sanitizer/cuda-gdb and profile GPU kernels with Nsight Tools & Roofline model.', 'Profile compute-bound vs memory-bound kernels, fix warp stalls, and optimize kernel execution.'],
+    ['Cloud HPC, containers, and AI accelerators', 'Set up Docker with NVIDIA Container Toolkit and develop AI accelerated applications with Tensor Cores.', 'Deploy containerized GPU pipelines, leverage mixed precision FP16/INT8, and scale across multi-GPU setups.']
   ],
   4: [
     ['Qubits, gates, and measurement', 'Represent a qubit state and predict measurement probabilities.', 'Compose gates and observe a simulated measurement distribution.'],
