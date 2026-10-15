@@ -452,12 +452,14 @@ function assessment(_, app) {
 
 function topicPage(_, app, unitId, topicId) {
   app.innerHTML = renderTopicLesson(unitId, topicId);
+  initTopicLab(unitId, topicId);
 }
 
 function standaloneLabPage(path, app) {
   const m = path.match(/lab\/(.+)/);
   const labId = m ? m[1] : 'hpc-throughput';
   app.innerHTML = renderLab(labId, true);
+  initStandaloneLab(labId);
 }
 
 function projectsPage(path, app) {
@@ -995,6 +997,14 @@ function checkChallengeCompletion(labId, data) {
     if (data === 'ordered' || data === 'mutex') isComplete = true;
   } else if (labId === 'load-balancing') {
     if (data.strat === 'stealing') isComplete = true;
+  } else if (labId === 'cuda-basics') {
+    if (data.blocks * data.threads === 65536) isComplete = true;
+  } else if (labId === 'memory-coalescing') {
+    if (data.stride === 1 && data.padding >= 1) isComplete = true;
+  } else if (labId === 'roofline-profiling') {
+    if (data.intensity >= 10.0) isComplete = true;
+  } else if (labId === 'ai-accelerator') {
+    if ((data.prec === 'fp16' || data.prec === 'int8') && data.gpus >= 16) isComplete = true;
   }
 
   if (isComplete) {
@@ -1303,6 +1313,223 @@ function updateLoadBalancing(strat, varianceVal) {
   trackLabExperiment();
 }
 
+function updateCudaBasics(blocks, threads) {
+  const total = blocks * threads;
+  const warps = Math.round(threads / 32);
+  const occ = Math.min(100, Math.round((threads / 1024) * 100));
+
+  setText('[data-cuda-blocks-val]', blocks);
+  setText('[data-cuda-threads-val]', threads);
+  setText('[data-cuda-total-threads]', total.toLocaleString());
+  setText('[data-cuda-warps-per-block]', `${warps} warps`);
+  setText('[data-cuda-occupancy]', `${occ}%`);
+
+  const feedbackEl = document.querySelector('[data-cuda-feedback]');
+  if (feedbackEl) {
+    if (total === 65536) {
+      feedbackEl.textContent = `🎯 Perfect 65,536 thread dispatch (${blocks} blocks × ${threads} threads/block)! All ${warps} warps per block running with ${occ}% SM occupancy!`;
+    } else if (threads % 32 !== 0) {
+      feedbackEl.textContent = `⚠️ Warning: ${threads} threads/block is not a multiple of 32 (warp size). Unused warp lanes will idle wastefully!`;
+    } else {
+      feedbackEl.textContent = `Threads execute in SIMT groups of 32 called warps. Setting ${threads} threads/block yields ${warps} full warps per block (${total.toLocaleString()} total threads)!`;
+    }
+  }
+
+  checkChallengeCompletion('cuda-basics', { blocks, threads });
+  trackLabExperiment();
+}
+
+function updateMemoryCoalescing(stride, padding) {
+  const tx = stride;
+  const bw = Math.round(910 / stride);
+  const eff = Math.round((1 / stride) * 100);
+  const conflicts = padding === 0 ? '16-way bank conflict' : '1-way (conflict free)';
+
+  setText('[data-coalesce-stride-val]', stride === 1 ? '1 (Coalesced)' : `${stride} (Uncoalesced)`);
+  setText('[data-smem-padding-val]', `${padding} elements`);
+  setText('[data-coalesce-tx]', `${tx} tx / warp`);
+  setText('[data-coalesce-bw]', `${bw} GB/s`);
+  setText('[data-coalesce-conflicts]', conflicts);
+  setText('[data-coalesce-eff]', `${eff}%`);
+
+  const feedbackEl = document.querySelector('[data-coalesce-feedback]');
+  if (feedbackEl) {
+    if (stride === 1 && padding >= 1) {
+      feedbackEl.textContent = `🚀 Optimal GPU memory configuration! Stride 1 achieves 100% coalescing (${bw} GB/s) and +${padding} element padding eliminates all shared memory bank collisions!`;
+    } else if (stride > 1) {
+      feedbackEl.textContent = `⚠️ Uncoalesced access penalty: Stride ${stride} triggers ${tx} separate 128-byte cache transactions per warp, reducing bandwidth from 910 GB/s down to ${bw} GB/s!`;
+    } else if (padding === 0) {
+      feedbackEl.textContent = `⚠️ Stride 1 global reads are coalesced (910 GB/s), but 2D shared memory without padding risks 16-way bank collisions across 32 physical banks. Add 1 padding element!`;
+    }
+  }
+
+  checkChallengeCompletion('memory-coalescing', { stride, padding });
+  trackLabExperiment();
+}
+
+function updateRooflineProfiling(intensity) {
+  const peakCompute = 19.5; // TFLOP/s (A100 FP32)
+  const peakBW = 2.0;       // TB/s (2000 GB/s)
+  const ridge = (peakCompute / peakBW).toFixed(2); // 9.75 FLOP/byte
+  const maxPerfFromBW = intensity * peakBW;
+  const perf = Math.min(peakCompute, maxPerfFromBW);
+  const isMemoryBound = intensity < Number(ridge);
+  const solCompute = Math.min(100, Math.round((perf / peakCompute) * 100));
+
+  setText('[data-roofline-intensity-val]', intensity.toFixed(1));
+  setText('[data-roofline-perf]', `${perf.toFixed(2)} TFLOP/s`);
+  setText('[data-roofline-region]', isMemoryBound ? 'Memory-Bound' : 'Compute-Bound');
+  setText('[data-roofline-sol]', `${solCompute}% SOL Compute`);
+  setText('[data-roofline-ridge]', `${ridge} FLOP/B`);
+
+  // Move dynamic SVG dot marker
+  const dot = document.querySelector('[data-roofline-dot]');
+  const dotLabel = document.querySelector('[data-roofline-dot-label]');
+  if (dot) {
+    let cx = 40 + (intensity / 40) * 440;
+    let cy = isMemoryBound ? 180 - (intensity / Number(ridge)) * 130 : 50;
+    cx = Math.max(40, Math.min(480, cx));
+    cy = Math.max(50, Math.min(180, cy));
+    dot.setAttribute('cx', String(cx));
+    dot.setAttribute('cy', String(cy));
+    if (dotLabel) {
+      dotLabel.setAttribute('x', String(cx));
+      dotLabel.setAttribute('y', String(Math.min(170, cy + 22)));
+      dotLabel.textContent = `${intensity.toFixed(1)} FLOP/B (${perf.toFixed(1)} TFLOP/s)`;
+    }
+  }
+
+  const feedbackEl = document.querySelector('[data-roofline-feedback]');
+  if (feedbackEl) {
+    if (isMemoryBound) {
+      feedbackEl.textContent = `At ${intensity.toFixed(1)} FLOP/byte, the kernel is Memory-Bound under the ${peakBW} TB/s bandwidth slope. Apply Shared Memory Tiling and loop fusion to push past the ${ridge} Ridge Point!`;
+    } else {
+      feedbackEl.textContent = `🚀 Compute-Bound Plateau Reached! At ${intensity.toFixed(1)} FLOP/byte, the kernel achieves ${perf.toFixed(2)} TFLOP/s (${solCompute}% of peak). Hardware memory bandwidth is no longer the bottleneck!`;
+    }
+  }
+
+  checkChallengeCompletion('roofline-profiling', { intensity });
+  trackLabExperiment();
+}
+
+function updateAiAccelerator(prec, gpus) {
+  const mult = prec === 'fp32' ? 312 : prec === 'fp16' ? 624 : 1248;
+  const flops = gpus * mult;
+  const speedup = (gpus * 0.95).toFixed(1);
+  const time = (60.0 / (gpus * (prec === 'fp32' ? 1.0 : prec === 'fp16' ? 2.0 : 4.0))).toFixed(1);
+  const powerWatts = gpus * 400;
+  const efficiency = (flops / (powerWatts / 1000)).toFixed(2);
+
+  setText('[data-ai-gpus-val]', `${gpus} GPUs`);
+  setText('[data-ai-flops]', `${flops.toLocaleString()} TFLOP/s`);
+  setText('[data-ai-speedup]', `${speedup}×`);
+  setText('[data-ai-train-time]', `${time} min`);
+  setText('[data-ai-efficiency]', `${efficiency} TFLOPS/W`);
+
+  const feedbackEl = document.querySelector('[data-ai-feedback]');
+  if (feedbackEl) {
+    if ((prec === 'fp16' || prec === 'int8') && gpus >= 16) {
+      feedbackEl.textContent = `🚀 Exascale Distributed Cluster Active! ${gpus} Tensor Core GPUs deliver ${flops.toLocaleString()} TFLOP/s with ${speedup}× scaling over NVLink mesh fabric!`;
+    } else if (prec === 'fp32') {
+      feedbackEl.textContent = `Standard FP32 CUDA cores deliver baseline throughput. Switch to FP16 Mixed Precision to activate Tensor Cores and double matrix multiply throughput!`;
+    } else {
+      feedbackEl.textContent = `Tensor Cores active with ${prec.toUpperCase()} mode! Training time dropped to ${time} min per epoch across ${gpus} GPUs.`;
+    }
+  }
+
+  checkChallengeCompletion('ai-accelerator', { prec, gpus });
+  trackLabExperiment();
+}
+
+function updateHpcThroughput(nodes, ops) {
+  const time = ops / (nodes * 350 + 100);
+  const flops = (ops / time) / 1000;
+  const power = nodes * 0.35;
+  setText('[data-hpc-nodes-val]', nodes);
+  setText('[data-hpc-ops-val]', ops);
+  setText('[data-hpc-time]', `${time.toFixed(2)}s`);
+  setText('[data-hpc-flops]', `${flops.toFixed(2)} TFLOP/s`);
+  setText('[data-hpc-power]', `${power.toFixed(1)} kW`);
+  setStyle('[data-hpc-bar-hpc]', 'height', `${Math.min(100, (nodes / 128) * 100)}%`);
+
+  trackLabExperiment();
+  checkChallengeCompletion('hpc-throughput', { nodes, ops });
+
+  if (flops > tutorialState.bestThroughput) {
+    tutorialState.bestThroughput = flops;
+    const bestEl = document.querySelector('[data-best-throughput]');
+    if (bestEl) {
+      bestEl.textContent = `${flops.toFixed(2)} TFLOP/s`;
+      bestEl.parentElement.classList.add('updated');
+      setTimeout(() => bestEl.parentElement.classList.remove('updated'), 500);
+    }
+  }
+
+  const efficiency = (flops / power).toFixed(2);
+  const effEl = document.querySelector('[data-efficiency-score]');
+  if (effEl) effEl.textContent = `${efficiency} GFLOPS/W`;
+
+  const feedbackEl = document.querySelector('[data-hpc-feedback]');
+  if (feedbackEl) {
+    if (nodes < 8) {
+      feedbackEl.textContent = 'Try increasing nodes to see better scalability. HPC clusters typically have 32+ nodes for production workloads.';
+    } else if (nodes > 64 && ops < 10000) {
+      feedbackEl.textContent = 'Great node count! Now increase problem size to fully utilize the cluster capacity.';
+    } else if (flops > 15) {
+      feedbackEl.textContent = '🚀 Excellent throughput! This configuration delivers supercomputer-class performance.';
+    } else {
+      feedbackEl.textContent = 'As problem size grows, standard PC time scales linearly to hours, while the cluster maintains sub-second execution.';
+    }
+  }
+}
+
+function initTopicLab(unitId, topicId) {
+  setTimeout(() => {
+    if (unitId === 3) {
+      if (topicId === 1) updateCudaBasics(64, 256);
+      else if (topicId === 2) updateMemoryCoalescing(1, 0);
+      else if (topicId === 3) updateRooflineProfiling(4);
+      else if (topicId === 4) updateAiAccelerator('fp16', 8);
+    } else if (unitId === 1) {
+      if (topicId === 1) {
+        const nodes = Number(document.querySelector('[data-hpc-nodes]')?.value || 16);
+        const ops = Number(document.querySelector('[data-hpc-ops]')?.value || 5000);
+        updateHpcThroughput(nodes, ops);
+      } else if (topicId === 2) updateFlynn('SIMD');
+      else if (topicId === 3) updateCacheCoherence('seq', 4);
+      else if (topicId === 4) updateSpeedupLaws(5, 64);
+      else if (topicId === 5) updateTop500Cluster(32, 4, 115);
+    } else if (unitId === 2) {
+      if (topicId === 1) updateOpenmpLoop(4, 'static', 50);
+      else if (topicId === 2) updateMpiCollective(16, 'bcast', 4);
+      else if (topicId === 3) updateSync('race');
+      else if (topicId === 4) updateLoadBalancing('static', 3);
+    }
+  }, 50);
+}
+
+function initStandaloneLab(labId) {
+  setTimeout(() => {
+    if (labId === 'cuda-basics') updateCudaBasics(64, 256);
+    else if (labId === 'memory-coalescing' || labId === 'gpu') updateMemoryCoalescing(1, 0);
+    else if (labId === 'roofline-profiling') updateRooflineProfiling(4);
+    else if (labId === 'ai-accelerator') updateAiAccelerator('fp16', 8);
+    else if (labId === 'openmp-loop' || labId === 'parallel') updateOpenmpLoop(4, 'static', 50);
+    else if (labId === 'mpi-collective') updateMpiCollective(16, 'bcast', 4);
+    else if (labId === 'sync-deadlock') updateSync('race');
+    else if (labId === 'load-balancing') updateLoadBalancing('static', 3);
+    else if (labId === 'flynn-taxonomy') updateFlynn('SIMD');
+    else if (labId === 'cache-coherence') updateCacheCoherence('seq', 4);
+    else if (labId === 'speedup-laws') updateSpeedupLaws(5, 64);
+    else if (labId === 'top500-cluster') updateTop500Cluster(32, 4, 115);
+    else if (labId === 'hpc-throughput' || labId === 'speedup') {
+      const nodes = Number(document.querySelector('[data-hpc-nodes]')?.value || 16);
+      const ops = Number(document.querySelector('[data-hpc-ops]')?.value || 5000);
+      updateHpcThroughput(nodes, ops);
+    }
+  }, 50);
+}
+
 document.addEventListener('input', throttle((e) => {
   handleInput(e);
 }, 50));
@@ -1317,45 +1544,7 @@ function handleInput(e) {
   if (e.target.matches('[data-hpc-nodes], [data-hpc-ops]')) {
     const nodes = Number(document.querySelector('[data-hpc-nodes]')?.value || 16);
     const ops = Number(document.querySelector('[data-hpc-ops]')?.value || 5000);
-    const time = ops / (nodes * 350 + 100);
-    const flops = (ops / time) / 1000;
-    const power = nodes * 0.35;
-    setText('[data-hpc-nodes-val]', nodes);
-    setText('[data-hpc-ops-val]', ops);
-    setText('[data-hpc-time]', `${time.toFixed(2)}s`);
-    setText('[data-hpc-flops]', `${flops.toFixed(2)} TFLOP/s`);
-    setText('[data-hpc-power]', `${power.toFixed(1)} kW`);
-    setStyle('[data-hpc-bar-hpc]', 'height', `${Math.min(100, (nodes / 128) * 100)}%`);
-
-    trackLabExperiment();
-    checkChallengeCompletion('hpc-throughput', { nodes, ops });
-
-    if (flops > tutorialState.bestThroughput) {
-      tutorialState.bestThroughput = flops;
-      const bestEl = document.querySelector('[data-best-throughput]');
-      if (bestEl) {
-        bestEl.textContent = `${flops.toFixed(2)} TFLOP/s`;
-        bestEl.parentElement.classList.add('updated');
-        setTimeout(() => bestEl.parentElement.classList.remove('updated'), 500);
-      }
-    }
-
-    const efficiency = (flops / power).toFixed(2);
-    const effEl = document.querySelector('[data-efficiency-score]');
-    if (effEl) effEl.textContent = `${efficiency} GFLOPS/W`;
-
-    const feedbackEl = document.querySelector('[data-hpc-feedback]');
-    if (feedbackEl) {
-      if (nodes < 8) {
-        feedbackEl.textContent = 'Try increasing nodes to see better scalability. HPC clusters typically have 32+ nodes for production workloads.';
-      } else if (nodes > 64 && ops < 10000) {
-        feedbackEl.textContent = 'Great node count! Now increase problem size to fully utilize the cluster capacity.';
-      } else if (flops > 15) {
-        feedbackEl.textContent = '🚀 Excellent throughput! This configuration delivers supercomputer-class performance.';
-      } else {
-        feedbackEl.textContent = 'As problem size grows, standard PC time scales linearly to hours, while the cluster maintains sub-second execution.';
-      }
-    }
+    updateHpcThroughput(nodes, ops);
   }
 
   // 3. Cache Coherence
@@ -1407,62 +1596,27 @@ function handleInput(e) {
   if (e.target.matches('[data-cuda-blocks], [data-cuda-threads]')) {
     const blocks = Number(document.querySelector('[data-cuda-blocks]')?.value || 64);
     const threads = Number(document.querySelector('[data-cuda-threads]')?.value || 256);
-    const total = blocks * threads;
-    const warps = threads / 32;
-    const occ = Math.min(100, Math.round((threads / 1024) * 100));
-    setText('[data-cuda-blocks-val]', blocks);
-    setText('[data-cuda-threads-val]', threads);
-    setText('[data-cuda-total-threads]', total.toLocaleString());
-    setText('[data-cuda-warps-per-block]', `${warps} warps`);
-    setText('[data-cuda-occupancy]', `${occ}%`);
+    updateCudaBasics(blocks, threads);
   }
 
   // 11. Memory Coalescing
   if (e.target.matches('[data-coalesce-stride], [data-smem-padding]')) {
     const stride = Number(document.querySelector('[data-coalesce-stride]')?.value || 1);
     const padding = Number(document.querySelector('[data-smem-padding]')?.value || 0);
-    const tx = stride;
-    const bw = Math.round(910 / stride);
-    const conflicts = padding === 0 ? '16-way bank conflict' : '1-way (conflict free)';
-    setText('[data-coalesce-stride-val]', stride === 1 ? '1 (Coalesced)' : `${stride} (Uncoalesced)`);
-    setText('[data-smem-padding-val]', `${padding} elements`);
-    setText('[data-coalesce-tx]', `${tx} tx / warp`);
-    setText('[data-coalesce-bw]', `${bw} GB/s`);
-    setText('[data-coalesce-conflicts]', conflicts);
-    setStyle('[data-coalesce-bar]', 'height', `${Math.min(100, (bw / 910) * 100)}%`);
+    updateMemoryCoalescing(stride, padding);
   }
 
   // 12. CUDA Roofline
   if (e.target.matches('[data-roofline-intensity]')) {
-    const intensity = Number(document.querySelector('[data-roofline-intensity]')?.value || 5);
-    const region = intensity < 10 ? 'Memory-Bound' : 'Compute-Bound';
-    const perf = Math.min(20, intensity * 0.9).toFixed(2);
-    const sol = intensity < 10 ? `${Math.round((intensity / 10) * 100)}% SOL Memory` : '100% SOL Compute';
-    setText('[data-roofline-intensity-val]', intensity.toFixed(1));
-    setText('[data-roofline-region]', region);
-    setText('[data-roofline-perf]', `${perf} TFLOP/s`);
-    setText('[data-roofline-sol]', sol);
-    const dot = document.querySelector('[data-roofline-dot]');
-    if (dot) {
-      const cx = Math.min(380, 20 + intensity * 3.6);
-      const cy = Math.max(40, 160 - intensity * 2.8);
-      dot.setAttribute('cx', String(cx));
-      dot.setAttribute('cy', String(cy));
-    }
+    const intensity = Number(document.querySelector('[data-roofline-intensity]')?.value || 4);
+    updateRooflineProfiling(intensity);
   }
 
   // 13. AI Accelerator
   if (e.target.matches('[data-ai-precision], [data-ai-gpus]')) {
     const prec = document.querySelector('[data-ai-precision]')?.value || 'fp16';
     const gpus = Number(document.querySelector('[data-ai-gpus]')?.value || 8);
-    const mult = prec === 'fp32' ? 312 : prec === 'fp16' ? 624 : 1248;
-    const flops = gpus * mult;
-    const speedup = (gpus * 0.95).toFixed(1);
-    const time = (120 / (gpus * (prec === 'fp32' ? 1 : 2.5))).toFixed(1);
-    setText('[data-ai-gpus-val]', gpus);
-    setText('[data-ai-flops]', `${flops.toLocaleString()} TFLOP/s`);
-    setText('[data-ai-speedup]', `${speedup}×`);
-    setText('[data-ai-train-time]', `${time} min`);
+    updateAiAccelerator(prec, gpus);
   }
 
   // 16. Grover Search

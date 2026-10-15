@@ -46,6 +46,24 @@ export const TUTORIAL_STEPS = {
     { step: 2, instruction: 'Observe 8 warps per block (256/32 = 8)', highlight: 'cuda-warps-per-block' },
     { step: 3, instruction: 'Increase threads to 1024 for maximum occupancy', highlight: 'cuda-threads' },
     { step: 4, instruction: 'Total threads = blocks × threads/block', highlight: 'cuda-total-threads' }
+  ],
+  'memory-coalescing': [
+    { step: 1, instruction: 'Start with Stride 1 (Coalesced) to see 1 memory transaction per warp', highlight: 'coalesce-stride' },
+    { step: 2, instruction: 'Increase Stride to 4 and 8 - observe memory transactions soar and bandwidth plunge', highlight: 'coalesce-stride' },
+    { step: 3, instruction: 'Notice 16-way bank conflict when accessing shared memory without padding', highlight: 'smem-padding' },
+    { step: 4, instruction: 'Set Shared Memory Padding to 1 to offset bank addresses and eliminate conflicts!', highlight: 'smem-padding' }
+  ],
+  'roofline-profiling': [
+    { step: 1, instruction: 'Start at 2.0 FLOP/byte to observe the memory-bandwidth bottleneck slope', highlight: 'roofline-intensity' },
+    { step: 2, instruction: 'Increase intensity to 6.0 FLOP/byte - attainable performance scales with bandwidth', highlight: 'roofline-intensity' },
+    { step: 3, instruction: 'Cross the Ridge Point (~10 FLOP/byte) into the compute-bound plateau', highlight: 'roofline-intensity' },
+    { step: 4, instruction: 'Reach 20+ FLOP/byte to achieve 100% Speed-of-Light (SOL) GPU utilization!', highlight: 'result' }
+  ],
+  'ai-accelerator': [
+    { step: 1, instruction: 'Start with FP32 Single Precision on 4 GPUs for baseline CUDA Core throughput', highlight: 'ai-precision' },
+    { step: 2, instruction: 'Switch to FP16 Mixed Precision - Tensor Cores activate with 2× throughput!', highlight: 'ai-precision' },
+    { step: 3, instruction: 'Scale GPU count to 32 over NVLink - observe near-linear cluster scaling', highlight: 'ai-gpus' },
+    { step: 4, instruction: 'Select INT8 Quantized for maximum inference throughput (>10,000 TFLOP/s)!', highlight: 'ai-precision' }
   ]
 };
 
@@ -96,6 +114,24 @@ const LAB_CHALLENGES = {
       return blocks * threads === 65536;
     },
     hint: 'Try 256 blocks × 256 threads, or 128 blocks × 512 threads'
+  },
+  'memory-coalescing': {
+    title: 'Challenge: Conflict-Free Peak Bandwidth',
+    description: 'Configure Stride 1 and shared memory padding to achieve 910 GB/s with 0 bank conflicts',
+    check: (stride, padding) => stride === 1 && padding >= 1,
+    hint: 'Keep Stride = 1 for coalesced transactions and set padding = 1 element to avoid 32-bank collisions'
+  },
+  'roofline-profiling': {
+    title: 'Challenge: Escape the Memory Wall',
+    description: 'Tune Operational Intensity ≥ 10.0 FLOP/byte to break out of memory-bound limits and reach compute plateau',
+    check: (intensity) => intensity >= 10.0,
+    hint: 'Push intensity past the Ridge Point (≥ 10.0 FLOP/byte) by reusing data in registers or shared memory'
+  },
+  'ai-accelerator': {
+    title: 'Challenge: Exascale AI Cluster',
+    description: 'Configure 16+ GPUs with FP16 Tensor Cores or INT8 Quantization to achieve >10,000 TFLOP/s aggregate AI throughput',
+    check: (prec, gpus) => (prec === 'fp16' || prec === 'int8') && gpus >= 16,
+    hint: 'Select FP16 Tensor Cores or INT8 with 16 or more GPUs connected via NVLink mesh fabric'
   }
 };
 
@@ -1501,19 +1537,437 @@ int col = blockIdx.x * blockDim.x + threadIdx.x;</code></pre>
   </div>`;
 }
 
-// 11. Memory Coalescing & Bank Conflict Analyzer
+// 11. Memory Coalescing & Bank Conflict Analyzer (ENHANCED)
 function labMemoryCoalescing() {
-  return `<div class="lab-layout"><div class="lab-panel"><div class="eyebrow">Unit 03 · Topic 02 Lab</div><h2>Memory Coalescing & Bank Conflict Analyzer</h2><p class="lede">Simulate 32-thread warp access patterns. Adjust stride to see how uncoalesced global memory reads or shared memory bank conflicts impair throughput.</p><div class="control"><label for="coalesce-stride">Global Access Stride <output data-coalesce-stride-val>1 (Coalesced)</output></label><input id="coalesce-stride" data-coalesce-stride type="range" min="1" max="16" value="1" /></div><div class="control"><label for="smem-padding">Shared Memory Padding <output data-smem-padding-val>0 (Conflict Risk)</output></label><input id="smem-padding" data-smem-padding type="range" min="0" max="4" value="0" /></div><div class="result"><div><strong data-coalesce-tx>1 tx</strong><span>memory transactions / warp</span></div><div><strong data-coalesce-bw>910 GB/s</strong><span>achieved bandwidth</span></div><div><strong data-coalesce-conflicts">1-way</strong><span>bank conflicts</span></div></div><div class="bar-chart" aria-label="Bandwidth efficiency"><i data-coalesce-bar style="height:95%"></i></div></div><aside class="lab-panel"><div class="eyebrow">Profiler Note</div><h2>Memory Access Pattern</h2><p class="callout" data-coalesce-feedback>Stride 1 allows all 32 threads in a warp to be served by a single 128-byte cache transaction. Stride 16 requires 16 separate transactions!</p><button class="button primary" data-action="mark-lab" data-lab="memory-coalescing">Mark lab explored ✓</button></aside></div>`;
+  const tutorialSteps = TUTORIAL_STEPS['memory-coalescing'] || [];
+  const challenge = LAB_CHALLENGES['memory-coalescing'];
+
+  return `<div class="lab-layout">
+    <!-- Tutorial Progress Bar -->
+    <div class="lab-tutorial-bar">
+      <div class="tutorial-controls">
+        <button class="tutorial-btn" data-tutorial-action="start" data-lab-id="memory-coalescing">
+          <span>📚 Start Tutorial</span>
+        </button>
+        <div class="tutorial-progress" data-tutorial-progress style="display:none;">
+          <span class="tutorial-step-indicator">Step <strong data-step-current>1</strong> of ${tutorialSteps.length}</span>
+          <div class="tutorial-progress-bar">
+            <div class="tutorial-progress-fill" data-progress-fill style="width:25%"></div>
+          </div>
+          <button class="tutorial-nav-btn" data-tutorial-action="next">Next →</button>
+          <button class="tutorial-nav-btn secondary" data-tutorial-action="skip">Skip Tutorial</button>
+        </div>
+      </div>
+      <div class="tutorial-hint" data-tutorial-hint style="display:none;">
+        <span class="hint-icon">💡</span>
+        <span data-hint-text>Start with Stride 1 (coalesced) and 1 padding element</span>
+      </div>
+    </div>
+
+    <div class="lab-panel">
+      <div class="eyebrow">Unit 03 · Topic 02 Lab · GPU Memory Hierarchy</div>
+      <h2>Memory Coalescing & Bank Conflict Analyzer</h2>
+      <p class="lede">Simulate 32-thread warp memory access patterns across GPU global VRAM and high-speed shared memory banks. Experience how uncoalesced strides and bank collisions throttle throughput.</p>
+
+      <!-- Challenge Card -->
+      <div class="lab-challenge-card" data-challenge-card>
+        <div class="challenge-header">
+          <span class="challenge-badge">🏆 Challenge</span>
+          <h3>${challenge.title}</h3>
+        </div>
+        <p class="challenge-desc">${challenge.description}</p>
+        <div class="challenge-status" data-challenge-status>
+          <span class="status-indicator pending">⏳ Not Completed</span>
+          <button class="hint-toggle-btn" data-action="toggle-hint">Show Hint</button>
+        </div>
+        <p class="challenge-hint" data-challenge-hint style="display:none;">💡 ${challenge.hint}</p>
+      </div>
+
+      <div class="control">
+        <label for="coalesce-stride">Global Memory Access Stride <output data-coalesce-stride-val>1 (Coalesced)</output></label>
+        <input id="coalesce-stride" data-coalesce-stride type="range" min="1" max="16" value="1" />
+        <div class="control-tips">
+          <span class="tip-badge">💡 Stride 1 = consecutive threads access contiguous 4-byte addresses</span>
+        </div>
+      </div>
+
+      <div class="control">
+        <label for="smem-padding">Shared Memory Bank Padding <output data-smem-padding-val>0 (Conflict Risk)</output></label>
+        <input id="smem-padding" data-smem-padding type="range" min="0" max="4" value="0" />
+        <div class="control-tips">
+          <span class="tip-badge">💡 Padding offsets 2D array row indices across 32 physical banks</span>
+        </div>
+      </div>
+
+      <div class="result-enhanced">
+        <div class="result-card highlight">
+          <div class="result-icon">⚡</div>
+          <strong data-coalesce-tx>1 tx / warp</strong>
+          <span>Bus Transactions</span>
+          <div class="result-comparison">128-byte cache lines</div>
+        </div>
+        <div class="result-card highlight">
+          <div class="result-icon">🚀</div>
+          <strong data-coalesce-bw>910 GB/s</strong>
+          <span>Achieved Bandwidth</span>
+          <div class="result-comparison">vs 910 GB/s Peak VRAM</div>
+        </div>
+        <div class="result-card">
+          <div class="result-icon">🏦</div>
+          <strong data-coalesce-conflicts>1-way (Conflict-free)</strong>
+          <span>Shared Memory State</span>
+          <div class="result-comparison">32 Independent Banks</div>
+        </div>
+        <div class="result-card">
+          <div class="result-icon">📊</div>
+          <strong data-coalesce-eff>100%</strong>
+          <span>Coalescing Efficiency</span>
+          <div class="result-comparison">Payload / Transferred</div>
+        </div>
+      </div>
+
+      <!-- Warp Coalescing Visualizer -->
+      <div class="lab-insights-panel">
+        <h4>📊 Warp Memory Architecture Principles</h4>
+        <ul class="insights-list">
+          <li>🔹 <strong>Coalesced Reads:</strong> 32 threads in a warp requesting 4-byte values are combined into a single 128-byte L2/DRAM cache transaction.</li>
+          <li>🔹 <strong>Uncoalesced Stride:</strong> A stride of 16 scatters addresses across 16 separate cache lines, dropping effective bus utilization to 6.25%!</li>
+          <li>🔹 <strong>32 Shared Memory Banks:</strong> Successive 32-bit words map to successive banks (Bank = Address/4 % 32). Concurrent accesses to the same bank serialize into multiple clock cycles.</li>
+          <li>🔹 <strong>Padding Solution:</strong> Adding 1 dummy element per row (e.g. <code>float tile[32][33]</code>) shifts bank alignment by 1, restoring full single-cycle conflict-free throughput.</li>
+        </ul>
+      </div>
+    </div>
+
+    <aside class="lab-panel">
+      <div class="eyebrow">CUDA Architecture Lens</div>
+      <h2>Memory Optimization Code</h2>
+
+      <pre class="code-block"><code>// 1. Coalesced Global Read (Optimal)
+int tid = blockIdx.x * blockDim.x + threadIdx.x;
+float a = d_input[tid];
+
+// 2. Conflict-Free Shared Memory
+__shared__ float tile[32][33]; // +1 Pad
+tile[threadIdx.y][threadIdx.x] = val;</code></pre>
+
+      <div class="feedback-box" data-feedback-box>
+        <p class="callout" data-coalesce-feedback>Stride 1 allows all 32 threads in a warp to be served by a single 128-byte cache transaction. Peak 910 GB/s bandwidth achieved!</p>
+      </div>
+
+      <div class="metrics-tracking">
+        <h4>GPU Memory Hierarchy</h4>
+        <div class="metric-row"><span>Global VRAM (HBM2):</span><strong>910 GB/s (~400 cycles)</strong></div>
+        <div class="metric-row"><span>Shared Memory (L1):</span><strong>19 TB/s (~20 cycles)</strong></div>
+        <div class="metric-row"><span>Cache Line Size:</span><strong>128 Bytes</strong></div>
+        <div class="metric-row"><span>SMem Banks:</span><strong>32 Banks (4 Bytes/bank)</strong></div>
+      </div>
+
+      <div class="quick-reference">
+        <h4>Optimization Techniques</h4>
+        <table class="ref-table">
+          <tr><td><strong>Coalesced 1D</strong></td><td>threadIdx.x sequential</td></tr>
+          <tr><td><strong>SMem Tiling</strong></td><td>Stage global data in L1</td></tr>
+          <tr><td><strong>Padding</strong></td><td>Avoid 32-bank modulo collisions</td></tr>
+          <tr><td><strong>Vector Load</strong></td><td>float4 / int4 (16 bytes/thread)</td></tr>
+        </table>
+      </div>
+
+      <button class="button primary" data-action="mark-lab" data-lab="memory-coalescing">Mark lab explored ✓</button>
+    </aside>
+  </div>`;
 }
 
-// 12. CUDA Roofline Model & Profiling Sandbox
+// 12. CUDA Roofline Model & Profiling Sandbox (ENHANCED)
 function labRooflineProfiling() {
-  return `<div class="lab-layout"><div class="lab-panel"><div class="eyebrow">Unit 03 · Topic 03 Lab</div><h2>CUDA Roofline Model & Profiling Sandbox</h2><p class="lede">Plot Operational Intensity (FLOP/byte) against GPU Peak Memory Bandwidth and Peak FLOPS to determine if a kernel is memory-bound or compute-bound.</p><div class="control"><label for="roofline-intensity">Operational Intensity (FLOP/byte) <output data-roofline-intensity-val>4.0</output></label><input id="roofline-intensity" data-roofline-intensity type="range" min="1" max="100" step="1" value="4" /></div><div class="result"><div><strong data-roofline-region>Memory-Bound</strong><span>limiting bottleneck</span></div><div><strong data-roofline-perf>3.60 TFLOP/s</strong><span>attainable performance</span></div><div><strong data-roofline-sol>75% SOL Memory</strong><span>speed-of-light utilization</span></div></div><div class="roofline-plot-box"><svg class="roofline-svg" viewBox="0 0 400 180"><polyline points="20,160 180,40 380,40" fill="none" stroke="var(--cyan)" stroke-width="3"/><circle data-roofline-dot cx="90" cy="110" r="7" fill="var(--orange)"/><text x="25" y="30" fill="var(--muted)" font-size="10">Peak Compute Roof</text><text x="260" y="150" fill="var(--muted)" font-size="10">Memory Bandwidth Slope</text></svg></div></div><aside class="lab-panel"><div class="eyebrow">Profiler Signal</div><h2>Nsight Profiler Insight</h2><p class="callout" data-roofline-feedback>At 4 FLOP/byte, the kernel sits under the memory bandwidth ceiling slope. Increasing computation reuse pushes the kernel into the compute-bound plateau!</p><button class="button primary" data-action="mark-lab" data-lab="roofline-profiling">Mark lab explored ✓</button></aside></div>`;
+  const tutorialSteps = TUTORIAL_STEPS['roofline-profiling'] || [];
+  const challenge = LAB_CHALLENGES['roofline-profiling'];
+
+  return `<div class="lab-layout">
+    <!-- Tutorial Progress Bar -->
+    <div class="lab-tutorial-bar">
+      <div class="tutorial-controls">
+        <button class="tutorial-btn" data-tutorial-action="start" data-lab-id="roofline-profiling">
+          <span>📚 Start Tutorial</span>
+        </button>
+        <div class="tutorial-progress" data-tutorial-progress style="display:none;">
+          <span class="tutorial-step-indicator">Step <strong data-step-current>1</strong> of ${tutorialSteps.length}</span>
+          <div class="tutorial-progress-bar">
+            <div class="tutorial-progress-fill" data-progress-fill style="width:25%"></div>
+          </div>
+          <button class="tutorial-nav-btn" data-tutorial-action="next">Next →</button>
+          <button class="tutorial-nav-btn secondary" data-tutorial-action="skip">Skip Tutorial</button>
+        </div>
+      </div>
+      <div class="tutorial-hint" data-tutorial-hint style="display:none;">
+        <span class="hint-icon">💡</span>
+        <span data-hint-text>Adjust operational intensity to explore memory-bound vs compute-bound regions</span>
+      </div>
+    </div>
+
+    <div class="lab-panel">
+      <div class="eyebrow">Unit 03 · Topic 03 Lab · Performance Engineering</div>
+      <h2>CUDA Roofline Model & Profiling Sandbox</h2>
+      <p class="lede">Diagnose GPU computational efficiency with the Williams-Patterson Roofline Model. Plot Operational Intensity (FLOP/byte) against GPU Peak Memory Bandwidth and Peak Compute to find whether a kernel is memory-bound or compute-bound.</p>
+
+      <!-- Challenge Card -->
+      <div class="lab-challenge-card" data-challenge-card>
+        <div class="challenge-header">
+          <span class="challenge-badge">🏆 Challenge</span>
+          <h3>${challenge.title}</h3>
+        </div>
+        <p class="challenge-desc">${challenge.description}</p>
+        <div class="challenge-status" data-challenge-status>
+          <span class="status-indicator pending">⏳ Not Completed</span>
+          <button class="hint-toggle-btn" data-action="toggle-hint">Show Hint</button>
+        </div>
+        <p class="challenge-hint" data-challenge-hint style="display:none;">💡 ${challenge.hint}</p>
+      </div>
+
+      <div class="control">
+        <label for="roofline-intensity">Operational Intensity (FLOP/Byte) <output data-roofline-intensity-val>4.0</output></label>
+        <input id="roofline-intensity" data-roofline-intensity type="range" min="1" max="40" step="1" value="4" />
+        <div class="control-tips">
+          <span class="tip-badge">💡 Intensity = Total Arithmetic FLOPs ÷ Total DRAM Bytes Transferred</span>
+        </div>
+      </div>
+
+      <div class="result-enhanced">
+        <div class="result-card highlight">
+          <div class="result-icon">⚡</div>
+          <strong data-roofline-perf>3.64 TFLOP/s</strong>
+          <span>Attainable Performance</span>
+          <div class="result-comparison">Hardware ceiling limit</div>
+        </div>
+        <div class="result-card highlight">
+          <div class="result-icon">🎯</div>
+          <strong data-roofline-region>Memory-Bound</strong>
+          <span>Limiting Bottleneck</span>
+          <div class="result-comparison">Bound by VRAM Bandwidth</div>
+        </div>
+        <div class="result-card">
+          <div class="result-icon">🏎️</div>
+          <strong data-roofline-sol>37% SOL Compute</strong>
+          <span>Speed-Of-Light Metric</span>
+          <div class="result-comparison">vs 19.5 TFLOP/s Peak</div>
+        </div>
+        <div class="result-card">
+          <div class="result-icon">📍</div>
+          <strong data-roofline-ridge>9.75 FLOP/B</strong>
+          <span>Machine Ridge Point</span>
+          <div class="result-comparison">Peak Compute ÷ Peak BW</div>
+        </div>
+      </div>
+
+      <!-- Interactive Roofline SVG Plot -->
+      <div class="roofline-plot-container" style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1.25rem;margin-top:1.25rem;">
+        <h4 style="margin:0 0 0.5rem 0;color:var(--ink);font-size:0.95rem;">📈 Empirical Roofline Trajectory (NVIDIA A100-SXM4)</h4>
+        <svg class="roofline-svg" viewBox="0 0 500 220" style="width:100%;height:auto;max-height:220px;display:block;">
+          <line x1="40" y1="20" x2="40" y2="180" stroke="var(--line)" stroke-width="1.5"/>
+          <line x1="40" y1="180" x2="480" y2="180" stroke="var(--line)" stroke-width="1.5"/>
+          <line x1="40" y1="50" x2="480" y2="50" stroke="var(--line)" stroke-dasharray="4,4" opacity="0.4"/>
+          <line x1="220" y1="50" x2="220" y2="180" stroke="var(--line)" stroke-dasharray="4,4" opacity="0.4"/>
+
+          <text x="260" y="205" text-anchor="middle" font-size="11" fill="var(--muted)">Operational Intensity (FLOP/byte) →</text>
+          <text x="15" y="100" font-size="11" fill="var(--muted)" transform="rotate(-90 15 100)" text-anchor="middle">Attainable Performance (TFLOP/s) →</text>
+
+          <line x1="40" y1="180" x2="220" y2="50" stroke="var(--pink)" stroke-width="3"/>
+          <text x="120" y="105" font-size="10" fill="var(--pink)" font-weight="bold" transform="rotate(-36 120 105)">Memory BW: 2.0 TB/s</text>
+
+          <line x1="220" y1="50" x2="480" y2="50" stroke="var(--cyan)" stroke-width="3"/>
+          <text x="350" y="42" text-anchor="middle" font-size="10" fill="var(--cyan)" font-weight="bold">Peak Compute Ceiling: 19.5 TFLOP/s</text>
+
+          <circle cx="220" cy="50" r="5" fill="var(--lime)"/>
+          <text x="220" y="70" text-anchor="middle" font-size="9" fill="var(--lime)" font-weight="bold">Ridge (9.75)</text>
+
+          <circle data-roofline-dot cx="112" cy="128" r="8" fill="var(--orange)" stroke="#ffffff" stroke-width="2"/>
+          <text data-roofline-dot-label x="112" y="150" text-anchor="middle" font-size="10" fill="var(--orange)" font-weight="bold">Current Kernel (4.0 FLOP/B)</text>
+        </svg>
+      </div>
+    </div>
+
+    <aside class="lab-panel">
+      <div class="eyebrow">Nsight Telemetry</div>
+      <h2>Roofline Profiling Command</h2>
+
+      <pre class="code-block"><code># Collect Roofline in Nsight Compute
+ncu --metrics sm__throughput.avg.pct_of_peak_sustained_elapsed,\
+dram__throughput.avg.pct_of_peak_sustained_elapsed \
+--target-processes all ./cuda_app</code></pre>
+
+      <div class="feedback-box" data-feedback-box>
+        <p class="callout" data-roofline-feedback>At 4.0 FLOP/byte, the kernel sits on the memory bandwidth slope. To reach the 19.5 TFLOP/s compute ceiling, apply Shared Memory Tiling to increase arithmetic reuse!</p>
+      </div>
+
+      <div class="metrics-tracking">
+        <h4>Target Hardware Specs</h4>
+        <div class="metric-row"><span>Device:</span><strong>NVIDIA A100 Tensor Core</strong></div>
+        <div class="metric-row"><span>FP32 Peak Compute:</span><strong>19.5 TFLOP/s</strong></div>
+        <div class="metric-row"><span>VRAM Bandwidth:</span><strong>2,039 GB/s (HBM2e)</strong></div>
+        <div class="metric-row"><span>Ridge Point:</span><strong>9.75 FLOP/byte</strong></div>
+      </div>
+
+      <div class="quick-reference">
+        <h4>Optimization Roadmap</h4>
+        <table class="ref-table">
+          <tr><td><strong>Memory-Bound</strong></td><td>Tile in shared memory, register reuse</td></tr>
+          <tr><td><strong>Compute-Bound</strong></td><td>Instruction-level parallelism, Tensor Cores</td></tr>
+          <tr><td><strong>Divergence</strong></td><td>Eliminate warp branch serialization</td></tr>
+          <tr><td><strong>Latency Bound</strong></td><td>Increase occupancy to hide memory stall</td></tr>
+        </table>
+      </div>
+
+      <button class="button primary" data-action="mark-lab" data-lab="roofline-profiling">Mark lab explored ✓</button>
+    </aside>
+  </div>`;
 }
 
-// 13. AI Accelerator & Cloud HPC Simulator
+// 13. AI Accelerator & Cloud HPC Simulator (ENHANCED)
 function labAiAccelerator() {
-  return `<div class="lab-layout"><div class="lab-panel"><div class="eyebrow">Unit 03 · Topic 04 Lab</div><h2>AI Accelerator & Cloud HPC Cluster Simulator</h2><p class="lede">Simulate mixed-precision Tensor Core (FP32 vs FP16 vs INT8) throughput and multi-GPU scaling over NVLink vs PCIe interconnects.</p><div class="control"><label for="ai-precision">Precision Mode</label><select id="ai-precision" data-ai-precision><option value="fp32">FP32 Single Precision (CUDA Cores)</option><option value="fp16">FP16 Mixed Precision (Tensor Cores)</option><option value="int8">INT8 Quantized (Tensor Cores)</option></select></div><div class="control"><label for="ai-gpus">Accelerator GPU Count <output data-ai-gpus-val>8</output></label><input id="ai-gpus" data-ai-gpus type="range" min="1" max="64" value="8" /></div><div class="result"><div><strong data-ai-flops>2,496 TFLOP/s</strong><span>aggregate throughput</span></div><div><strong data-ai-speedup>7.8×</strong><span>multi-GPU speedup</span></div><div><strong data-ai-train-time>14.2 min</strong><span>training time / epoch</span></div></div></div><aside class="lab-panel"><div class="eyebrow">Tensor Core Accelerator</div><h2>Mixed Precision Gain</h2><p class="callout" data-ai-feedback>Switching from FP32 to FP16 Tensor Cores provides up to 8x matrix multiply speedup while keeping high precision through FP32 accumulation!</p><button class="button primary" data-action="mark-lab" data-lab="ai-accelerator">Mark lab explored ✓</button></aside></div>`;
+  const tutorialSteps = TUTORIAL_STEPS['ai-accelerator'] || [];
+  const challenge = LAB_CHALLENGES['ai-accelerator'];
+
+  return `<div class="lab-layout">
+    <!-- Tutorial Progress Bar -->
+    <div class="lab-tutorial-bar">
+      <div class="tutorial-controls">
+        <button class="tutorial-btn" data-tutorial-action="start" data-lab-id="ai-accelerator">
+          <span>📚 Start Tutorial</span>
+        </button>
+        <div class="tutorial-progress" data-tutorial-progress style="display:none;">
+          <span class="tutorial-step-indicator">Step <strong data-step-current>1</strong> of ${tutorialSteps.length}</span>
+          <div class="tutorial-progress-bar">
+            <div class="tutorial-progress-fill" data-progress-fill style="width:25%"></div>
+          </div>
+          <button class="tutorial-nav-btn" data-tutorial-action="next">Next →</button>
+          <button class="tutorial-nav-btn secondary" data-tutorial-action="skip">Skip Tutorial</button>
+        </div>
+      </div>
+      <div class="tutorial-hint" data-tutorial-hint style="display:none;">
+        <span class="hint-icon">💡</span>
+        <span data-hint-text>Select FP16 Tensor Cores or INT8 with 16+ GPUs</span>
+      </div>
+    </div>
+
+    <div class="lab-panel">
+      <div class="eyebrow">Unit 03 · Topic 04 Lab · AI & Distributed HPC</div>
+      <h2>AI Accelerator & Cloud HPC Cluster Simulator</h2>
+      <p class="lede">Simulate distributed deep learning training scaling across dense multi-GPU nodes. Compare FP32 standard CUDA math against FP16 Tensor Cores and INT8 quantization over NVLink vs PCIe interconnects.</p>
+
+      <!-- Challenge Card -->
+      <div class="lab-challenge-card" data-challenge-card>
+        <div class="challenge-header">
+          <span class="challenge-badge">🏆 Challenge</span>
+          <h3>${challenge.title}</h3>
+        </div>
+        <p class="challenge-desc">${challenge.description}</p>
+        <div class="challenge-status" data-challenge-status>
+          <span class="status-indicator pending">⏳ Not Completed</span>
+          <button class="hint-toggle-btn" data-action="toggle-hint">Show Hint</button>
+        </div>
+        <p class="challenge-hint" data-challenge-hint style="display:none;">💡 ${challenge.hint}</p>
+      </div>
+
+      <div class="control">
+        <label for="ai-precision">Arithmetic Precision Mode</label>
+        <select id="ai-precision" data-ai-precision>
+          <option value="fp32">FP32 Single Precision (CUDA Cores · Baseline 1×)</option>
+          <option value="fp16" selected>FP16 Mixed Precision (Tensor Cores · 2× Speedup)</option>
+          <option value="int8">INT8 Quantized (Tensor Cores · 4× Density)</option>
+        </select>
+        <div class="control-tips">
+          <span class="tip-badge">💡 Tensor Cores execute 4×4 matrix multiply-accumulate in 1 hardware cycle</span>
+        </div>
+      </div>
+
+      <div class="control">
+        <label for="ai-gpus">Cluster GPU Count <output data-ai-gpus-val>8 GPUs</output></label>
+        <input id="ai-gpus" data-ai-gpus type="range" min="1" max="64" value="8" />
+        <div class="control-tips">
+          <span class="tip-badge">💡 Distributed data-parallel nodes linked via NVLink & InfiniBand</span>
+        </div>
+      </div>
+
+      <div class="result-enhanced">
+        <div class="result-card highlight">
+          <div class="result-icon">🚀</div>
+          <strong data-ai-flops>4,992 TFLOP/s</strong>
+          <span>Aggregate Throughput</span>
+          <div class="result-comparison">Mixed Precision Tensor FLOPs</div>
+        </div>
+        <div class="result-card highlight">
+          <div class="result-icon">⚡</div>
+          <strong data-ai-speedup>7.6×</strong>
+          <span>Multi-GPU Speedup</span>
+          <div class="result-comparison">95% Scaling Efficiency</div>
+        </div>
+        <div class="result-card">
+          <div class="result-icon">⏱️</div>
+          <strong data-ai-train-time>7.9 min</strong>
+          <span>Epoch Training Time</span>
+          <div class="result-comparison">vs 60.0 min (Single GPU)</div>
+        </div>
+        <div class="result-card">
+          <div class="result-icon">🌱</div>
+          <strong data-ai-efficiency>1.78 TFLOPS/W</strong>
+          <span>Energy Efficiency</span>
+          <div class="result-comparison">Performance per Watt</div>
+        </div>
+      </div>
+
+      <!-- Cluster Mesh Visualizer -->
+      <div class="lab-insights-panel">
+        <h4>📊 Modern AI Accelerator Technologies</h4>
+        <ul class="insights-list">
+          <li>🔹 <strong>Tensor Core Mixed Precision:</strong> Performs matrix multiplication: D = A × B + C where inputs A, B are FP16 and accumulator C, D are FP32, maintaining convergence without precision loss.</li>
+          <li>🔹 <strong>NVLink Interconnect:</strong> Delivers 900 GB/s bidirectional bandwidth per GPU (vs 64 GB/s PCIe 4.0), preventing parameter synchronization bottlenecks during all-reduce gradients.</li>
+          <li>🔹 <strong>GPUDirect RDMA:</strong> Bypasses host CPU RAM completely, streaming gradient tensors directly between GPU VRAM across 400 Gbps InfiniBand adapters.</li>
+          <li>🔹 <strong>Quantization (INT8):</strong> Cuts memory footprint by 75% for LLM serving, allowing 70B parameter models to run on dense single-node clusters.</li>
+        </ul>
+      </div>
+    </div>
+
+    <aside class="lab-panel">
+      <div class="eyebrow">PyTorch AMP Lens</div>
+      <h2>Automatic Mixed Precision</h2>
+
+      <pre class="code-block"><code># PyTorch Tensor Core Autocast
+from torch.cuda.amp import autocast, GradScaler
+scaler = GradScaler()
+
+for data, target in loader:
+    optimizer.zero_grad()
+    with autocast(dtype=torch.float16):
+        output = model(data)
+        loss = criterion(output, target)
+    scaler.scale(loss).backward()
+    scaler.step(optimizer)
+    scaler.update()</code></pre>
+
+      <div class="feedback-box" data-feedback-box>
+        <p class="callout" data-ai-feedback>FP16 Tensor Cores double matrix multiply throughput while PyTorch GradScaler prevents underflow in backward gradients!</p>
+      </div>
+
+      <div class="metrics-tracking">
+        <h4>Cluster Interconnect Specs</h4>
+        <div class="metric-row"><span>NVLink 4 Bidirectional:</span><strong>900 GB/s</strong></div>
+        <div class="metric-row"><span>PCIe 4.0 x16:</span><strong>64 GB/s</strong></div>
+        <div class="metric-row"><span>InfiniBand NDR:</span><strong>400 Gbps</strong></div>
+        <div class="metric-row"><span>Tensor Core FLOPs:</span><strong>312 TFLOP/s per GPU</strong></div>
+      </div>
+
+      <div class="quick-reference">
+        <h4>AI Distributed Parallelism</h4>
+        <table class="ref-table">
+          <tr><td><strong>DDP</strong></td><td>Distributed Data Parallel (AllReduce)</td></tr>
+          <tr><td><strong>FSDP</strong></td><td>Fully Sharded Data Parallel (Zero-3)</td></tr>
+          <tr><td><strong>Pipeline</strong></td><td>Inter-layer stage partitioning</td></tr>
+          <tr><td><strong>Tensor</strong></td><td>Intra-layer matrix splitting (Megatron)</td></tr>
+        </table>
+      </div>
+
+      <button class="button primary" data-action="mark-lab" data-lab="ai-accelerator">Mark lab explored ✓</button>
+    </aside>
+  </div>`;
 }
 
 // 14. Single Qubit Bloch Sphere Simulator
