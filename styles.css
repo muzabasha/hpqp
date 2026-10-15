@@ -717,13 +717,25 @@ a.button:active {
 .lab-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 310px;
-  gap: 1rem;
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.lab-layout > * {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 .lab-panel {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: clamp(1.2rem, 3vw, 2rem);
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 .lab-panel h2 {
   margin: 0.5rem 0;
@@ -3084,12 +3096,17 @@ input[type="range"] {
 
 /* Tutorial Progress Bar */
 .lab-tutorial-bar {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   margin-bottom: 1.5rem;
   padding: 1.2rem;
   background: var(--surface);
   border: 2px solid var(--cyan);
   border-radius: 12px;
   box-shadow: 0 4px 16px var(--cyan-glow);
+  overflow: hidden;
 }
 
 .tutorial-controls {
@@ -3098,6 +3115,8 @@ input[type="range"] {
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .tutorial-btn {
@@ -3113,6 +3132,7 @@ input[type="range"] {
   font-size: 0.85rem;
   box-shadow: 0 4px 12px var(--cyan-glow);
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .tutorial-btn:hover {
@@ -3125,6 +3145,7 @@ input[type="range"] {
   align-items: center;
   gap: 1rem;
   flex: 1;
+  min-width: 0;
 }
 
 .tutorial-step-indicator {
@@ -3132,6 +3153,7 @@ input[type="range"] {
   color: var(--muted);
   font-weight: 600;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .tutorial-step-indicator strong {
@@ -3145,6 +3167,7 @@ input[type="range"] {
   background: var(--line);
   border-radius: 8px;
   overflow: hidden;
+  min-width: 60px;
 }
 
 .tutorial-progress-fill {
@@ -3163,6 +3186,7 @@ input[type="range"] {
   font-weight: 800;
   font-size: 0.8rem;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .tutorial-nav-btn:hover {
@@ -3186,6 +3210,10 @@ input[type="range"] {
   align-items: start;
   gap: 0.8rem;
   animation: slideIn 0.3s ease;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 @keyframes slideIn {
@@ -3209,6 +3237,11 @@ input[type="range"] {
   color: var(--ink);
   font-weight: 600;
   line-height: 1.5;
+  box-sizing: border-box;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+  flex: 1;
 }
 
 /* Challenge Card */
@@ -3825,6 +3858,10 @@ input[type="range"] {
   background: var(--cyan-soft);
   border-radius: 10px;
   margin: 1rem 0;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  flex-wrap: wrap;
 }
 
 .tutorial-toggle-btn {
@@ -3840,6 +3877,7 @@ input[type="range"] {
   font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .tutorial-toggle-btn:hover {
@@ -3861,6 +3899,7 @@ input[type="range"] {
   font-size: 0.75rem;
   cursor: pointer;
   transition: transform 0.2s ease;
+  white-space: nowrap;
 }
 
 .challenge-badge:hover {
@@ -3875,6 +3914,9 @@ input[type="range"] {
   overflow: hidden;
   background: var(--surface);
   transition: all 0.3s ease;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
 }
 
 .tutorial-panel.collapsed {
@@ -3888,6 +3930,9 @@ input[type="range"] {
   padding: 0.75rem 1rem;
   background: var(--cyan-soft);
   border-bottom: 1px solid var(--line);
+  box-sizing: border-box;
+  width: 100%;
+  gap: 0.75rem;
 }
 
 .tutorial-progress-compact {
@@ -3895,6 +3940,7 @@ input[type="range"] {
   align-items: center;
   gap: 0.8rem;
   flex: 1;
+  min-width: 0;
 }
 
 .step-indicator {
@@ -3902,6 +3948,7 @@ input[type="range"] {
   font-weight: 700;
   color: var(--ink);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .progress-bar-mini {
@@ -3910,6 +3957,7 @@ input[type="range"] {
   background: var(--line);
   border-radius: 3px;
   overflow: hidden;
+  min-width: 60px;
 }
 
 .progress-fill-mini {
@@ -3927,6 +3975,8 @@ input[type="range"] {
   font-size: 1.2rem;
   cursor: pointer;
   transition: color 0.2s ease;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 .tutorial-close:hover {
@@ -3935,17 +3985,28 @@ input[type="range"] {
 
 .tutorial-content {
   padding: 1rem;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .hint-box {
-  padding: 0.8rem 1rem;
+  padding: 0.9rem 1.1rem;
   background: var(--paper);
-  border-left: 3px solid var(--cyan);
-  border-radius: 6px;
+  border-left: 4px solid var(--cyan);
+  border-radius: 8px;
   color: var(--ink);
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   line-height: 1.6;
   margin-bottom: 0.8rem;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  display: block;
 }
 
 .tutorial-next-btn {

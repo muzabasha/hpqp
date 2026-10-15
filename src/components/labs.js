@@ -64,6 +64,30 @@ export const TUTORIAL_STEPS = {
     { step: 2, instruction: 'Switch to FP16 Mixed Precision - Tensor Cores activate with 2× throughput!', highlight: 'ai-precision' },
     { step: 3, instruction: 'Scale GPU count to 32 over NVLink - observe near-linear cluster scaling', highlight: 'ai-gpus' },
     { step: 4, instruction: 'Select INT8 Quantized for maximum inference throughput (>10,000 TFLOP/s)!', highlight: 'ai-precision' }
+  ],
+  'qubit-gates': [
+    { step: 1, instruction: 'Observe initial ground state |0⟩ pointing to the North Pole on the Bloch sphere (P(|0⟩) = 100%)', highlight: 'state-label' },
+    { step: 2, instruction: 'Click H (Hadamard) gate to rotate into equal superposition |+⟩ = (|0⟩+|1⟩)/√2 with 50/50 probabilities', highlight: 'gate-h' },
+    { step: 3, instruction: 'Click X (Pauli-X) bit-flip gate to invert the state down to the South Pole |1⟩', highlight: 'gate-x' },
+    { step: 4, instruction: 'Click Reset |0⟩ to return the qubit back to the ground baseline for a new circuit experiment', highlight: 'reset-circuit' }
+  ],
+  'bell-entanglement': [
+    { step: 1, instruction: 'Start with 2 unentangled qubits in ground state |00⟩ across wires q₀ and q₁', highlight: 'state-label' },
+    { step: 2, instruction: 'Apply H to q₀ to put the control qubit into equal superposition (|0⟩+|1⟩)/√2', highlight: 'gate-h' },
+    { step: 3, instruction: 'Apply CNOT (q₀ → q₁) to generate the maximally entangled Bell state |Φ⁺⟩ = (|00⟩+|11⟩)/√2!', highlight: 'gate-cnot' },
+    { step: 4, instruction: 'Click Measure: observing q₀ instantaneously determines q₁ with 100% quantum correlation!', highlight: 'gate-measure' }
+  ],
+  'quantum-algorithms': [
+    { step: 1, instruction: 'Select Grover Target Item |10⟩ in search space N = 4 (initial random probability is 25%)', highlight: 'grover-oracle' },
+    { step: 2, instruction: 'Set Amplification Steps to 1 to run the Oracle phase inversion and Diffusion reflection', highlight: 'grover-steps' },
+    { step: 3, instruction: 'Observe target probability amplifies to 100% with a 2.00× quadratic speedup (O(√N))!', highlight: 'grover-prob' },
+    { step: 4, instruction: 'Increase steps to 2 or 3 to observe quantum over-rotation reducing target probability', highlight: 'grover-steps' }
+  ],
+  'hybrid-vqe': [
+    { step: 1, instruction: 'Examine the H₂ molecular Hamiltonian and parameterized ansatz state |ψ(θ)⟩ = Ry(θ)|0⟩', highlight: 'vqe-theta' },
+    { step: 2, instruction: 'Vary ansatz angle θ and observe quantum expectation ⟨H⟩ rises above ground state', highlight: 'vqe-theta' },
+    { step: 3, instruction: 'Tune θ to 0.78 rad (~π/4) - Rayleigh-Ritz variational minimum hits exact ground energy -1.137 Hartree!', highlight: 'vqe-energy' },
+    { step: 4, instruction: 'Switch Classical Optimizer between COBYLA and Gradient Descent to evaluate convergence resilience', highlight: 'vqe-optimizer' }
   ]
 };
 
@@ -132,6 +156,30 @@ const LAB_CHALLENGES = {
     description: 'Configure 16+ GPUs with FP16 Tensor Cores or INT8 Quantization to achieve >10,000 TFLOP/s aggregate AI throughput',
     check: (prec, gpus) => (prec === 'fp16' || prec === 'int8') && gpus >= 16,
     hint: 'Select FP16 Tensor Cores or INT8 with 16 or more GPUs connected via NVLink mesh fabric'
+  },
+  'qubit-gates': {
+    title: 'Challenge: Superposition State Preparation',
+    description: 'Apply quantum gates to place the qubit into an equal superposition (|0⟩ + |1⟩)/√2 with 50/50 measurement probabilities',
+    check: (gate) => gate === 'h',
+    hint: 'Click the H (Hadamard) gate from ground state |0⟩ to rotate the state vector to the equator'
+  },
+  'bell-entanglement': {
+    title: 'Challenge: Generate Bell State |Φ⁺⟩',
+    description: 'Construct a 2-qubit circuit producing the maximally entangled state (|00⟩ + |11⟩)/√2',
+    check: (gate) => gate === 'cnot',
+    hint: 'Apply H on q₀, followed by CNOT with q₀ as control and q₁ as target'
+  },
+  'quantum-algorithms': {
+    title: 'Challenge: Grover Amplitude Amplification',
+    description: 'Tune Grover amplification steps to boost target item probability to 100% on the N = 4 database',
+    check: (steps) => steps === 1,
+    hint: 'Set Amplification Steps slider to 1 (optimal number of Grover iterations for 2 qubits is ⌊π/4 √4⌋ = 1)'
+  },
+  'hybrid-vqe': {
+    title: 'Challenge: Molecular Ground Energy Convergence',
+    description: 'Tune ansatz angle θ to converge within ±0.02 rad of optimal H₂ ground state (-1.137 Hartree)',
+    check: (theta) => Math.abs(theta - 0.78) <= 0.02,
+    hint: 'Move slider θ to approximately 0.78 rad (around value 78) to reach the variational minimum'
   }
 };
 
@@ -1376,34 +1424,40 @@ function labCudaBasics() {
   const challenge = LAB_CHALLENGES['cuda-basics'];
   
   return `<div class="lab-layout">
-    <!-- Tutorial Progress Bar -->
-    <div class="lab-tutorial-bar">
-      <div class="tutorial-controls">
-        <button class="tutorial-btn" data-tutorial-action="start" data-lab-id="cuda-basics">
-          <span>📚 Start Tutorial</span>
+    <div class="lab-panel">
+      <div class="eyebrow">Unit 03 · Topic 01 Lab · Hands-On Learning</div>
+      <h2>CUDA Execution Hierarchy Visualizer</h2>
+      <p class="lede">🎯 <strong>Learn by Doing:</strong> Map a 1D/2D grid of thread blocks onto Streaming Multiprocessors (SMs). Observe thread indexing <code>blockIdx</code> and <code>threadIdx</code> hardware dispatch.</p>
+      
+      <!-- Compact Tutorial & Challenge Bar -->
+      <div class="learn-by-doing-bar">
+        <button class="tutorial-toggle-btn" data-tutorial-action="start" data-lab-id="cuda-basics">
+          📚 Start Tutorial (${tutorialSteps.length} steps)
         </button>
-        <div class="tutorial-progress" data-tutorial-progress style="display:none;">
-          <span class="tutorial-step-indicator">Step <strong data-step-current>1</strong> of ${tutorialSteps.length}</span>
-          <div class="tutorial-progress-bar">
-            <div class="tutorial-progress-fill" data-progress-fill style="width:25%"></div>
-          </div>
-          <button class="tutorial-nav-btn" data-tutorial-action="next">Next →</button>
-          <button class="tutorial-nav-btn secondary" data-tutorial-action="skip">Skip Tutorial</button>
+        <div class="challenge-badge" data-challenge-badge>
+          🏆 Challenge: ${challenge.title}
         </div>
       </div>
-      <div class="tutorial-hint" data-tutorial-hint style="display:none;">
-        <span class="hint-icon">💡</span>
-        <span data-hint-text>Set blocks to 32 and threads to 256</span>
-      </div>
-    </div>
-    
-    <div class="lab-panel">
-      <div class="eyebrow">Unit 03 · Topic 01 Lab</div>
-      <h2>CUDA Execution Hierarchy Visualizer</h2>
-      <p class="lede">Map a 1D/2D grid of thread blocks onto Streaming Multiprocessors (SMs). Observe thread indexing <code>blockIdx</code> and <code>threadIdx</code> hardware dispatch.</p>
       
-      <!-- Challenge Card -->
-      <div class="lab-challenge-card" data-challenge-card>
+      <!-- Collapsible Tutorial Panel -->
+      <div class="tutorial-panel collapsed" data-tutorial-panel style="display:none;">
+        <div class="tutorial-header">
+          <div class="tutorial-progress-compact">
+            <span class="step-indicator">Step <strong data-step-current>1</strong>/${tutorialSteps.length}</span>
+            <div class="progress-bar-mini">
+              <div class="progress-fill-mini" data-progress-fill style="width:25%"></div>
+            </div>
+          </div>
+          <button class="tutorial-close" data-tutorial-action="skip" title="Close Tutorial">✕</button>
+        </div>
+        <div class="tutorial-content">
+          <div class="hint-box" data-hint-text>${tutorialSteps[0]?.instruction || 'Set blocks to 32 and threads to 256'}</div>
+          <button class="tutorial-next-btn" data-tutorial-action="next">Next Step →</button>
+        </div>
+      </div>
+      
+      <!-- Challenge Card (Collapsible) -->
+      <div class="lab-challenge-card collapsed" data-challenge-card>
         <div class="challenge-header">
           <span class="challenge-badge">🏆 Challenge</span>
           <h3>${challenge.title}</h3>
@@ -1543,34 +1597,40 @@ function labMemoryCoalescing() {
   const challenge = LAB_CHALLENGES['memory-coalescing'];
 
   return `<div class="lab-layout">
-    <!-- Tutorial Progress Bar -->
-    <div class="lab-tutorial-bar">
-      <div class="tutorial-controls">
-        <button class="tutorial-btn" data-tutorial-action="start" data-lab-id="memory-coalescing">
-          <span>📚 Start Tutorial</span>
-        </button>
-        <div class="tutorial-progress" data-tutorial-progress style="display:none;">
-          <span class="tutorial-step-indicator">Step <strong data-step-current>1</strong> of ${tutorialSteps.length}</span>
-          <div class="tutorial-progress-bar">
-            <div class="tutorial-progress-fill" data-progress-fill style="width:25%"></div>
-          </div>
-          <button class="tutorial-nav-btn" data-tutorial-action="next">Next →</button>
-          <button class="tutorial-nav-btn secondary" data-tutorial-action="skip">Skip Tutorial</button>
-        </div>
-      </div>
-      <div class="tutorial-hint" data-tutorial-hint style="display:none;">
-        <span class="hint-icon">💡</span>
-        <span data-hint-text>Start with Stride 1 (coalesced) and 1 padding element</span>
-      </div>
-    </div>
-
     <div class="lab-panel">
       <div class="eyebrow">Unit 03 · Topic 02 Lab · GPU Memory Hierarchy</div>
       <h2>Memory Coalescing & Bank Conflict Analyzer</h2>
-      <p class="lede">Simulate 32-thread warp memory access patterns across GPU global VRAM and high-speed shared memory banks. Experience how uncoalesced strides and bank collisions throttle throughput.</p>
+      <p class="lede">🎯 <strong>Learn by Doing:</strong> Simulate 32-thread warp memory access patterns across GPU global VRAM and high-speed shared memory banks. Experience how uncoalesced strides and bank collisions throttle throughput.</p>
 
-      <!-- Challenge Card -->
-      <div class="lab-challenge-card" data-challenge-card>
+      <!-- Compact Tutorial & Challenge Bar -->
+      <div class="learn-by-doing-bar">
+        <button class="tutorial-toggle-btn" data-tutorial-action="start" data-lab-id="memory-coalescing">
+          📚 Start Tutorial (${tutorialSteps.length} steps)
+        </button>
+        <div class="challenge-badge" data-challenge-badge>
+          🏆 Challenge: ${challenge.title}
+        </div>
+      </div>
+
+      <!-- Collapsible Tutorial Panel -->
+      <div class="tutorial-panel collapsed" data-tutorial-panel style="display:none;">
+        <div class="tutorial-header">
+          <div class="tutorial-progress-compact">
+            <span class="step-indicator">Step <strong data-step-current>1</strong>/${tutorialSteps.length}</span>
+            <div class="progress-bar-mini">
+              <div class="progress-fill-mini" data-progress-fill style="width:25%"></div>
+            </div>
+          </div>
+          <button class="tutorial-close" data-tutorial-action="skip" title="Close Tutorial">✕</button>
+        </div>
+        <div class="tutorial-content">
+          <div class="hint-box" data-hint-text>${tutorialSteps[0]?.instruction || 'Start with Stride 1 (Coalesced) to see 1 memory transaction per warp'}</div>
+          <button class="tutorial-next-btn" data-tutorial-action="next">Next Step →</button>
+        </div>
+      </div>
+
+      <!-- Challenge Card (Collapsible) -->
+      <div class="lab-challenge-card collapsed" data-challenge-card>
         <div class="challenge-header">
           <span class="challenge-badge">🏆 Challenge</span>
           <h3>${challenge.title}</h3>
@@ -1683,34 +1743,40 @@ function labRooflineProfiling() {
   const challenge = LAB_CHALLENGES['roofline-profiling'];
 
   return `<div class="lab-layout">
-    <!-- Tutorial Progress Bar -->
-    <div class="lab-tutorial-bar">
-      <div class="tutorial-controls">
-        <button class="tutorial-btn" data-tutorial-action="start" data-lab-id="roofline-profiling">
-          <span>📚 Start Tutorial</span>
-        </button>
-        <div class="tutorial-progress" data-tutorial-progress style="display:none;">
-          <span class="tutorial-step-indicator">Step <strong data-step-current>1</strong> of ${tutorialSteps.length}</span>
-          <div class="tutorial-progress-bar">
-            <div class="tutorial-progress-fill" data-progress-fill style="width:25%"></div>
-          </div>
-          <button class="tutorial-nav-btn" data-tutorial-action="next">Next →</button>
-          <button class="tutorial-nav-btn secondary" data-tutorial-action="skip">Skip Tutorial</button>
-        </div>
-      </div>
-      <div class="tutorial-hint" data-tutorial-hint style="display:none;">
-        <span class="hint-icon">💡</span>
-        <span data-hint-text>Adjust operational intensity to explore memory-bound vs compute-bound regions</span>
-      </div>
-    </div>
-
     <div class="lab-panel">
       <div class="eyebrow">Unit 03 · Topic 03 Lab · Performance Engineering</div>
       <h2>CUDA Roofline Model & Profiling Sandbox</h2>
-      <p class="lede">Diagnose GPU computational efficiency with the Williams-Patterson Roofline Model. Plot Operational Intensity (FLOP/byte) against GPU Peak Memory Bandwidth and Peak Compute to find whether a kernel is memory-bound or compute-bound.</p>
+      <p class="lede">🎯 <strong>Learn by Doing:</strong> Diagnose GPU computational efficiency with the Williams-Patterson Roofline Model. Plot Operational Intensity (FLOP/byte) against GPU Peak Memory Bandwidth and Peak Compute to find whether a kernel is memory-bound or compute-bound.</p>
 
-      <!-- Challenge Card -->
-      <div class="lab-challenge-card" data-challenge-card>
+      <!-- Compact Tutorial & Challenge Bar -->
+      <div class="learn-by-doing-bar">
+        <button class="tutorial-toggle-btn" data-tutorial-action="start" data-lab-id="roofline-profiling">
+          📚 Start Tutorial (${tutorialSteps.length} steps)
+        </button>
+        <div class="challenge-badge" data-challenge-badge>
+          🏆 Challenge: ${challenge.title}
+        </div>
+      </div>
+
+      <!-- Collapsible Tutorial Panel -->
+      <div class="tutorial-panel collapsed" data-tutorial-panel style="display:none;">
+        <div class="tutorial-header">
+          <div class="tutorial-progress-compact">
+            <span class="step-indicator">Step <strong data-step-current>1</strong>/${tutorialSteps.length}</span>
+            <div class="progress-bar-mini">
+              <div class="progress-fill-mini" data-progress-fill style="width:25%"></div>
+            </div>
+          </div>
+          <button class="tutorial-close" data-tutorial-action="skip" title="Close Tutorial">✕</button>
+        </div>
+        <div class="tutorial-content">
+          <div class="hint-box" data-hint-text>${tutorialSteps[0]?.instruction || 'Start at 2.0 FLOP/byte to observe the memory-bandwidth bottleneck slope'}</div>
+          <button class="tutorial-next-btn" data-tutorial-action="next">Next Step →</button>
+        </div>
+      </div>
+
+      <!-- Challenge Card (Collapsible) -->
+      <div class="lab-challenge-card collapsed" data-challenge-card>
         <div class="challenge-header">
           <span class="challenge-badge">🏆 Challenge</span>
           <h3>${challenge.title}</h3>
@@ -1827,34 +1893,40 @@ function labAiAccelerator() {
   const challenge = LAB_CHALLENGES['ai-accelerator'];
 
   return `<div class="lab-layout">
-    <!-- Tutorial Progress Bar -->
-    <div class="lab-tutorial-bar">
-      <div class="tutorial-controls">
-        <button class="tutorial-btn" data-tutorial-action="start" data-lab-id="ai-accelerator">
-          <span>📚 Start Tutorial</span>
-        </button>
-        <div class="tutorial-progress" data-tutorial-progress style="display:none;">
-          <span class="tutorial-step-indicator">Step <strong data-step-current>1</strong> of ${tutorialSteps.length}</span>
-          <div class="tutorial-progress-bar">
-            <div class="tutorial-progress-fill" data-progress-fill style="width:25%"></div>
-          </div>
-          <button class="tutorial-nav-btn" data-tutorial-action="next">Next →</button>
-          <button class="tutorial-nav-btn secondary" data-tutorial-action="skip">Skip Tutorial</button>
-        </div>
-      </div>
-      <div class="tutorial-hint" data-tutorial-hint style="display:none;">
-        <span class="hint-icon">💡</span>
-        <span data-hint-text>Select FP16 Tensor Cores or INT8 with 16+ GPUs</span>
-      </div>
-    </div>
-
     <div class="lab-panel">
       <div class="eyebrow">Unit 03 · Topic 04 Lab · AI & Distributed HPC</div>
       <h2>AI Accelerator & Cloud HPC Cluster Simulator</h2>
-      <p class="lede">Simulate distributed deep learning training scaling across dense multi-GPU nodes. Compare FP32 standard CUDA math against FP16 Tensor Cores and INT8 quantization over NVLink vs PCIe interconnects.</p>
+      <p class="lede">🎯 <strong>Learn by Doing:</strong> Simulate distributed deep learning training scaling across dense multi-GPU nodes. Compare FP32 standard CUDA math against FP16 Tensor Cores and INT8 quantization over NVLink vs PCIe interconnects.</p>
 
-      <!-- Challenge Card -->
-      <div class="lab-challenge-card" data-challenge-card>
+      <!-- Compact Tutorial & Challenge Bar -->
+      <div class="learn-by-doing-bar">
+        <button class="tutorial-toggle-btn" data-tutorial-action="start" data-lab-id="ai-accelerator">
+          📚 Start Tutorial (${tutorialSteps.length} steps)
+        </button>
+        <div class="challenge-badge" data-challenge-badge>
+          🏆 Challenge: ${challenge.title}
+        </div>
+      </div>
+
+      <!-- Collapsible Tutorial Panel -->
+      <div class="tutorial-panel collapsed" data-tutorial-panel style="display:none;">
+        <div class="tutorial-header">
+          <div class="tutorial-progress-compact">
+            <span class="step-indicator">Step <strong data-step-current>1</strong>/${tutorialSteps.length}</span>
+            <div class="progress-bar-mini">
+              <div class="progress-fill-mini" data-progress-fill style="width:25%"></div>
+            </div>
+          </div>
+          <button class="tutorial-close" data-tutorial-action="skip" title="Close Tutorial">✕</button>
+        </div>
+        <div class="tutorial-content">
+          <div class="hint-box" data-hint-text>${tutorialSteps[0]?.instruction || 'Start with FP32 Single Precision on 4 GPUs for baseline CUDA Core throughput'}</div>
+          <button class="tutorial-next-btn" data-tutorial-action="next">Next Step →</button>
+        </div>
+      </div>
+
+      <!-- Challenge Card (Collapsible) -->
+      <div class="lab-challenge-card collapsed" data-challenge-card>
         <div class="challenge-header">
           <span class="challenge-badge">🏆 Challenge</span>
           <h3>${challenge.title}</h3>
@@ -1970,22 +2042,374 @@ for data, target in loader:
   </div>`;
 }
 
-// 14. Single Qubit Bloch Sphere Simulator
+// 14. Single Qubit Bloch Sphere Simulator (ENHANCED)
 function labQubitGates() {
-  return `<div class="lab-layout"><div class="lab-panel"><div class="eyebrow">Unit 04 · Topic 01 Lab</div><h2>Single Qubit & Bloch Sphere Visualizer</h2><p class="lede">Apply quantum logic gates (H, X, Y, Z, S, T) to rotate the state vector |ψ⟩ = α|0⟩ + β|1⟩ on the 3D Bloch sphere.</p><div class="chip-row"><button class="button" data-gate="h">H · Hadamard</button><button class="button" data-gate="x">X · Bit Flip</button><button class="button" data-gate="z">Z · Phase Flip</button><button class="button" data-gate="s">S · Phase π/2</button><button class="button" data-gate="t">T · Phase π/4</button><button class="button" data-action="reset-circuit">Reset |0⟩</button></div><div class="bloch-box"><svg class="bloch-svg" viewBox="0 0 200 200"><circle cx="100" cy="100" r="75" fill="none" stroke="var(--line)" stroke-width="2"/><ellipse cx="100" cy="100" rx="75" ry="25" fill="none" stroke="var(--line)" stroke-linecap="round" stroke-dasharray="4,4"/><line x1="100" y1="25" x2="100" y2="175" stroke="var(--line)" stroke-width="1.5"/><line data-bloch-vec x1="100" y1="100" x2="100" y2="25" stroke="var(--cyan)" stroke-width="3.5" marker-end="url(#arrow)"/><text x="95" y="18" fill="var(--cyan)" font-weight="800">|0⟩</text><text x="95" y="195" fill="var(--pink)" font-weight="800">|1⟩</text></svg></div><div class="result"><div><strong data-state-label>|0⟩</strong><span>quantum state</span></div><div><strong data-state-prob0>100%</strong><span>P(|0⟩)</span></div><div><strong data-state-prob1>0%</strong><span>P(|1⟩)</span></div></div></div><aside class="lab-panel"><div class="eyebrow">Quantum State Vector</div><h2>Amplitude & Phase</h2><p class="callout" data-quantum-feedback>Applying H transforms |0⟩ into equal superposition (|0⟩ + |1⟩)/√2 with 50% probability of measuring 0 or 1!</p><button class="button primary" data-action="mark-lab" data-lab="qubit-gates">Mark lab explored ✓</button></aside></div>`;
+  const tutorialSteps = TUTORIAL_STEPS['qubit-gates'] || [];
+  const challenge = LAB_CHALLENGES['qubit-gates'];
+
+  return `<div class="lab-layout">
+    <div class="lab-panel">
+      <div class="eyebrow">Unit 04 · Topic 01 Lab · Hands-On Learning</div>
+      <h2>Single Qubit & Bloch Sphere Visualizer</h2>
+      <p class="lede">🎯 <strong>Learn by Doing:</strong> Apply quantum logic gates (H, X, Y, Z, S, T) to rotate the state vector |ψ⟩ = α|0⟩ + β|1⟩ on the 3D Bloch sphere.</p>
+
+      <!-- Compact Tutorial & Challenge Bar -->
+      <div class="learn-by-doing-bar">
+        <button class="tutorial-toggle-btn" data-tutorial-action="start" data-lab-id="qubit-gates">
+          📚 Start Tutorial (${tutorialSteps.length} steps)
+        </button>
+        <div class="challenge-badge" data-challenge-badge>
+          🏆 Challenge: ${challenge.title}
+        </div>
+      </div>
+
+      <!-- Collapsible Tutorial Panel -->
+      <div class="tutorial-panel collapsed" data-tutorial-panel style="display:none;">
+        <div class="tutorial-header">
+          <div class="tutorial-progress-compact">
+            <span class="step-indicator">Step <strong data-step-current>1</strong>/${tutorialSteps.length}</span>
+            <div class="progress-bar-mini">
+              <div class="progress-fill-mini" data-progress-fill style="width:25%"></div>
+            </div>
+          </div>
+          <button class="tutorial-close" data-tutorial-action="skip" title="Close Tutorial">✕</button>
+        </div>
+        <div class="tutorial-content">
+          <div class="hint-box" data-hint-text>${tutorialSteps[0]?.instruction || 'Observe initial ground state |0⟩ pointing to North Pole'}</div>
+          <button class="tutorial-next-btn" data-tutorial-action="next">Next Step →</button>
+        </div>
+      </div>
+
+      <!-- Challenge Card (Collapsible) -->
+      <div class="lab-challenge-card collapsed" data-challenge-card>
+        <div class="challenge-header">
+          <span class="challenge-badge">🏆 Challenge</span>
+          <h3>${challenge.title}</h3>
+        </div>
+        <p class="challenge-desc">${challenge.description}</p>
+        <div class="challenge-status" data-challenge-status>
+          <span class="status-indicator pending">⏳ Not Completed</span>
+          <button class="hint-toggle-btn" data-action="toggle-hint">Show Hint</button>
+        </div>
+        <p class="challenge-hint" data-challenge-hint style="display:none;">💡 ${challenge.hint}</p>
+      </div>
+
+      <div class="chip-row">
+        <button class="button" data-gate="h" id="gate-h">H · Hadamard</button>
+        <button class="button" data-gate="x" id="gate-x">X · Bit Flip</button>
+        <button class="button" data-gate="z" id="gate-z">Z · Phase Flip</button>
+        <button class="button" data-gate="s" id="gate-s">S · Phase π/2</button>
+        <button class="button" data-gate="t" id="gate-t">T · Phase π/4</button>
+        <button class="button" data-action="reset-circuit" id="reset-circuit">Reset |0⟩</button>
+      </div>
+
+      <div class="bloch-box">
+        <svg class="bloch-svg" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="75" fill="none" stroke="var(--line)" stroke-width="2"/>
+          <ellipse cx="100" cy="100" rx="75" ry="25" fill="none" stroke="var(--line)" stroke-linecap="round" stroke-dasharray="4,4"/>
+          <line x1="100" y1="25" x2="100" y2="175" stroke="var(--line)" stroke-width="1.5"/>
+          <line data-bloch-vec x1="100" y1="100" x2="100" y2="25" stroke="var(--cyan)" stroke-width="3.5" marker-end="url(#arrow)"/>
+          <text x="95" y="18" fill="var(--cyan)" font-weight="800">|0⟩</text>
+          <text x="95" y="195" fill="var(--pink)" font-weight="800">|1⟩</text>
+        </svg>
+      </div>
+
+      <div class="result">
+        <div><strong data-state-label id="state-label">|0⟩</strong><span>quantum state</span></div>
+        <div><strong data-state-prob0>100%</strong><span>P(|0⟩)</span></div>
+        <div><strong data-state-prob1>0%</strong><span>P(|1⟩)</span></div>
+      </div>
+    </div>
+
+    <aside class="lab-panel">
+      <div class="eyebrow">Quantum State Vector</div>
+      <h2>Amplitude & Phase</h2>
+      <div class="feedback-box" data-feedback-box>
+        <p class="callout" data-quantum-feedback>Applying H transforms |0⟩ into equal superposition (|0⟩ + |1⟩)/√2 with 50% probability of measuring 0 or 1!</p>
+      </div>
+      <div class="metrics-tracking">
+        <h4>Gate Matrix Form</h4>
+        <div class="metric-row"><span>Hadamard:</span><strong>1/√2 [[1, 1], [1, -1]]</strong></div>
+        <div class="metric-row"><span>Pauli-X:</span><strong>[[0, 1], [1, 0]]</strong></div>
+        <div class="metric-row"><span>Pauli-Z:</span><strong>[[1, 0], [0, -1]]</strong></div>
+      </div>
+      <button class="button primary" data-action="mark-lab" data-lab="qubit-gates">Mark lab explored ✓</button>
+    </aside>
+  </div>`;
 }
 
-// 15. 2-Qubit Bell State Generator
+// 15. 2-Qubit Bell State Generator (ENHANCED)
 function labBellEntanglement() {
-  return `<div class="lab-layout"><div class="lab-panel"><div class="eyebrow">Unit 04 · Topic 02 Lab</div><h2>2-Qubit Entanglement & Bell State Generator</h2><p class="lede">Construct 2-qubit circuits to produce the four maximally entangled Bell states (|Φ⁺⟩, |Φ⁻⟩, |Ψ⁺⟩, |Ψ⁻⟩).</p><div class="chip-row"><button class="button" data-gate="h">H (q₀)</button><button class="button" data-gate="x">X (q₀)</button><button class="button" data-gate="cnot">CNOT (q₀ → q₁)</button><button class="button" data-gate="measure">Measure</button><button class="button" data-action="reset-circuit">Reset</button></div><div class="quantum-register"><div class="wire"><span>q₀</span><i data-wire-a></i></div><div class="wire"><span>q₁</span><i data-wire-b></i></div></div><div class="result"><div><strong data-state-label>|00⟩</strong><span>current state</span></div><div><strong data-state-probability>100%</strong><span>dominant probability</span></div><div><strong data-measurement>ready</strong><span>measurement</span></div></div></div><aside class="lab-panel"><div class="eyebrow">Entanglement Concurrence</div><h2>Bell Correlation</h2><p class="callout" data-quantum-feedback>Applying H to q₀ and CNOT between q₀ and q₁ creates the maximally entangled Bell state (|00⟩ + |11⟩)/√2!</p><button class="button primary" data-action="mark-lab" data-lab="bell-entanglement">Mark lab explored ✓</button></aside></div>`;
+  const tutorialSteps = TUTORIAL_STEPS['bell-entanglement'] || [];
+  const challenge = LAB_CHALLENGES['bell-entanglement'];
+
+  return `<div class="lab-layout">
+    <div class="lab-panel">
+      <div class="eyebrow">Unit 04 · Topic 02 Lab · Hands-On Learning</div>
+      <h2>2-Qubit Entanglement & Bell State Generator</h2>
+      <p class="lede">🎯 <strong>Learn by Doing:</strong> Construct 2-qubit circuits to produce the four maximally entangled Bell states (|Φ⁺⟩, |Φ⁻⟩, |Ψ⁺⟩, |Ψ⁻⟩).</p>
+
+      <!-- Compact Tutorial & Challenge Bar -->
+      <div class="learn-by-doing-bar">
+        <button class="tutorial-toggle-btn" data-tutorial-action="start" data-lab-id="bell-entanglement">
+          📚 Start Tutorial (${tutorialSteps.length} steps)
+        </button>
+        <div class="challenge-badge" data-challenge-badge>
+          🏆 Challenge: ${challenge.title}
+        </div>
+      </div>
+
+      <!-- Collapsible Tutorial Panel -->
+      <div class="tutorial-panel collapsed" data-tutorial-panel style="display:none;">
+        <div class="tutorial-header">
+          <div class="tutorial-progress-compact">
+            <span class="step-indicator">Step <strong data-step-current>1</strong>/${tutorialSteps.length}</span>
+            <div class="progress-bar-mini">
+              <div class="progress-fill-mini" data-progress-fill style="width:25%"></div>
+            </div>
+          </div>
+          <button class="tutorial-close" data-tutorial-action="skip" title="Close Tutorial">✕</button>
+        </div>
+        <div class="tutorial-content">
+          <div class="hint-box" data-hint-text>${tutorialSteps[0]?.instruction || 'Start with 2 unentangled qubits in ground state |00⟩'}</div>
+          <button class="tutorial-next-btn" data-tutorial-action="next">Next Step →</button>
+        </div>
+      </div>
+
+      <!-- Challenge Card (Collapsible) -->
+      <div class="lab-challenge-card collapsed" data-challenge-card>
+        <div class="challenge-header">
+          <span class="challenge-badge">🏆 Challenge</span>
+          <h3>${challenge.title}</h3>
+        </div>
+        <p class="challenge-desc">${challenge.description}</p>
+        <div class="challenge-status" data-challenge-status>
+          <span class="status-indicator pending">⏳ Not Completed</span>
+          <button class="hint-toggle-btn" data-action="toggle-hint">Show Hint</button>
+        </div>
+        <p class="challenge-hint" data-challenge-hint style="display:none;">💡 ${challenge.hint}</p>
+      </div>
+
+      <div class="chip-row">
+        <button class="button" data-gate="h" id="gate-h">H (q₀)</button>
+        <button class="button" data-gate="x" id="gate-x">X (q₀)</button>
+        <button class="button" data-gate="cnot" id="gate-cnot">CNOT (q₀ → q₁)</button>
+        <button class="button" data-gate="measure" id="gate-measure">Measure</button>
+        <button class="button" data-action="reset-circuit" id="reset-circuit">Reset</button>
+      </div>
+
+      <div class="quantum-register">
+        <div class="wire"><span>q₀</span><i data-wire-a></i></div>
+        <div class="wire"><span>q₁</span><i data-wire-b></i></div>
+      </div>
+
+      <div class="result">
+        <div><strong data-state-label id="state-label">|00⟩</strong><span>current state</span></div>
+        <div><strong data-state-probability>100%</strong><span>dominant probability</span></div>
+        <div><strong data-measurement>ready</strong><span>measurement</span></div>
+      </div>
+    </div>
+
+    <aside class="lab-panel">
+      <div class="eyebrow">Entanglement Concurrence</div>
+      <h2>Bell Correlation</h2>
+      <div class="feedback-box" data-feedback-box>
+        <p class="callout" data-quantum-feedback>Applying H to q₀ and CNOT between q₀ and q₁ creates the maximally entangled Bell state (|00⟩ + |11⟩)/√2!</p>
+      </div>
+      <div class="metrics-tracking">
+        <h4>4 Bell Basis States</h4>
+        <div class="metric-row"><span>|Φ⁺⟩:</span><strong>(|00⟩ + |11⟩)/√2</strong></div>
+        <div class="metric-row"><span>|Φ⁻⟩:</span><strong>(|00⟩ - |11⟩)/√2</strong></div>
+        <div class="metric-row"><span>|Ψ⁺⟩:</span><strong>(|01⟩ + |10⟩)/√2</strong></div>
+        <div class="metric-row"><span>|Ψ⁻⟩:</span><strong>(|01⟩ - |10⟩)/√2</strong></div>
+      </div>
+      <button class="button primary" data-action="mark-lab" data-lab="bell-entanglement">Mark lab explored ✓</button>
+    </aside>
+  </div>`;
 }
 
-// 16. Quantum Algorithm Simulator (Deutsch-Jozsa & Grover)
+// 16. Quantum Algorithm Simulator (Deutsch-Jozsa & Grover) - ENHANCED
 function labQuantumAlgorithms() {
-  return `<div class="lab-layout"><div class="lab-panel"><div class="eyebrow">Unit 04 · Topic 03 Lab</div><h2>Deutsch-Jozsa & Grover Search Simulator</h2><p class="lede">Step through Grover's algorithm to observe phase inversion and constructive amplitude amplification searching N = 2ⁿ items.</p><div class="control"><label for="grover-oracle">Grover Target Item</label><select id="grover-oracle" data-grover-oracle><option value="0">Item |00⟩ (Index 0)</option><option value="1">Item |01⟩ (Index 1)</option><option value="2" selected>Item |10⟩ (Index 2)</option><option value="3">Item |11⟩ (Index 3)</option></select></div><div class="control"><label for="grover-steps">Amplification Steps <output data-grover-steps-val>1</output></label><input id="grover-steps" data-grover-steps type="range" min="0" max="3" value="1" /></div><div class="result"><div><strong data-grover-prob>100%</strong><span>success probability</span></div><div><strong data-grover-speedup>2.00×</strong><span>quantum speedup</span></div><div><strong data-grover-queries>1 query</strong><span>oracle calls</span></div></div></div><aside class="lab-panel"><div class="eyebrow">Amplitude Amplification</div><h2>Oracle Phase Flip</h2><p class="callout" data-grover-feedback>Grover's oracle flips the phase of the target item, and the diffusion operator reflects amplitudes about the mean, boosting target probability!</p><button class="button primary" data-action="mark-lab" data-lab="quantum-algorithms">Mark lab explored ✓</button></aside></div>`;
+  const tutorialSteps = TUTORIAL_STEPS['quantum-algorithms'] || [];
+  const challenge = LAB_CHALLENGES['quantum-algorithms'];
+
+  return `<div class="lab-layout">
+    <div class="lab-panel">
+      <div class="eyebrow">Unit 04 · Topic 03 Lab · Hands-On Learning</div>
+      <h2>Deutsch-Jozsa & Grover Search Simulator</h2>
+      <p class="lede">🎯 <strong>Learn by Doing:</strong> Step through Grover's algorithm to observe phase inversion and constructive amplitude amplification searching N = 2ⁿ items.</p>
+
+      <!-- Compact Tutorial & Challenge Bar -->
+      <div class="learn-by-doing-bar">
+        <button class="tutorial-toggle-btn" data-tutorial-action="start" data-lab-id="quantum-algorithms">
+          📚 Start Tutorial (${tutorialSteps.length} steps)
+        </button>
+        <div class="challenge-badge" data-challenge-badge>
+          🏆 Challenge: ${challenge.title}
+        </div>
+      </div>
+
+      <!-- Collapsible Tutorial Panel -->
+      <div class="tutorial-panel collapsed" data-tutorial-panel style="display:none;">
+        <div class="tutorial-header">
+          <div class="tutorial-progress-compact">
+            <span class="step-indicator">Step <strong data-step-current>1</strong>/${tutorialSteps.length}</span>
+            <div class="progress-bar-mini">
+              <div class="progress-fill-mini" data-progress-fill style="width:25%"></div>
+            </div>
+          </div>
+          <button class="tutorial-close" data-tutorial-action="skip" title="Close Tutorial">✕</button>
+        </div>
+        <div class="tutorial-content">
+          <div class="hint-box" data-hint-text>${tutorialSteps[0]?.instruction || 'Select Grover Target Item in search space'}</div>
+          <button class="tutorial-next-btn" data-tutorial-action="next">Next Step →</button>
+        </div>
+      </div>
+
+      <!-- Challenge Card (Collapsible) -->
+      <div class="lab-challenge-card collapsed" data-challenge-card>
+        <div class="challenge-header">
+          <span class="challenge-badge">🏆 Challenge</span>
+          <h3>${challenge.title}</h3>
+        </div>
+        <p class="challenge-desc">${challenge.description}</p>
+        <div class="challenge-status" data-challenge-status>
+          <span class="status-indicator pending">⏳ Not Completed</span>
+          <button class="hint-toggle-btn" data-action="toggle-hint">Show Hint</button>
+        </div>
+        <p class="challenge-hint" data-challenge-hint style="display:none;">💡 ${challenge.hint}</p>
+      </div>
+
+      <div class="control">
+        <label for="grover-oracle">Grover Target Item</label>
+        <select id="grover-oracle" data-grover-oracle>
+          <option value="0">Item |00⟩ (Index 0)</option>
+          <option value="1">Item |01⟩ (Index 1)</option>
+          <option value="2" selected>Item |10⟩ (Index 2)</option>
+          <option value="3">Item |11⟩ (Index 3)</option>
+        </select>
+      </div>
+
+      <div class="control">
+        <label for="grover-steps">Amplification Steps <output data-grover-steps-val>1</output></label>
+        <input id="grover-steps" data-grover-steps type="range" min="0" max="3" value="1" />
+        <div class="control-tips">
+          <span class="tip-badge">💡 Optimal steps for N = 4 is R ≈ π/4 √4 = 1 step</span>
+        </div>
+      </div>
+
+      <div class="result">
+        <div><strong data-grover-prob id="grover-prob">100%</strong><span>success probability</span></div>
+        <div><strong data-grover-speedup>2.00×</strong><span>quantum speedup</span></div>
+        <div><strong data-grover-queries>1 query</strong><span>oracle calls</span></div>
+      </div>
+    </div>
+
+    <aside class="lab-panel">
+      <div class="eyebrow">Amplitude Amplification</div>
+      <h2>Oracle Phase Flip</h2>
+      <div class="feedback-box" data-feedback-box>
+        <p class="callout" data-grover-feedback>Grover's oracle flips the phase of the target item, and the diffusion operator reflects amplitudes about the mean, boosting target probability!</p>
+      </div>
+      <div class="metrics-tracking">
+        <h4>Complexity Analysis</h4>
+        <div class="metric-row"><span>Classical Search:</span><strong>O(N) queries</strong></div>
+        <div class="metric-row"><span>Grover Quantum:</span><strong>O(√N) quadratic speedup</strong></div>
+        <div class="metric-row"><span>Deutsch-Jozsa:</span><strong>1 query vs 2ⁿ⁻¹+1</strong></div>
+      </div>
+      <button class="button primary" data-action="mark-lab" data-lab="quantum-algorithms">Mark lab explored ✓</button>
+    </aside>
+  </div>`;
 }
 
-// 17. Hybrid Quantum-Classical VQE Simulator
+// 17. Hybrid Quantum-Classical VQE Simulator - ENHANCED
 function labHybridVqe() {
-  return `<div class="lab-layout"><div class="lab-panel"><div class="eyebrow">Unit 04 · Topic 04 Lab</div><h2>Variational Quantum Eigensolver (VQE) Simulator</h2><p class="lede">Simulate the NISQ hybrid quantum-classical loop. Tune ansatz parameter θ to find the ground state energy of a hydrogen molecule (H₂).</p><div class="control"><label for="vqe-theta">Ansatz Parameter θ <output data-vqe-theta-val>0.78 rad</output></label><input id="vqe-theta" data-vqe-theta type="range" min="0" max="314" value="78" /></div><div class="control"><label for="vqe-optimizer">Classical Optimizer</label><select id="vqe-optimizer" data-vqe-optimizer><option value="cobyla">COBYLA (Noise Tolerant)</option><option value="gd">Gradient Descent</option></select></div><div class="result"><div><strong data-vqe-energy>-1.137 Hartree</strong><span>calculated ⟨E(θ)⟩</span></div><div><strong data-vqe-exact>-1.137 Hartree</strong><span>exact ground energy</span></div><div><strong data-vqe-error">0.000 Hartree</strong><span>energy error ΔE</span></div></div></div><aside class="lab-panel"><div class="eyebrow">Variational Principle</div><h2>Quantum-Classical Loop</h2><p class="callout" data-vqe-feedback>By Rayleigh-Ritz variational principle, ⟨E(θ)⟩ ≥ E₀. The classical optimizer tunes θ until minimum ground energy is found!</p><button class="button primary" data-action="mark-lab" data-lab="hybrid-vqe">Mark lab explored ✓</button></aside></div>`;
+  const tutorialSteps = TUTORIAL_STEPS['hybrid-vqe'] || [];
+  const challenge = LAB_CHALLENGES['hybrid-vqe'];
+
+  return `<div class="lab-layout">
+    <div class="lab-panel">
+      <div class="eyebrow">Unit 04 · Topic 04 Lab · Hands-On Learning</div>
+      <h2>Variational Quantum Eigensolver (VQE) Simulator</h2>
+      <p class="lede">🎯 <strong>Learn by Doing:</strong> Simulate the NISQ hybrid quantum-classical loop. Tune ansatz parameter θ to find the ground state energy of a hydrogen molecule (H₂).</p>
+
+      <!-- Compact Tutorial & Challenge Bar -->
+      <div class="learn-by-doing-bar">
+        <button class="tutorial-toggle-btn" data-tutorial-action="start" data-lab-id="hybrid-vqe">
+          📚 Start Tutorial (${tutorialSteps.length} steps)
+        </button>
+        <div class="challenge-badge" data-challenge-badge>
+          🏆 Challenge: ${challenge.title}
+        </div>
+      </div>
+
+      <!-- Collapsible Tutorial Panel -->
+      <div class="tutorial-panel collapsed" data-tutorial-panel style="display:none;">
+        <div class="tutorial-header">
+          <div class="tutorial-progress-compact">
+            <span class="step-indicator">Step <strong data-step-current>1</strong>/${tutorialSteps.length}</span>
+            <div class="progress-bar-mini">
+              <div class="progress-fill-mini" data-progress-fill style="width:25%"></div>
+            </div>
+          </div>
+          <button class="tutorial-close" data-tutorial-action="skip" title="Close Tutorial">✕</button>
+        </div>
+        <div class="tutorial-content">
+          <div class="hint-box" data-hint-text>${tutorialSteps[0]?.instruction || 'Examine the H₂ molecular Hamiltonian and parameterized ansatz state'}</div>
+          <button class="tutorial-next-btn" data-tutorial-action="next">Next Step →</button>
+        </div>
+      </div>
+
+      <!-- Challenge Card (Collapsible) -->
+      <div class="lab-challenge-card collapsed" data-challenge-card>
+        <div class="challenge-header">
+          <span class="challenge-badge">🏆 Challenge</span>
+          <h3>${challenge.title}</h3>
+        </div>
+        <p class="challenge-desc">${challenge.description}</p>
+        <div class="challenge-status" data-challenge-status>
+          <span class="status-indicator pending">⏳ Not Completed</span>
+          <button class="hint-toggle-btn" data-action="toggle-hint">Show Hint</button>
+        </div>
+        <p class="challenge-hint" data-challenge-hint style="display:none;">💡 ${challenge.hint}</p>
+      </div>
+
+      <div class="control">
+        <label for="vqe-theta">Ansatz Parameter θ <output data-vqe-theta-val>0.78 rad</output></label>
+        <input id="vqe-theta" data-vqe-theta type="range" min="0" max="314" value="78" />
+        <div class="control-tips">
+          <span class="tip-badge">💡 θ controls rotation angle Ry(θ) prepared on the quantum co-processor</span>
+        </div>
+      </div>
+
+      <div class="control">
+        <label for="vqe-optimizer">Classical Optimizer</label>
+        <select id="vqe-optimizer" data-vqe-optimizer>
+          <option value="cobyla">COBYLA (Noise Tolerant)</option>
+          <option value="gd">Gradient Descent</option>
+        </select>
+      </div>
+
+      <div class="result">
+        <div><strong data-vqe-energy id="vqe-energy">-1.137 Hartree</strong><span>calculated ⟨E(θ)⟩</span></div>
+        <div><strong data-vqe-exact>-1.137 Hartree</strong><span>exact ground energy</span></div>
+        <div><strong data-vqe-error>0.000 Hartree</strong><span>energy error ΔE</span></div>
+      </div>
+    </div>
+
+    <aside class="lab-panel">
+      <div class="eyebrow">Variational Principle</div>
+      <h2>Quantum-Classical Loop</h2>
+      <div class="feedback-box" data-feedback-box>
+        <p class="callout" data-vqe-feedback>By Rayleigh-Ritz variational principle, ⟨E(θ)⟩ ≥ E₀. The classical optimizer tunes θ until minimum ground energy is found!</p>
+      </div>
+      <div class="metrics-tracking">
+        <h4>VQE Hardware Specs</h4>
+        <div class="metric-row"><span>Molecule:</span><strong>Hydrogen H₂ (0.7414 Å)</strong></div>
+        <div class="metric-row"><span>Ground Energy:</span><strong>-1.1373 Hartree</strong></div>
+        <div class="metric-row"><span>Mapping:</span><strong>Jordan-Wigner / Bravyi-Kitaev</strong></div>
+      </div>
+      <button class="button primary" data-action="mark-lab" data-lab="hybrid-vqe">Mark lab explored ✓</button>
+    </aside>
+  </div>`;
 }

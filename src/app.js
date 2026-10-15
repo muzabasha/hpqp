@@ -1057,6 +1057,14 @@ function checkChallengeCompletion(labId, data) {
     if (data.intensity >= 10.0) isComplete = true;
   } else if (labId === 'ai-accelerator') {
     if ((data.prec === 'fp16' || data.prec === 'int8') && data.gpus >= 16) isComplete = true;
+  } else if (labId === 'qubit-gates') {
+    if (data === 'h' || data.gate === 'h' || data.state === 'superposition') isComplete = true;
+  } else if (labId === 'bell-entanglement') {
+    if (data === 'cnot' || data.gate === 'cnot' || data.state === 'bell') isComplete = true;
+  } else if (labId === 'quantum-algorithms') {
+    if (data === 1 || data.steps === 1) isComplete = true;
+  } else if (labId === 'hybrid-vqe') {
+    if (Math.abs((data.theta !== undefined ? data.theta : data) - 0.78) <= 0.03) isComplete = true;
   }
 
   if (isComplete) {
@@ -1679,6 +1687,7 @@ function handleInput(e) {
     setText('[data-grover-prob]', prob);
     setText('[data-grover-speedup]', `${(Math.sqrt(4) / Math.max(1, steps)).toFixed(2)}×`);
     setText('[data-grover-queries]', `${steps} query`);
+    checkChallengeCompletion('quantum-algorithms', steps);
   }
 
   // 17. VQE Simulator
@@ -1689,6 +1698,7 @@ function handleInput(e) {
     setText('[data-vqe-theta-val]', `${theta.toFixed(2)} rad`);
     setText('[data-vqe-energy]', `${energy.toFixed(3)} Hartree`);
     setText('[data-vqe-error]', `${error.toFixed(3)} Hartree`);
+    checkChallengeCompletion('hybrid-vqe', { theta });
   }
 
   // Unit 3 Interactive Diagram Sliders
@@ -1859,6 +1869,7 @@ function updateQuantum(gate) {
     if (prob) prob.textContent = '50 / 50';
     if (fb) fb.textContent = 'H Hadamard gate creates equal superposition!';
     if (wireA) wireA.classList.add('active');
+    checkChallengeCompletion('qubit-gates', 'h');
   } else if (gate === 'x') {
     label.textContent = '|1⟩'; if (p0) p0.textContent = '0%'; if (p1) p1.textContent = '100%';
     if (prob) prob.textContent = '100%';
@@ -1868,6 +1879,7 @@ function updateQuantum(gate) {
     label.textContent = '(|00⟩ + |11⟩)/√2'; if (prob) prob.textContent = '50 / 50';
     if (fb) fb.textContent = 'CNOT correlates qubits to generate the Bell state!';
     if (wireA) wireA.classList.add('active'); if (wireB) wireB.classList.add('active');
+    checkChallengeCompletion('bell-entanglement', 'cnot');
   } else if (gate === 'measure') {
     const res = Math.random() > 0.5 ? '|00⟩' : '|11⟩';
     if (meas) meas.textContent = res;
@@ -1911,7 +1923,6 @@ let tutorialState = {
 
 function handleTutorialAction(action, labId) {
   const tutorialPanel = document.querySelector('[data-tutorial-panel]');
-  const startBtn = document.querySelector('[data-tutorial-action="start"]');
   
   if (action === 'start') {
     tutorialState.active = true;
@@ -1922,11 +1933,26 @@ function handleTutorialAction(action, labId) {
     if (tutorialPanel) {
       tutorialPanel.style.display = 'block';
       tutorialPanel.classList.remove('collapsed');
+      tutorialPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
     
     updateTutorialStep();
     toast('📚 Tutorial started! Follow the step-by-step guidance.');
   } else if (action === 'next') {
+    const steps = TUTORIAL_STEPS[tutorialState.labId] || [];
+    const maxSteps = steps.length || 4;
+    if (tutorialState.currentStep >= maxSteps - 1) {
+      toast('🎉 Tutorial completed! Keep experimenting to master the lab.');
+      tutorialState.active = false;
+      if (tutorialPanel) {
+        tutorialPanel.style.display = 'none';
+        tutorialPanel.classList.add('collapsed');
+      }
+      document.querySelectorAll('.tutorial-highlight').forEach(el => {
+        el.classList.remove('tutorial-highlight');
+      });
+      return;
+    }
     tutorialState.currentStep++;
     updateTutorialStep();
   } else if (action === 'skip') {
@@ -1958,6 +1984,7 @@ function updateTutorialStep() {
   const stepEl = document.querySelector('[data-step-current]');
   const fillEl = document.querySelector('[data-progress-fill]');
   const hintTextEl = document.querySelector('[data-hint-text]');
+  const nextBtn = document.querySelector('[data-tutorial-action="next"]');
   
   // Get tutorial steps for current lab
   const labId = tutorialState.labId || 'hpc-throughput';
@@ -1969,6 +1996,15 @@ function updateTutorialStep() {
   
   if (stepEl) stepEl.textContent = tutorialState.currentStep + 1;
   if (fillEl) fillEl.style.width = `${progress}%`;
+  
+  if (nextBtn) {
+    if (tutorialState.currentStep >= maxSteps - 1) {
+      nextBtn.textContent = 'Complete Tutorial ✓';
+    } else {
+      nextBtn.textContent = 'Next Step →';
+    }
+    nextBtn.onclick = null;
+  }
   
   // Use actual tutorial instruction or fallback to generic hint
   if (hintTextEl && currentStepData) {
@@ -1985,8 +2021,7 @@ function updateTutorialStep() {
       const highlightEl = document.querySelector(`[data-${currentStepData.highlight}], #${currentStepData.highlight}, [id*="${currentStepData.highlight}"]`);
       if (highlightEl) {
         highlightEl.classList.add('tutorial-highlight');
-        // Scroll into view
-        highlightEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        highlightEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     }
   } else if (hintTextEl) {
@@ -1998,30 +2033,6 @@ function updateTutorialStep() {
       3: 'Find the optimal configuration for best performance'
     };
     hintTextEl.textContent = fallbackHints[tutorialState.currentStep] || 'Continue exploring the lab';
-  }
-  
-  // Auto-complete tutorial after last step
-  if (tutorialState.currentStep >= maxSteps - 1) {
-    const nextBtn = document.querySelector('[data-tutorial-action="next"]');
-    if (nextBtn) {
-      nextBtn.textContent = 'Complete Tutorial ✓';
-      nextBtn.onclick = (e) => {
-        e.preventDefault();
-        toast('🎉 Tutorial completed! Keep experimenting to master the lab.');
-        tutorialState.active = false;
-        
-        const tutorialPanel = document.querySelector('[data-tutorial-panel]');
-        if (tutorialPanel) {
-          tutorialPanel.style.display = 'none';
-          tutorialPanel.classList.add('collapsed');
-        }
-        
-        // Remove all highlights
-        document.querySelectorAll('.tutorial-highlight').forEach(el => {
-          el.classList.remove('tutorial-highlight');
-        });
-      };
-    }
   }
 }
 
