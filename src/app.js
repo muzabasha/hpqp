@@ -453,6 +453,7 @@ function assessment(_, app) {
 function topicPage(_, app, unitId, topicId) {
   app.innerHTML = renderTopicLesson(unitId, topicId);
   initTopicLab(unitId, topicId);
+  initTopicDiagram(unitId, topicId);
 }
 
 function standaloneLabPage(path, app) {
@@ -709,15 +710,56 @@ document.addEventListener('click', (e) => {
   }
 
   // Unit 3 Diagram Interactions
+  const cudaView = e.target.closest('[data-cuda-view]');
+  if (cudaView) {
+    scheduleUpdate(() => handleCudaView(cudaView.dataset.cudaView));
+    return;
+  }
+  const cudaAction = e.target.closest('[data-cuda-action]');
+  if (cudaAction) {
+    scheduleUpdate(() => handleCudaAction(cudaAction.dataset.cudaAction));
+    return;
+  }
+  const cudaThreadCell = e.target.closest('[data-t]');
+  if (cudaThreadCell) {
+    scheduleUpdate(() => handleCudaThreadCellClick(Number(cudaThreadCell.dataset.t)));
+    return;
+  }
   const cudaLevel = e.target.closest('[data-cuda-level]');
   if (cudaLevel) {
     scheduleUpdate(() => handleCudaLevel(cudaLevel.dataset.cudaLevel));
     return;
   }
 
+  const coalesceMode = e.target.closest('[data-coalesce-mode]');
+  if (coalesceMode) {
+    scheduleUpdate(() => handleCoalesceMode(coalesceMode.dataset.coalesceMode));
+    return;
+  }
+  const coalesceStride = e.target.closest('[data-coalesce-stride]');
+  if (coalesceStride) {
+    scheduleUpdate(() => handleCoalesceStride(Number(coalesceStride.dataset.coalesceStride)));
+    return;
+  }
+  const coalescePad = e.target.closest('[data-coalesce-pad]');
+  if (coalescePad) {
+    scheduleUpdate(() => handleCoalescePad(Number(coalescePad.dataset.coalescePad)));
+    return;
+  }
+  const coalesceAction = e.target.closest('[data-coalesce-action]');
+  if (coalesceAction) {
+    scheduleUpdate(() => handleCoalesceAction(coalesceAction.dataset.coalesceAction));
+    return;
+  }
   const coalescePattern = e.target.closest('[data-coalesce-pattern]');
   if (coalescePattern) {
     scheduleUpdate(() => handleCoalescePattern(coalescePattern.dataset.coalescePattern));
+    return;
+  }
+
+  const rooflinePreset = e.target.closest('[data-roofline-preset]');
+  if (rooflinePreset) {
+    scheduleUpdate(() => handleRooflinePreset(rooflinePreset.dataset.rooflinePreset));
     return;
   }
 
@@ -746,6 +788,16 @@ document.addEventListener('click', (e) => {
   const cloudTier = e.target.closest('[data-cloud-tier]');
   if (cloudTier) {
     scheduleUpdate(() => handleCloudTier(cloudTier.dataset.cloudTier));
+    return;
+  }
+  const cloudWorkload = e.target.closest('[data-cloud-workload]');
+  if (cloudWorkload) {
+    scheduleUpdate(() => handleCloudWorkload(cloudWorkload.dataset.cloudWorkload));
+    return;
+  }
+  const cloudAction = e.target.closest('[data-cloud-action]');
+  if (cloudAction) {
+    scheduleUpdate(() => handleCloudAction(cloudAction.dataset.cloudAction));
     return;
   }
 
@@ -1637,6 +1689,18 @@ function handleInput(e) {
     setText('[data-vqe-theta-val]', `${theta.toFixed(2)} rad`);
     setText('[data-vqe-energy]', `${energy.toFixed(3)} Hartree`);
     setText('[data-vqe-error]', `${error.toFixed(3)} Hartree`);
+  }
+
+  // Unit 3 Interactive Diagram Sliders
+  if (e.target.matches('[data-cuda-block-slider], [data-cuda-thread-slider]')) {
+    const b = Number(document.querySelector('[data-cuda-block-slider]')?.value || 0);
+    const t = Number(document.querySelector('[data-cuda-thread-slider]')?.value || 0);
+    updateCudaDiagram('indexing', b, t);
+  }
+  if (e.target.matches('[data-roofline-slider]')) {
+    const logVal = Number(document.querySelector('[data-roofline-slider]')?.value || -0.6);
+    const intensity = Math.pow(10, logVal);
+    updateRooflineDiagram(intensity, 'custom');
   }
 }
 
@@ -2844,83 +2908,448 @@ function handleWorkStealing(action) {
   }
 }
 
-// Unit 3 (GPU) Diagram Handlers
-function handleCudaLevel(level) {
-  document.querySelectorAll('[data-cuda-level]').forEach(btn => btn.classList.remove('primary'));
-  document.querySelector(`[data-cuda-level="${level}"]`)?.classList.add('primary');
-  
+// Unit 3, Topic 1: CUDA Basics Diagram Handlers
+let cudaDiagState = { view: 'hierarchy', blockId: 0, threadId: 0 };
+
+function updateCudaDiagram(view = 'hierarchy', blockId = 0, threadId = 0) {
+  cudaDiagState.view = view;
+  cudaDiagState.blockId = blockId;
+  cudaDiagState.threadId = threadId;
+
   const diagram = document.querySelector('[data-diagram="cuda-basics"]');
   if (!diagram) return;
-  
-  const insights = {
-    'thread': '<strong>Thread Level:</strong> Individual execution unit. Each thread has its own registers and executes the kernel code. threadIdx identifies each thread within a block.',
-    'warp': '<strong>Warp Level:</strong> 32 threads execute in SIMT lockstep. All threads in a warp must execute the same instruction. Divergence (if/else) serializes execution.',
-    'block': '<strong>Block Level:</strong> Group of threads (up to 1024) sharing shared memory and able to synchronize via __syncthreads(). Blocks execute independently.',
-    'grid': '<strong>Grid Level:</strong> Collection of all blocks launched by a kernel. Grid dimensions define the total parallelism. Blocks can execute in any order.'
-  };
-  
-  const insightEl = diagram.querySelector('[data-cuda-insight]');
-  if (insightEl) insightEl.innerHTML = insights[level];
-  
-  // Highlight relevant elements
-  diagram.querySelectorAll('.cuda-block, .cuda-warp, .thread-blocks').forEach(el => {
-    el.style.opacity = '0.4';
+
+  // Active view buttons
+  diagram.querySelectorAll('[data-cuda-view]').forEach(btn => {
+    btn.classList.toggle('primary', btn.dataset.cudaView === view);
   });
-  
-  if (level === 'thread') {
-    diagram.querySelectorAll('.thread-blocks').forEach(el => el.style.opacity = '1');
-  } else if (level === 'warp') {
-    diagram.querySelectorAll('.cuda-warp').forEach(el => el.style.opacity = '1');
-  } else if (level === 'block') {
-    diagram.querySelectorAll('.cuda-block').forEach(el => el.style.opacity = '1');
-  } else if (level === 'grid') {
-    diagram.querySelectorAll('.cuda-block').forEach(el => el.style.opacity = '1');
+
+  // Slider inputs & displays
+  const bSlider = diagram.querySelector('[data-cuda-block-slider]');
+  const tSlider = diagram.querySelector('[data-cuda-thread-slider]');
+  if (bSlider) bSlider.value = String(blockId);
+  if (tSlider) tSlider.value = String(threadId);
+
+  const bDisp = diagram.querySelector('[data-cuda-block-display]');
+  const tDisp = diagram.querySelector('[data-cuda-thread-display]');
+  if (bDisp) bDisp.textContent = String(blockId);
+  if (tDisp) tDisp.textContent = String(threadId);
+
+  // Global index calculation: idx = blockIdx.x * 32 + threadIdx.x
+  const globalIdx = blockId * 32 + threadId;
+  const formulaEl = diagram.querySelector('[data-cuda-formula]');
+  if (formulaEl) {
+    formulaEl.innerHTML = `<strong>1D Index:</strong> <span style="color:var(--cyan); font-weight:700;">idx = ${blockId} &times; 32 + ${threadId} = ${globalIdx}</span>`;
+  }
+
+  // Telemetry HUD updates
+  const hudIdx = diagram.querySelector('[data-hud-idx]');
+  const hudCoord = diagram.querySelector('[data-hud-coord]');
+  const hudLane = diagram.querySelector('[data-hud-lane]');
+  const hudState = diagram.querySelector('[data-hud-state]');
+  const statusEl = diagram.querySelector('[data-cuda-status]');
+  const substatusEl = diagram.querySelector('[data-cuda-substatus]');
+  const insightEl = diagram.querySelector('[data-cuda-insight]');
+
+  if (hudIdx) hudIdx.textContent = String(globalIdx);
+  if (hudCoord) hudCoord.textContent = `Block ${blockId}, Thread ${threadId}`;
+  if (hudLane) hudLane.textContent = `Lane ${threadId} of 32`;
+
+  // Highlight blocks in grid
+  diagram.querySelectorAll('.cuda-block-card').forEach(card => {
+    const bId = Number(card.dataset.blockId);
+    const bg = card.querySelector('.cuda-block-bg');
+    if (bg) {
+      if (bId === blockId) {
+        bg.style.stroke = 'var(--lime)';
+        bg.style.strokeWidth = '2.5px';
+        bg.style.opacity = '1';
+      } else {
+        bg.style.stroke = 'var(--line)';
+        bg.style.strokeWidth = '1.5px';
+        bg.style.opacity = '0.5';
+      }
+    }
+  });
+
+  // Highlight selected thread cell inside Warp 0
+  diagram.querySelectorAll('.cuda-thread-cell').forEach(cell => {
+    const t = Number(cell.dataset.t);
+    cell.classList.remove('selected');
+    if (t === threadId) {
+      cell.classList.add('selected');
+    }
+  });
+
+  // Divergence vs SIMT view modes
+  if (view === 'divergence') {
+    // 32 threads split: 0..15 execute IF branch, 16..31 disabled / masked
+    diagram.querySelectorAll('.cuda-thread-cell').forEach(cell => {
+      const t = Number(cell.dataset.t);
+      if (t < 16) {
+        cell.style.fill = 'var(--cyan-soft)';
+        cell.style.stroke = 'var(--cyan)';
+        cell.style.opacity = '1';
+      } else {
+        cell.style.fill = 'var(--pink-soft)';
+        cell.style.stroke = 'var(--pink)';
+        cell.style.opacity = '0.35';
+      }
+    });
+
+    const isIf = threadId < 16;
+    if (hudState) {
+      hudState.textContent = isIf ? 'Status: ACTIVE (Executing IF path)' : 'Status: MASKED (Idle during IF path)';
+      hudState.style.color = isIf ? 'var(--cyan)' : 'var(--pink)';
+    }
+    if (statusEl) {
+      statusEl.innerHTML = `⚠️ <strong>Branch Divergence:</strong> <code>if (threadIdx.x < 16)</code> splits the 32-thread warp into 2 serial execution passes!`;
+    }
+    if (substatusEl) {
+      substatusEl.textContent = `Hardware masks lanes 16..31 during IF branch, then executes ELSE branch sequentially. Warp efficiency drops to 50%!`;
+    }
+    if (insightEl) {
+      insightEl.innerHTML = `<strong>Branch Divergence Impact:</strong> When threads in a 32-lane warp take different paths (e.g. <code>if-else</code>), the GPU serializes each path. All threads disabled on a given path remain idle while active threads execute. Avoid branching dependent on <code>threadIdx.x % 32</code>!`;
+    }
+  } else if (view === 'simt') {
+    // All 32 threads in lockstep
+    diagram.querySelectorAll('.cuda-thread-cell').forEach(cell => {
+      cell.style.fill = 'var(--lime-soft)';
+      cell.style.stroke = 'var(--lime)';
+      cell.style.opacity = '1';
+    });
+    if (hudState) {
+      hudState.textContent = 'Status: LOCKSTEP (All 32 Active)';
+      hudState.style.color = 'var(--lime)';
+    }
+    if (statusEl) {
+      statusEl.innerHTML = `⚡ <strong>SIMT Lockstep Active:</strong> 32 execution lanes execute identical program counter in parallel without divergence.`;
+    }
+    if (substatusEl) {
+      substatusEl.textContent = `Warp scheduler issues 1 instruction per cycle across all 32 ALUs at 100% compute efficiency.`;
+    }
+    if (insightEl) {
+      insightEl.innerHTML = `<strong>Single Instruction Multiple Threads (SIMT):</strong> Instructions are broadcast to 32 threads simultaneously. Each thread has independent registers and can compute unique addresses, but executes the same instruction stream for peak hardware throughput.`;
+    }
+  } else {
+    // Standard Hierarchy View
+    diagram.querySelectorAll('.cuda-thread-cell').forEach(cell => {
+      const t = Number(cell.dataset.t);
+      if (t === threadId) {
+        cell.style.fill = 'var(--cyan)';
+        cell.style.stroke = 'white';
+        cell.style.opacity = '1';
+      } else {
+        cell.style.fill = 'var(--pink-soft)';
+        cell.style.stroke = 'var(--pink)';
+        cell.style.opacity = '0.8';
+      }
+    });
+    if (hudState) {
+      hudState.textContent = 'Status: ACTIVE (Inspecting coordinates)';
+      hudState.style.color = 'var(--lime)';
+    }
+    if (statusEl) {
+      statusEl.innerHTML = `⚡ <strong>SIMT Execution Model:</strong> Grid &rarr; Blocks &rarr; Warps (32 Threads) mapped to Streaming Multiprocessors.`;
+    }
+    if (substatusEl) {
+      substatusEl.textContent = `Use sliders or click thread cells to inspect 1D index mapping across blocks.`;
+    }
+    if (insightEl) {
+      insightEl.innerHTML = `<strong>CUDA Execution Hierarchy:</strong> A kernel launches a <strong>Grid</strong> of <strong>Blocks</strong> mapped onto hardware <strong>Streaming Multiprocessors (SMs)</strong>. Each block is partitioned into 32-thread <strong>Warps</strong> that execute in SIMT lockstep. Each thread computes its unique memory index via <code>int idx = blockIdx.x * blockDim.x + threadIdx.x</code>.`;
+    }
+  }
+}
+
+function handleCudaView(view) {
+  updateCudaDiagram(view, cudaDiagState.blockId, cudaDiagState.threadId);
+}
+
+function handleCudaThreadCellClick(t) {
+  updateCudaDiagram(cudaDiagState.view, cudaDiagState.blockId, t);
+}
+
+function handleCudaAction(action) {
+  const diagram = document.querySelector('[data-diagram="cuda-basics"]');
+  if (!diagram) return;
+
+  if (action === 'step-warp') {
+    toast('Executing Warp Instruction in SIMT lockstep across 32 lanes...');
+    const cells = diagram.querySelectorAll('.cuda-thread-cell');
+    cells.forEach((cell, i) => {
+      setTimeout(() => {
+        cell.classList.add('simt-pulse');
+        setTimeout(() => cell.classList.remove('simt-pulse'), 600);
+      }, i * 20);
+    });
+  } else if (action === 'reset') {
+    updateCudaDiagram('hierarchy', 0, 0);
+    toast('CUDA execution diagram reset to initial coordinates');
+  }
+}
+
+function handleCudaLevel(level) {
+  // Backwards compatibility for older level buttons
+  if (level === 'thread') updateCudaDiagram('indexing', 0, 0);
+  else if (level === 'warp') updateCudaDiagram('simt', 0, 0);
+  else if (level === 'block') updateCudaDiagram('hierarchy', 1, 0);
+  else if (level === 'grid') updateCudaDiagram('hierarchy', 0, 0);
+}
+
+// Unit 3, Topic 2: Memory Coalescing & Bank Conflicts Handlers
+let coalesceDiagState = { mode: 'global', stride: 1, padding: 0 };
+
+function updateCoalesceDiagram(mode = 'global', stride = 1, padding = 0) {
+  coalesceDiagState.mode = mode;
+  coalesceDiagState.stride = stride;
+  coalesceDiagState.padding = padding;
+
+  const diagram = document.querySelector('[data-diagram="memory-coalescing"]');
+  if (!diagram) return;
+
+  // Active mode buttons
+  diagram.querySelectorAll('[data-coalesce-mode]').forEach(btn => {
+    btn.classList.toggle('primary', btn.dataset.coalesceMode === mode);
+  });
+
+  // Toggle toolbars
+  const strideCtrl = diagram.querySelector('[data-coalesce-stride-control]');
+  const padCtrl = diagram.querySelector('[data-coalesce-pad-control]');
+  if (strideCtrl) strideCtrl.style.display = mode === 'global' ? 'flex' : 'none';
+  if (padCtrl) padCtrl.style.display = mode === 'shared' ? 'flex' : 'none';
+
+  // Toggle SVG views
+  const globalView = diagram.querySelector('.coalesce-global-view');
+  const sharedView = diagram.querySelector('.coalesce-shared-view');
+  if (globalView) globalView.style.display = mode === 'global' ? '' : 'none';
+  if (sharedView) sharedView.style.display = mode === 'shared' ? '' : 'none';
+
+  // Active stride / padding buttons
+  diagram.querySelectorAll('[data-coalesce-stride]').forEach(btn => {
+    btn.classList.toggle('primary', Number(btn.dataset.coalesceStride) === stride);
+  });
+  diagram.querySelectorAll('[data-coalesce-pad]').forEach(btn => {
+    btn.classList.toggle('primary', Number(btn.dataset.coalescePad) === padding);
+  });
+
+  // Calculate metrics
+  let tx = 1;
+  let bw = 900;
+  let eff = 100.0;
+  let txNote = '100% Coalesced (128-byte payload)';
+  let bwNote = 'Theoretical HBM2 peak saturated';
+  let effNote = 'Zero wasted bus bandwidth';
+
+  if (mode === 'global') {
+    tx = Math.min(16, stride);
+    bw = Math.round(900 / tx);
+    eff = (100 / tx).toFixed(1);
+    if (stride > 1) {
+      txNote = `${tx} separate 128B transactions required`;
+      bwNote = `${tx}× bandwidth degradation penalty`;
+      effNote = `${(100 - eff).toFixed(1)}% of bus bandwidth wasted!`;
+    }
+
+    // Re-draw arrows
+    const arrowsGroup = diagram.querySelector('[data-coalesce-arrows]');
+    if (arrowsGroup) {
+      const isCoalesced = stride === 1;
+      arrowsGroup.innerHTML = Array.from({length: 16}, (_, i) => {
+        const destSlot = (i * stride) % 16;
+        const x1 = i * 46.5 + 21;
+        const x2 = destSlot * 46.5 + 21;
+        const strokeColor = isCoalesced ? 'var(--lime)' : 'var(--pink)';
+        const marker = isCoalesced ? 'url(#arrow-coalesce-lime)' : 'url(#arrow-coalesce-pink)';
+        const dash = isCoalesced ? 'none' : '4,3';
+        return `<line x1="${x1}" y1="210" x2="${x2}" y2="92" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="${dash}" marker-end="${marker}" class="access-vector" />`;
+      }).join('');
+    }
+  } else {
+    // Shared Memory Bank Conflict mode
+    if (padding === 0) {
+      tx = 16; // 16-way bank conflict
+      bw = Math.round(900 / 16);
+      eff = (100 / 16).toFixed(1);
+      txNote = '16-way Shared Memory serialization penalty!';
+      bwNote = '16 cycles per warp access (1/16th speed)';
+      effNote = '93.75% stall cycles due to bank collisions';
+    } else {
+      tx = 1;
+      bw = 900;
+      eff = 100.0;
+      txNote = 'Conflict-free shared memory access (1 cycle)';
+      bwNote = 'Full shared memory broadcast bandwidth';
+      effNote = 'Zero bank collision stalls with +1 padding';
+    }
+
+    // Color bank cells according to conflicts
+    diagram.querySelectorAll('.bank-col').forEach((col, b) => {
+      const c0 = col.querySelector('.cell-0');
+      const c1 = col.querySelector('.cell-1');
+      if (padding === 0) {
+        if (b % 2 === 0) {
+          if (c0) { c0.style.fill = 'var(--pink-soft)'; c0.style.stroke = 'var(--pink)'; }
+          if (c1) { c1.style.fill = 'var(--pink-soft)'; c1.style.stroke = 'var(--pink)'; }
+        }
+      } else {
+        if (c0) { c0.style.fill = 'var(--cyan-soft)'; c0.style.stroke = 'var(--cyan)'; }
+        if (c1) { c1.style.fill = 'var(--lime-soft)'; c1.style.stroke = 'var(--lime)'; }
+      }
+    });
+  }
+
+  // Update telemetry cards and badges
+  setText('[data-coalesce-badge-tx]', `${tx} ${tx === 1 ? 'Transaction' : 'Transactions'}`);
+  setText('[data-coalesce-badge-bw]', `${bw} GB/s`);
+  setText('[data-metric-tx]', `${tx} ${tx === 1 ? 'Transaction' : 'Transactions'}`);
+  setText('[data-metric-tx-note]', txNote);
+  setText('[data-metric-bw]', `${bw} GB/s`);
+  setText('[data-metric-bw-note]', bwNote);
+  setText('[data-metric-eff]', `${eff}%`);
+  setText('[data-metric-eff-note]', effNote);
+
+  const insightEl = diagram.querySelector('[data-coalesce-insight]');
+  if (insightEl) {
+    if (mode === 'global') {
+      insightEl.innerHTML = stride === 1
+        ? `<strong>Coalesced Access (Ideal):</strong> All 32 threads in the warp access consecutive 4-byte words within a single 128-byte cache segment. The memory controller issues <strong>1 transaction</strong> at peak bandwidth (${bw} GB/s).`
+        : `<strong>Strided Access (Stride = ${stride}):</strong> Threads access non-consecutive addresses. Because requests span ${tx} separate cache lines, the memory controller must issue <strong>${tx} transactions</strong>, dropping effective bandwidth down to ${bw} GB/s!`;
+    } else {
+      insightEl.innerHTML = padding === 0
+        ? `<strong>Shared Memory Bank Conflict (Pad = 0):</strong> Multiple threads in the warp simultaneously access different addresses mapped to the <em>same physical bank</em> (Bank modulo 32). The hardware serializes the requests, requiring 16 separate cycles!`
+        : `<strong>Conflict-Free Shared Memory (Pad = +1):</strong> By adding 1 dummy column padding element (<code>__shared__ float tile[32][33]</code>), addresses shift diagonally by 1 bank per row. All 32 threads access distinct banks in parallel in a single cycle!`;
+    }
+  }
+}
+
+function handleCoalesceMode(mode) {
+  updateCoalesceDiagram(mode, coalesceDiagState.stride, coalesceDiagState.padding);
+}
+
+function handleCoalesceStride(stride) {
+  updateCoalesceDiagram('global', stride, coalesceDiagState.padding);
+}
+
+function handleCoalescePad(pad) {
+  updateCoalesceDiagram('shared', coalesceDiagState.stride, pad);
+}
+
+function handleCoalesceAction(action) {
+  const diagram = document.querySelector('[data-diagram="memory-coalescing"]');
+  if (!diagram) return;
+
+  if (action === 'burst') {
+    toast('Transmitting memory burst across bus...');
+    const vectors = diagram.querySelectorAll('.access-vector');
+    vectors.forEach(v => {
+      v.classList.add('burst-flow');
+      setTimeout(() => v.classList.remove('burst-flow'), 1500);
+    });
+  } else if (action === 'reset') {
+    updateCoalesceDiagram('global', 1, 0);
+    toast('Memory access visualizer reset to sequential stride=1');
   }
 }
 
 function handleCoalescePattern(pattern) {
-  document.querySelectorAll('[data-coalesce-pattern]').forEach(btn => btn.classList.remove('primary'));
-  document.querySelector(`[data-coalesce-pattern="${pattern}"]`)?.classList.add('primary');
-  
-  const diagram = document.querySelector('[data-diagram="memory-coalescing"]');
+  updateCoalesceDiagram('global', pattern === 'sequential' ? 1 : 16, 0);
+}
+
+// Unit 3, Topic 3: GPU Performance Profiling & Roofline Sandbox Handlers
+const ROOFLINE_PRESETS = {
+  'saxpy': { intensity: 0.25, name: 'SAXPY Vector Add', desc: 'Single precision vector add (y = a*x + y). 2 FLOPs for 8 bytes read/write.' },
+  'stencil': { intensity: 1.25, name: '2D Heat Stencil', desc: '5-point stencil relaxation. 5 FLOPs for 4 bytes accessed.' },
+  'spmv': { intensity: 2.0, name: 'SpMV Sparse Matrix', desc: 'CSR matrix-vector multiply. Irregular indirect memory indexing.' },
+  'fft': { intensity: 5.0, name: '1D Fast Fourier Transform', desc: 'Butterfly operations with shared memory shuffle caching.' },
+  'gemm': { intensity: 25.0, name: 'Dense GEMM FP32', desc: 'Tiled matrix multiply (C = A*B). Near Ridge Point plateau.' },
+  'tensor': { intensity: 80.0, name: 'Tensor Core FP16', desc: 'Dense mixed-precision MMA instructions saturating peak compute.' }
+};
+
+function updateRooflineDiagram(intensity = 0.25, presetKey = 'saxpy') {
+  const diagram = document.querySelector('[data-diagram="gpu-profiling"]');
   if (!diagram) return;
-  
-  // Update arrows visualization
-  const arrows = diagram.querySelector('[data-pattern]');
-  if (arrows) {
-    if (pattern === 'sequential') {
-      // Show straight vertical arrows
-      arrows.innerHTML = Array.from({length: 16}, (_, i) => `
-        <path d="M ${61 + i * 45} 185 L ${61 + i * 45} 90" stroke="var(--lime)" stroke-width="2" fill="none" opacity="0.7"/>
-      `).join('');
+
+  // Active preset buttons
+  diagram.querySelectorAll('[data-roofline-preset]').forEach(btn => {
+    btn.classList.toggle('primary', btn.dataset.rooflinePreset === presetKey);
+  });
+
+  const peakCompute = 20.0; // TFLOP/s (A100 FP32 Peak)
+  const memoryBW = 0.90;    // TB/s (900 GB/s)
+  const ridge = 22.22;      // FLOP/Byte
+
+  const attainablePerf = Math.min(peakCompute, intensity * memoryBW);
+  const isMemoryBound = intensity < ridge;
+
+  // Update slider position (log scale between -1.0 and 2.0)
+  const slider = diagram.querySelector('[data-roofline-slider]');
+  const logVal = Math.max(-1, Math.min(2, Math.log10(intensity)));
+  if (slider && presetKey !== 'custom') {
+    slider.value = logVal.toFixed(2);
+  }
+
+  // Update badges
+  setText('[data-roofline-intensity-display]', `${intensity.toFixed(2)} FLOP/B`);
+  setText('[data-roofline-flops-badge]', `${attainablePerf.toFixed(2)} TFLOP/s`);
+
+  const regimeBadge = diagram.querySelector('[data-roofline-regime-badge]');
+  if (regimeBadge) {
+    regimeBadge.textContent = isMemoryBound ? 'Memory Bound' : 'Compute Bound';
+    regimeBadge.style.background = isMemoryBound ? 'var(--pink-soft)' : 'var(--cyan-soft)';
+    regimeBadge.style.color = isMemoryBound ? 'var(--pink)' : 'var(--cyan)';
+  }
+
+  // SVG Coordinate mapping (Log X: 0.1=70px, 1.0=240px, 10.0=430px, 100.0=620px)
+  // X = 70 + ((log10(intensity) - (-1)) / (2 - (-1))) * (620 - 70) = 70 + (log10 + 1) / 3 * 550
+  const normLog = Math.max(-1, Math.min(2.5, Math.log10(intensity)));
+  const cx = 70 + ((normLog + 1) / 3) * 550;
+  // Y = 390 - (attainablePerf / 20.0) * 300
+  const cy = 390 - (attainablePerf / peakCompute) * 300;
+
+  // Move operating point dot & ping ring
+  const dot = diagram.querySelector('[data-op-dot]');
+  const ping = diagram.querySelector('[data-op-ping]');
+  const xProj = diagram.querySelector('[data-op-x-proj]');
+  const yProj = diagram.querySelector('[data-op-y-proj]');
+
+  if (dot) { dot.setAttribute('cx', String(cx)); dot.setAttribute('cy', String(cy)); }
+  if (ping) { ping.setAttribute('cx', String(cx)); ping.setAttribute('cy', String(cy)); }
+  if (xProj) {
+    xProj.setAttribute('x1', String(cx));
+    xProj.setAttribute('y1', String(cy));
+    xProj.setAttribute('x2', String(cx));
+    xProj.setAttribute('y2', '390');
+  }
+  if (yProj) {
+    yProj.setAttribute('x1', '70');
+    yProj.setAttribute('y1', String(cy));
+    yProj.setAttribute('x2', String(cx));
+    yProj.setAttribute('y2', String(cy));
+  }
+
+  // Actionable diagnosis text
+  const insightEl = diagram.querySelector('[data-roofline-insight]');
+  if (insightEl) {
+    if (isMemoryBound) {
+      insightEl.innerHTML = `<strong>Kernel Diagnosis (Memory-Bound):</strong> At <strong>${intensity.toFixed(2)} FLOP/Byte</strong>, this kernel is bounded by the <strong>900 GB/s HBM2 memory bandwidth</strong> slope. Achieved compute is capped at <strong>${attainablePerf.toFixed(2)} TFLOP/s</strong>. <em>Actionable Fix:</em> Apply Shared Memory Tiling (Topic 3.2), fuse adjacent point-wise kernels, and store intermediate values in registers to push arithmetic intensity towards the Ridge Point (22.2 FLOP/Byte).`;
     } else {
-      // Show strided arrows (crossing pattern)
-      arrows.innerHTML = Array.from({length: 16}, (_, i) => `
-        <path d="M ${61 + i * 45} 185 L ${61 + ((i * 2) % 16) * 45} 90" stroke="var(--pink)" stroke-width="2" fill="none" opacity="0.5" stroke-dasharray="4"/>
-      `).join('');
+      insightEl.innerHTML = `<strong>Kernel Diagnosis (Compute-Bound):</strong> At <strong>${intensity.toFixed(2)} FLOP/Byte</strong>, this kernel has surpassed the Ridge Point (22.2 FLOP/Byte) and entered the <strong>20.0 TFLOP/s Peak Compute Ceiling</strong>. <em>Actionable Fix:</em> Optimize ALU execution pipelines, utilize Tensor Cores (Topic 3.4), eliminate warp divergence, and maximize instruction-level parallelism (ILP) with loop unrolling.`;
     }
   }
-  
-  // Update performance stats
-  const seqStats = diagram.querySelector('[data-sequential-stats]');
-  const strStats = diagram.querySelector('[data-strided-stats]');
-  if (seqStats && strStats) {
-    if (pattern === 'sequential') {
-      seqStats.style.display = '';
-      strStats.style.display = 'none';
-    } else {
-      seqStats.style.display = 'none';
-      strStats.style.display = '';
-    }
-  }
-  
-  const insights = {
-    'sequential': '<strong>Sequential Access (Coalesced):</strong> Consecutive threads access consecutive memory addresses. GPU combines all 32 thread requests into 1 memory transaction. Full bandwidth utilization (~900 GB/s).',
-    'strided': '<strong>Strided Access (Uncoalesced):</strong> Threads access memory with gaps (stride). Each thread triggers a separate memory transaction. Bandwidth drops by stride factor (stride=16 → 16× slower).'
-  };
-  
-  const insightEl = diagram.querySelector('[data-coalesce-insight]');
-  if (insightEl) insightEl.innerHTML = insights[pattern];
+}
+
+function handleRooflinePreset(presetKey) {
+  const p = ROOFLINE_PRESETS[presetKey];
+  if (!p) return;
+  updateRooflineDiagram(p.intensity, presetKey);
+}
+
+function handleRooflineSlider() {
+  const slider = document.querySelector('[data-roofline-slider]');
+  if (!slider) return;
+  const logVal = Number(slider.value);
+  const intensity = Math.pow(10, logVal);
+  updateRooflineDiagram(intensity, 'custom');
 }
 
 // Unit 4 (Quantum) Diagram Handlers
@@ -3009,30 +3438,141 @@ function handleClusterMode(mode) {
   }
 }
 
-// Unit 3 (Cloud HPC) Diagram Handler
-function handleCloudTier(tier) {
-  document.querySelectorAll('[data-cloud-tier]').forEach(btn => btn.classList.remove('primary'));
-  document.querySelector(`[data-cloud-tier="${tier}"]`)?.classList.add('primary');
+// Unit 3, Topic 4: Cloud HPC & Interconnect Scaling Handlers
+let cloudHpcDiagState = { tier: 'single', workload: 'resnet' };
+
+function updateCloudHpcDiagram(tier = 'single', workload = 'resnet') {
+  cloudHpcDiagState.tier = tier;
+  cloudHpcDiagState.workload = workload;
 
   const diagram = document.querySelector('[data-diagram="cloud-hpc"]');
   if (!diagram) return;
 
+  // Active buttons
+  diagram.querySelectorAll('[data-cloud-tier]').forEach(btn => {
+    btn.classList.toggle('primary', btn.dataset.cloudTier === tier);
+  });
+  diagram.querySelectorAll('[data-cloud-workload]').forEach(btn => {
+    btn.classList.toggle('primary', btn.dataset.cloudWorkload === workload);
+  });
+
+  // Opacity of tier cards
   const single = diagram.querySelector('.tier-single');
   const multi = diagram.querySelector('.tier-multi');
   const cluster = diagram.querySelector('.tier-cluster');
 
-  if (single) single.style.opacity = tier === 'single' ? '1' : '0.4';
-  if (multi) multi.style.opacity = tier === 'multi' ? '1' : '0.4';
-  if (cluster) cluster.style.opacity = tier === 'cluster' ? '1' : '0.4';
+  if (single) single.style.opacity = tier === 'single' ? '1' : '0.45';
+  if (multi) multi.style.opacity = tier === 'multi' ? '1' : '0.45';
+  if (cluster) cluster.style.opacity = tier === 'cluster' ? '1' : '0.45';
 
-  const insights = {
-    'single': '<strong>Single GPU Instance:</strong> Ideal for rapid prototyping, smaller deep learning models, and algorithm development. Access via PCIe bus (32-64 GB/s). Low cost (~$1-3/hr), zero cluster orchestration overhead.',
-    'multi': '<strong>Multi-GPU Node (NVLink):</strong> 4-8 GPUs interconnected via high-bandwidth NVLink/NVSwitch (600-900 GB/s bidirectional). Essential for multi-GPU training, large batch inference, and model parallelism with unified memory.',
-    'cluster': '<strong>Cloud GPU Cluster:</strong> Multi-node distributed cluster scaling across 256+ GPUs connected via 400 Gbps InfiniBand/RoCE with GPUDirect RDMA. Utilizes Slurm or Kubernetes for orchestration of foundation models and HPC simulations.'
-  };
+  // Metrics based on tier & workload
+  let compute = '19.5 TFLOPS';
+  let computeNote = '1× A100 SXM FP32 Peak';
+  let bw = '64 GB/s (PCIe 4.0)';
+  let bwNote = 'Host CPU <-> GPU bus bottleneck';
+  let eff = '100% Ideal';
+  let effNote = 'Comm overhead: 0.0%';
+  let vram = '40 GB VRAM';
+
+  if (tier === 'single') {
+    compute = '19.5 TFLOPS';
+    computeNote = '1× A100 SXM FP32 Peak';
+    bw = '64 GB/s (PCIe 4.0)';
+    bwNote = 'Host CPU <-> GPU bus bridge';
+    eff = '100% Ideal';
+    effNote = 'Zero distributed sync overhead';
+    vram = '40 GB VRAM';
+  } else if (tier === 'multi') {
+    compute = '156.0 TFLOPS';
+    computeNote = '8× A100 Node Aggregate Peak';
+    bw = '600 GB/s (NVLink 3.0)';
+    bwNote = 'NVSwitch crossbar all-to-all fabric';
+    eff = workload === 'resnet' ? '96% Efficiency' : workload === 'llama70b' ? '91% Efficiency' : '94% Efficiency';
+    effNote = 'Intra-node Ring AllReduce';
+    vram = '320 GB VRAM';
+  } else if (tier === 'cluster') {
+    compute = '4,992 TFLOPS (5.0 PFLOPS)';
+    computeNote = '256× GPUs across 32 Rack Nodes';
+    bw = '400 Gbps (InfiniBand HDR)';
+    bwNote = 'GPUDirect RDMA leaf/spine mesh';
+    eff = workload === 'resnet' ? '88% Efficiency' : workload === 'llama70b' ? '82% Efficiency' : '85% Efficiency';
+    effNote = 'Inter-node gradient all-gather sync';
+    vram = '10.2 TB HBM2';
+  }
+
+  setText('[data-cloud-badge-vram]', vram);
+  setText('[data-cloud-badge-eff]', eff);
+  setText('[data-cloud-metric-compute]', compute);
+  setText('[data-cloud-metric-compute-note]', computeNote);
+  setText('[data-cloud-metric-bw]', bw);
+  setText('[data-cloud-metric-bw-note]', bwNote);
+  setText('[data-cloud-metric-eff]', eff);
+  setText('[data-cloud-metric-eff-note]', effNote);
 
   const insightEl = diagram.querySelector('[data-cloud-insight]');
-  if (insightEl) insightEl.innerHTML = insights[tier] || '';
+  if (insightEl) {
+    const workloadNames = {
+      'resnet': 'ResNet-50 Data Parallel',
+      'llama8b': 'Llama-3 8B Pipeline Parallel',
+      'llama70b': 'Llama-3 70B Megatron 3D Tensor Parallel',
+      'climate': 'Climate HPC Domain Decomposition'
+    };
+    const wName = workloadNames[workload] || workload;
+    if (tier === 'single') {
+      insightEl.innerHTML = `<strong>Single GPU Tier (${wName}):</strong> Minimal orchestration overhead. Fits models under 40 GB VRAM. Data movement between CPU and GPU is limited by the <strong>64 GB/s PCIe Gen4 bus</strong>. Ideal for baseline prototyping, inference endpoints, and small fine-tunes.`;
+    } else if (tier === 'multi') {
+      insightEl.innerHTML = `<strong>Multi-GPU Node Tier (${wName}):</strong> 8 GPUs communicate directly through <strong>600 GB/s NVLink 3.0 &amp; NVSwitch</strong> without crossing the CPU PCIe bus. Achieves <strong>${eff}</strong> for model parallelism with unified shared memory addressing.`;
+    } else {
+      insightEl.innerHTML = `<strong>Cluster Supercomputing Tier (${wName}):</strong> Scales out across 256+ GPUs over <strong>400 Gbps InfiniBand / RoCE</strong> with <strong>GPUDirect RDMA</strong> (bypassing CPU memory copies). Sustains <strong>${compute}</strong> with <strong>${eff}</strong> for frontier foundation models!`;
+    }
+  }
+}
+
+function handleCloudTier(tier) {
+  updateCloudHpcDiagram(tier, cloudHpcDiagState.workload);
+}
+
+function handleCloudWorkload(workload) {
+  updateCloudHpcDiagram(cloudHpcDiagState.tier, workload);
+}
+
+function handleCloudAction(action) {
+  const diagram = document.querySelector('[data-diagram="cloud-hpc"]');
+  if (!diagram) return;
+
+  if (action === 'traffic') {
+    toast('Simulating inter-GPU & inter-node data traffic burst...');
+    const lines = diagram.querySelectorAll('.pcie-traffic-line');
+    lines.forEach(line => {
+      line.classList.add('active-traffic');
+      setTimeout(() => line.classList.remove('active-traffic'), 1500);
+    });
+  }
+}
+
+// Automatic Initialization of Topic Visual Diagrams
+function initTopicDiagram(unitId, topicId) {
+  setTimeout(() => {
+    if (unitId === 3) {
+      if (topicId === 1) updateCudaDiagram('hierarchy', 0, 0);
+      else if (topicId === 2) updateCoalesceDiagram('global', 1, 0);
+      else if (topicId === 3) updateRooflineDiagram(0.25, 'saxpy');
+      else if (topicId === 4) updateCloudHpcDiagram('single', 'resnet');
+    } else if (unitId === 1) {
+      if (topicId === 2) handleFlynnSelect('SISD');
+      else if (topicId === 3) handleMemoryLayer('registers');
+      else if (topicId === 5) handleClusterMode('arch');
+    } else if (unitId === 2) {
+      if (topicId === 1) handleScheduleSelect('static');
+      else if (topicId === 2) handleMPIOperation('broadcast');
+      else if (topicId === 3) handleSyncIssue('race');
+    } else if (unitId === 4) {
+      if (topicId === 1) handleBlochState('|0⟩');
+      else if (topicId === 2) handleQGateType('h');
+      else if (topicId === 3) handleGroverStep(1);
+      else if (topicId === 4) handleVqePhase('ansatz');
+    }
+  }, 50);
 }
 
 // Unit 4 (Quantum Gates) Diagram Handler

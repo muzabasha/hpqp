@@ -2075,8 +2075,44 @@ input[type="range"] {
 .task-block.animating {
   animation: task-execute 1s ease-in-out;
 }
-.amdahl-curve {
-  transition: d 0.5s ease;
+}
+.ping-circle {
+  animation: ping-glow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  transform-origin: center;
+}
+@keyframes ping-glow {
+  0% { transform: scale(0.85); opacity: 0.9; }
+  50% { transform: scale(1.6); opacity: 0.2; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+.cuda-thread-cell.selected {
+  fill: var(--cyan) !important;
+  stroke: white !important;
+  stroke-width: 2px !important;
+  filter: drop-shadow(0 0 6px var(--cyan));
+}
+.cuda-thread-cell.simt-pulse {
+  animation: simt-wave 0.6s ease-in-out;
+}
+@keyframes simt-wave {
+  0% { transform: scale(1); fill: var(--lime); }
+  50% { transform: scale(1.35); fill: var(--cyan); filter: drop-shadow(0 0 8px var(--cyan)); }
+  100% { transform: scale(1); fill: var(--lime-soft); }
+}
+.access-vector {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.access-vector.burst-flow {
+  stroke-dasharray: 6,4;
+  animation: burst-stream 0.8s linear infinite;
+}
+@keyframes burst-stream {
+  0% { stroke-dashoffset: 20; }
+  100% { stroke-dashoffset: 0; }
+}
+.pcie-traffic-line.active-traffic {
+  animation: burst-stream 0.5s linear infinite;
+  stroke: var(--lime) !important;
 }
 
 /* Interactive MCQ Styles */

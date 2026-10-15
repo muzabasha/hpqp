@@ -418,91 +418,140 @@ export const DIAGRAM_REGISTRY = {
   'vqe-circuit': diagramVqeCircuit
 };
 
-// Unit 3, Topic 1: CUDA Basics - Threads, Blocks, Grids
+// Unit 3, Topic 1: CUDA Basics - Threads, Blocks, Grids & SIMT Execution
 export function diagramCudaBasics() {
   return `<div class="interactive-diagram" data-diagram="cuda-basics">
     <div class="diagram-header">
-      <h4>CUDA Execution Model: Threads, Blocks, and Grids</h4>
+      <div>
+        <h4>CUDA Execution Model: Threads, Blocks, Grids &amp; SIMT</h4>
+        <p class="diagram-subtitle">Real-time thread coordinate mapping, warp lockstep execution, and branch divergence visualizer</p>
+      </div>
       <div class="diagram-controls">
-        <button class="button small primary" data-cuda-level="thread">Thread</button>
-        <button class="button small" data-cuda-level="warp">Warp</button>
-        <button class="button small" data-cuda-level="block">Block</button>
-        <button class="button small" data-cuda-level="grid">Grid</button>
+        <button type="button" class="button small primary" data-cuda-view="hierarchy">Hierarchy</button>
+        <button type="button" class="button small" data-cuda-view="simt">SIMT Lockstep</button>
+        <button type="button" class="button small" data-cuda-view="divergence">Branch Divergence</button>
+        <button type="button" class="button small" data-cuda-action="step-warp">▶ Animate Warp</button>
+        <button type="button" class="button small" data-cuda-action="reset">⟲ Reset</button>
       </div>
     </div>
-    <svg viewBox="0 0 800 500" class="diagram-svg">
-      <!-- Grid Level (Entire Kernel) -->
-      <rect x="20" y="20" width="760" height="460" fill="var(--surface)" stroke="var(--cyan)" stroke-width="3" rx="12"/>
-      <text x="40" y="50" font-weight="bold" font-size="18" fill="var(--cyan)">Grid (Kernel Launch)</text>
-      
-      <!-- Block 0 -->
-      <g class="cuda-block" data-block="0">
-        <rect x="40" y="70" width="220" height="200" fill="var(--lime-soft)" stroke="var(--lime)" stroke-width="2" rx="8"/>
-        <text x="150" y="95" text-anchor="middle" font-weight="bold" fill="var(--lime)">Block 0</text>
-        
-        <!-- Warps in Block 0 -->
-        <g class="cuda-warp" data-warp="0">
-          <rect x="50" y="105" width="200" height="35" fill="var(--orange-soft)" stroke="var(--orange)" stroke-width="1.5" rx="4"/>
-          <text x="60" y="125" font-size="11" font-weight="600">Warp 0 (32 threads)</text>
-          <!-- Thread visualization -->
-          <g class="thread-blocks">
-            ${Array.from({length: 8}, (_, i) => `<rect x="${55 + i * 24}" y="130" width="4" height="8" fill="var(--pink)" rx="1"/>`).join('')}
+
+    <!-- Interactive Coordinate Controls & Formula Bar -->
+    <div class="diagram-toolbar" style="display:flex; flex-wrap:wrap; gap:1.25rem; align-items:center; background:var(--paper); padding:0.85rem 1rem; border-radius:10px; margin-bottom:1rem; border:1px solid var(--line);">
+      <div style="display:flex; align-items:center; gap:0.6rem;">
+        <label style="font-size:0.85rem; font-weight:600; color:var(--text);">Block ID (<span style="color:var(--lime);">blockIdx.x</span>):</label>
+        <input type="range" min="0" max="3" value="0" step="1" data-cuda-block-slider style="width:90px; cursor:pointer;" />
+        <span class="badge" data-cuda-block-display style="background:var(--lime-soft); color:var(--lime); font-weight:700;">0</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:0.6rem;">
+        <label style="font-size:0.85rem; font-weight:600; color:var(--text);">Thread ID (<span style="color:var(--pink);">threadIdx.x</span>):</label>
+        <input type="range" min="0" max="31" value="0" step="1" data-cuda-thread-slider style="width:130px; cursor:pointer;" />
+        <span class="badge" data-cuda-thread-display style="background:var(--pink-soft); color:var(--pink); font-weight:700;">0</span>
+      </div>
+      <div style="margin-left:auto; font-size:0.85rem; font-family:monospace; background:var(--surface); padding:0.35rem 0.75rem; border-radius:6px; border:1px solid var(--line);" data-cuda-formula>
+        <strong>1D Index:</strong> <span style="color:var(--cyan);">idx = 0 &times; 32 + 0 = 0</span>
+      </div>
+    </div>
+
+    <svg viewBox="0 0 800 480" class="diagram-svg" data-cuda-svg>
+      <!-- Grid Boundary -->
+      <rect x="15" y="15" width="770" height="450" fill="var(--surface)" stroke="var(--cyan)" stroke-width="2" rx="12"/>
+      <g transform="translate(30, 42)">
+        <text font-weight="800" font-size="16" fill="var(--cyan)">Grid (Kernel Launch: 4 Blocks &times; 32 Threads = 128 Threads)</text>
+      </g>
+
+      <!-- 4 Blocks in Grid -->
+      <g class="cuda-blocks-container">
+        <!-- Block 0 -->
+        <g class="cuda-block-card" data-block-id="0" transform="translate(30, 60)">
+          <rect x="0" y="0" width="170" height="230" fill="var(--lime-soft)" stroke="var(--lime)" stroke-width="2.5" rx="8" class="cuda-block-bg"/>
+          <text x="85" y="24" text-anchor="middle" font-weight="700" font-size="13" fill="var(--lime)">Block 0 (Active)</text>
+          
+          <!-- Warp 0 in Block 0: 32 thread lanes (8x4 grid) -->
+          <g class="warp-lanes" data-warp-id="0" transform="translate(10, 38)">
+            <rect x="0" y="0" width="150" height="150" fill="var(--surface)" stroke="var(--line)" rx="6"/>
+            <text x="75" y="18" text-anchor="middle" font-size="10" font-weight="700" fill="var(--muted)">Warp 0 (32 Lanes)</text>
+            <g class="thread-grid" transform="translate(10, 26)">
+              ${Array.from({length: 32}, (_, i) => {
+                const col = i % 8;
+                const row = Math.floor(i / 8);
+                return `<rect class="cuda-thread-cell" data-t="${i}" x="${col * 16.5}" y="${row * 28}" width="13" height="22" rx="3" fill="var(--pink-soft)" stroke="var(--pink)" stroke-width="1.2" style="cursor:pointer; transition:all 0.2s;" />
+                <text class="cuda-thread-lbl" data-t-lbl="${i}" x="${col * 16.5 + 6.5}" y="${row * 28 + 15}" text-anchor="middle" font-size="8" font-weight="700" fill="var(--pink)" pointer-events="none">${i}</text>`;
+              }).join('')}
+            </g>
           </g>
+          <text x="85" y="212" text-anchor="middle" font-size="10" fill="var(--muted)" font-weight="600">32 Threads / Warp</text>
         </g>
-        
-        <g class="cuda-warp" data-warp="1">
-          <rect x="50" y="145" width="200" height="35" fill="var(--orange-soft)" stroke="var(--orange)" stroke-width="1.5" rx="4"/>
-          <text x="60" y="165" font-size="11" font-weight="600">Warp 1 (32 threads)</text>
-          <g class="thread-blocks">
-            ${Array.from({length: 8}, (_, i) => `<rect x="${55 + i * 24}" y="170" width="4" height="8" fill="var(--pink)" rx="1"/>`).join('')}
-          </g>
+
+        <!-- Block 1 -->
+        <g class="cuda-block-card" data-block-id="1" transform="translate(220, 60)">
+          <rect x="0" y="0" width="170" height="230" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5" rx="8" opacity="0.8" class="cuda-block-bg"/>
+          <text x="85" y="24" text-anchor="middle" font-weight="700" font-size="13" fill="var(--muted)">Block 1</text>
+          <rect x="10" y="38" width="150" height="150" fill="var(--paper)" stroke="var(--line)" stroke-dasharray="4,4" rx="6"/>
+          <text x="85" y="115" text-anchor="middle" font-size="12" fill="var(--muted)">Threads 32..63</text>
+          <text x="85" y="212" text-anchor="middle" font-size="10" fill="var(--muted)">Warp 1</text>
         </g>
+
+        <!-- Block 2 -->
+        <g class="cuda-block-card" data-block-id="2" transform="translate(410, 60)">
+          <rect x="0" y="0" width="170" height="230" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5" rx="8" opacity="0.6" class="cuda-block-bg"/>
+          <text x="85" y="24" text-anchor="middle" font-weight="700" font-size="13" fill="var(--muted)">Block 2</text>
+          <rect x="10" y="38" width="150" height="150" fill="var(--paper)" stroke="var(--line)" stroke-dasharray="4,4" rx="6"/>
+          <text x="85" y="115" text-anchor="middle" font-size="12" fill="var(--muted)">Threads 64..95</text>
+          <text x="85" y="212" text-anchor="middle" font-size="10" fill="var(--muted)">Warp 2</text>
+        </g>
+
+        <!-- Block 3 -->
+        <g class="cuda-block-card" data-block-id="3" transform="translate(600, 60)">
+          <rect x="0" y="0" width="170" height="230" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5" rx="8" opacity="0.6" class="cuda-block-bg"/>
+          <text x="85" y="24" text-anchor="middle" font-weight="700" font-size="13" fill="var(--muted)">Block 3</text>
+          <rect x="10" y="38" width="150" height="150" fill="var(--paper)" stroke="var(--line)" stroke-dasharray="4,4" rx="6"/>
+          <text x="85" y="115" text-anchor="middle" font-size="12" fill="var(--muted)">Threads 96..127</text>
+          <text x="85" y="212" text-anchor="middle" font-size="10" fill="var(--muted)">Warp 3</text>
+        </g>
+      </g>
+
+      <!-- Hardware Execution Plane: Streaming Multiprocessor (SM) & Architecture -->
+      <g transform="translate(30, 310)">
+        <rect x="0" y="0" width="440" height="135" fill="var(--paper)" stroke="var(--line)" stroke-width="1.5" rx="8"/>
+        <text x="15" y="24" font-weight="800" font-size="12" fill="var(--cyan)">Hardware SM Core Architecture</text>
         
-        <text x="150" y="240" text-anchor="middle" font-size="10" fill="var(--muted)" font-style="italic">256 threads total</text>
-        <text x="150" y="255" text-anchor="middle" font-size="10" fill="var(--muted)" font-style="italic">8 warps per block</text>
+        <!-- Warp Scheduler -->
+        <rect x="15" y="36" width="130" height="40" fill="var(--cyan-soft)" stroke="var(--cyan)" rx="5"/>
+        <text x="80" y="55" text-anchor="middle" font-size="10" font-weight="700">Warp Scheduler</text>
+        <text x="80" y="68" text-anchor="middle" font-size="8" fill="var(--muted)">Zero-overhead switch</text>
+
+        <!-- Register File -->
+        <rect x="155" y="36" width="130" height="40" fill="var(--pink-soft)" stroke="var(--pink)" rx="5"/>
+        <text x="220" y="55" text-anchor="middle" font-size="10" font-weight="700">64K Registers</text>
+        <text x="220" y="68" text-anchor="middle" font-size="8" fill="var(--muted)">Per-thread private</text>
+
+        <!-- Shared Memory / L1 -->
+        <rect x="295" y="36" width="130" height="40" fill="var(--lime-soft)" stroke="var(--lime)" rx="5"/>
+        <text x="360" y="55" text-anchor="middle" font-size="10" font-weight="700">48 KB Shared Mem</text>
+        <text x="360" y="68" text-anchor="middle" font-size="8" fill="var(--muted)">Block-wide __syncthreads()</text>
+
+        <text x="15" y="100" font-size="11" fill="var(--text)" data-cuda-status>
+          ⚡ <strong>SIMT Lockstep:</strong> 32 threads in Warp 0 execute identical PC instruction simultaneously.
+        </text>
+        <text x="15" y="120" font-size="10" fill="var(--muted)" data-cuda-substatus>
+          SM Hardware maintains separate program counter &amp; active mask per warp.
+        </text>
       </g>
-      
-      <!-- Block 1 -->
-      <g class="cuda-block" data-block="1">
-        <rect x="280" y="70" width="220" height="200" fill="var(--lime-soft)" stroke="var(--lime)" stroke-width="2" rx="8" opacity="0.7"/>
-        <text x="390" y="95" text-anchor="middle" font-weight="bold" fill="var(--lime)">Block 1</text>
-        <text x="390" y="170" text-anchor="middle" font-size="12" fill="var(--muted)">256 threads</text>
-      </g>
-      
-      <!-- Block 2 -->
-      <g class="cuda-block" data-block="2">
-        <rect x="520" y="70" width="220" height="200" fill="var(--lime-soft)" stroke="var(--lime)" stroke-width="2" rx="8" opacity="0.5"/>
-        <text x="630" y="95" text-anchor="middle" font-weight="bold" fill="var(--lime)">Block 2</text>
-        <text x="630" y="170" text-anchor="middle" font-size="12" fill="var(--muted)">256 threads</text>
-      </g>
-      
-      <!-- More blocks indicator -->
-      <text x="400" y="300" text-anchor="middle" font-size="14" fill="var(--muted)" font-style="italic">... more blocks ...</text>
-      
-      <!-- Streaming Multiprocessor (SM) -->
-      <g class="sm-boundary">
-        <rect x="40" y="320" width="350" height="140" fill="var(--cyan-soft)" stroke="var(--cyan)" stroke-width="2" stroke-dasharray="6 3" rx="8" opacity="0.3"/>
-        <text x="55" y="345" font-weight="bold" font-size="14" fill="var(--cyan)">Streaming Multiprocessor (SM)</text>
-        <text x="55" y="365" font-size="11" fill="var(--muted)">• Executes warps from blocks</text>
-        <text x="55" y="382" font-size="11" fill="var(--muted)">• Shared memory per block</text>
-        <text x="55" y="399" font-size="11" fill="var(--muted)">• 64K registers per SM</text>
-        <text x="55" y="416" font-size="11" fill="var(--muted)">• L1 cache / Shared memory</text>
-        <text x="55" y="433" font-size="11" fill="var(--muted)">• Warp scheduler</text>
-      </g>
-      
-      <!-- Memory Hierarchy Indicator -->
-      <g transform="translate(420, 320)">
-        <rect x="0" y="0" width="320" height="140" fill="var(--paper)" stroke="var(--line)" stroke-width="2" rx="8"/>
-        <text x="10" y="25" font-weight="bold" font-size="14">GPU Memory Hierarchy:</text>
-        <text x="15" y="48" font-size="11" fill="var(--pink)">★ Registers (per thread) - fastest</text>
-        <text x="15" y="65" font-size="11" fill="var(--orange)">★ Shared Mem (per block) - fast</text>
-        <text x="15" y="82" font-size="11" fill="var(--lime)">★ L1/L2 Cache - cached</text>
-        <text x="15" y="99" font-size="11" fill="var(--cyan)">★ Global Memory - slowest</text>
-        <text x="15" y="120" font-size="10" fill="var(--muted)" font-style="italic">Optimize: minimize global memory access</text>
+
+      <!-- Live Thread Telemetry HUD -->
+      <g transform="translate(490, 310)">
+        <rect x="0" y="0" width="280" height="135" fill="var(--paper)" stroke="var(--line)" stroke-width="1.5" rx="8"/>
+        <text x="15" y="24" font-weight="800" font-size="12" fill="var(--lime)">Selected Thread Telemetry</text>
+        
+        <text x="15" y="50" font-size="11">Global Index: <tspan font-weight="700" fill="var(--cyan)" data-hud-idx>0</tspan></text>
+        <text x="15" y="70" font-size="11">Coordinate: <tspan font-weight="700" fill="var(--text)" data-hud-coord>Block 0, Thread 0</tspan></text>
+        <text x="15" y="90" font-size="11">Warp Lane ID: <tspan font-weight="700" fill="var(--pink)" data-hud-lane>Lane 0 of 32</tspan></text>
+        <text x="15" y="112" font-size="10" font-weight="700" fill="var(--lime)" data-hud-state>Status: ACTIVE (Executing)</text>
       </g>
     </svg>
+
     <div class="diagram-insight" data-cuda-insight>
-      <strong>SIMT Execution:</strong> A GPU kernel launches a grid of thread blocks. Each block contains warps of 32 threads that execute in lockstep (SIMT). Blocks run on Streaming Multiprocessors (SMs) which have shared memory, registers, and L1 cache. All threads in a warp must execute the same instruction simultaneously.
+      <strong>CUDA Execution Hierarchy:</strong> A kernel launches a <strong>Grid</strong> of <strong>Blocks</strong> mapped onto hardware <strong>Streaming Multiprocessors (SMs)</strong>. Each block is partitioned into 32-thread <strong>Warps</strong> that execute in SIMT lockstep. Each thread computes its unique memory index via <code>int idx = blockIdx.x * blockDim.x + threadIdx.x</code>.
     </div>
   </div>`;
 }
@@ -843,235 +892,389 @@ export function diagramWorkStealing() {
 
 
 
-// Unit 3, Topic 2: Memory Coalescing Pattern
+// Unit 3, Topic 2: Memory Coalescing & Shared Memory Bank Conflicts
 export function diagramMemoryCoalescing() {
   return `<div class="interactive-diagram" data-diagram="memory-coalescing">
     <div class="diagram-header">
-      <h4>GPU Memory Coalescing: Sequential vs Strided Access</h4>
+      <div>
+        <h4>GPU Memory Access Patterns: Coalescing &amp; Bank Conflicts</h4>
+        <p class="diagram-subtitle">Explore 128-byte global memory cache line transactions and 32-bank shared memory collisions</p>
+      </div>
       <div class="diagram-controls">
-        <button class="button small primary" data-coalesce-pattern="sequential">Sequential (Coalesced)</button>
-        <button class="button small" data-coalesce-pattern="strided">Strided (Uncoalesced)</button>
+        <button type="button" class="button small primary" data-coalesce-mode="global">Global Coalescing</button>
+        <button type="button" class="button small" data-coalesce-mode="shared">Shared Mem Banks</button>
+        <button type="button" class="button small" data-coalesce-action="burst">▶ Animate Bus Burst</button>
+        <button type="button" class="button small" data-coalesce-action="reset">⟲ Reset</button>
       </div>
     </div>
-    <svg viewBox="0 0 800 450" class="diagram-svg">
-      <!-- Memory Array -->
-      <text x="20" y="30" font-weight="bold" font-size="16">Global Memory Array:</text>
-      <g class="memory-array">
-        ${Array.from({length: 16}, (_, i) => `
-          <rect x="${40 + i * 45}" y="50" width="42" height="40" fill="var(--cyan-soft)" stroke="var(--cyan)" stroke-width="2" rx="4"/>
-          <text x="${61 + i * 45}" y="75" text-anchor="middle" font-size="11" font-weight="600">[${i}]</text>
-        `).join('')}
-      </g>
-      
-      <!-- Warp Threads (32 threads, showing 16) -->
-      <text x="20" y="140" font-weight="bold" font-size="16">Warp (32 threads):</text>
-      <g class="warp-threads">
-        ${Array.from({length: 16}, (_, i) => `
-          <circle cx="${61 + i * 45}" cy="170" r="15" fill="var(--lime)" opacity="0.8"/>
-          <text x="${61 + i * 45}" y="175" text-anchor="middle" font-size="10" fill="white" font-weight="600">T${i}</text>
-        `).join('')}
-      </g>
-      
-      <!-- Access Pattern Arrows (Sequential by default) -->
-      <g class="access-arrows" data-pattern="sequential">
-        ${Array.from({length: 16}, (_, i) => `
-          <path d="M ${61 + i * 45} 185 L ${61 + i * 45} 90" stroke="var(--lime)" stroke-width="2" fill="none" marker-end="url(#arrow-lime)" opacity="0.7"/>
-        `).join('')}
-      </g>
-      
-      <!-- Cache Lines -->
-      <text x="20" y="240" font-weight="bold" font-size="16">Cache Lines (128 bytes each):</text>
-      <g class="cache-lines">
-        <rect x="40" y="255" width="360" height="50" fill="var(--orange-soft)" stroke="var(--orange)" stroke-width="2" rx="6"/>
-        <text x="220" y="285" text-anchor="middle" font-weight="600" fill="var(--orange)">Cache Line 0 (32 consecutive elements)</text>
-        
-        <rect x="420" y="255" width="360" height="50" fill="var(--pink-soft)" stroke="var(--pink)" stroke-width="2" rx="6" opacity="0.4"/>
-        <text x="600" y="285" text-anchor="middle" font-weight="600" fill="var(--pink)">Cache Line 1</text>
-      </g>
-      
-      <!-- Performance Metrics -->
-      <g class="performance-box">
-        <rect x="40" y="330" width="720" height="100" fill="var(--paper)" stroke="var(--line)" stroke-width="2" rx="8"/>
-        <text x="60" y="360" font-weight="bold" font-size="15">Performance Impact:</text>
-        
-        <g data-sequential-stats>
-          <text x="70" y="385" font-size="13" fill="var(--lime)">✓ Sequential: 1 memory transaction per warp</text>
-          <text x="70" y="405" font-size="13" fill="var(--lime)">✓ Bandwidth: ~900 GB/s (full utilization)</text>
+
+    <!-- Controls Toolbar -->
+    <div class="diagram-toolbar" style="display:flex; flex-wrap:wrap; gap:1.25rem; align-items:center; background:var(--paper); padding:0.85rem 1rem; border-radius:10px; margin-bottom:1rem; border:1px solid var(--line);">
+      <div style="display:flex; align-items:center; gap:0.5rem;" data-coalesce-stride-control>
+        <label style="font-size:0.85rem; font-weight:600; color:var(--text);">Global Stride (s):</label>
+        <button type="button" class="button small primary" data-coalesce-stride="1">s=1 (Ideal)</button>
+        <button type="button" class="button small" data-coalesce-stride="2">s=2</button>
+        <button type="button" class="button small" data-coalesce-stride="4">s=4</button>
+        <button type="button" class="button small" data-coalesce-stride="8">s=8</button>
+        <button type="button" class="button small" data-coalesce-stride="16">s=16 (Worst)</button>
+      </div>
+      <div style="display:none; align-items:center; gap:0.5rem;" data-coalesce-pad-control>
+        <label style="font-size:0.85rem; font-weight:600; color:var(--text);">Shared Memory Padding:</label>
+        <button type="button" class="button small primary" data-coalesce-pad="0">Pad +0 (Conflicts)</button>
+        <button type="button" class="button small" data-coalesce-pad="1">Pad +1 (Conflict-Free)</button>
+      </div>
+      <div style="margin-left:auto; display:flex; gap:0.75rem; align-items:center;">
+        <span class="badge" data-coalesce-badge-tx style="background:var(--cyan-soft); color:var(--cyan); font-weight:700;">1 Transaction</span>
+        <span class="badge" data-coalesce-badge-bw style="background:var(--lime-soft); color:var(--lime); font-weight:700;">900 GB/s</span>
+      </div>
+    </div>
+
+    <svg viewBox="0 0 800 460" class="diagram-svg" data-coalesce-svg>
+      <!-- Global Memory View (Default) -->
+      <g class="coalesce-global-view">
+        <!-- 16 Global Memory Words with 128-Byte Cache Segments -->
+        <text x="25" y="32" font-weight="700" font-size="13" fill="var(--text)">DRAM / HBM Global Memory Array (128-Byte Cache Lines):</text>
+        <g class="global-mem-words" transform="translate(25, 45)">
+          ${Array.from({length: 16}, (_, i) => `
+            <rect class="mem-slot" data-slot="${i}" x="${i * 46.5}" y="0" width="42" height="42" fill="var(--cyan-soft)" stroke="var(--cyan)" stroke-width="1.8" rx="5" />
+            <text x="${i * 46.5 + 21}" y="25" text-anchor="middle" font-size="11" font-weight="700" fill="var(--cyan)">[${i}]</text>
+          `).join('')}
         </g>
         
-        <g data-strided-stats style="display: none;">
-          <text x="70" y="385" font-size="13" fill="var(--pink)">✗ Strided: 16+ memory transactions per warp</text>
-          <text x="70" y="405" font-size="13" fill="var(--pink)">✗ Bandwidth: ~56 GB/s (16x slower!)</text>
+        <!-- 128-Byte Cache Line Brackets -->
+        <g transform="translate(25, 95)">
+          <rect x="0" y="0" width="368" height="24" fill="var(--orange-soft)" stroke="var(--orange)" stroke-width="1.5" rx="4"/>
+          <text x="184" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="var(--orange)">Cache Line 0 (Words 0..7: 128 Bytes)</text>
+
+          <rect x="375" y="0" width="368" height="24" fill="var(--pink-soft)" stroke="var(--pink)" stroke-width="1.5" rx="4"/>
+          <text x="559" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="var(--pink)">Cache Line 1 (Words 8..15: 128 Bytes)</text>
+        </g>
+
+        <!-- Connecting Access Vectors from Threads to Memory -->
+        <g class="coalesce-access-arrows" data-coalesce-arrows transform="translate(25, 0)">
+          ${Array.from({length: 16}, (_, i) => `
+            <line x1="${i * 46.5 + 21}" y1="210" x2="${i * 46.5 + 21}" y2="92" stroke="var(--lime)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-coalesce-lime)" class="access-vector" />
+          `).join('')}
+        </g>
+
+        <!-- Warp Threads (16 Threads Representing Half-Warp) -->
+        <text x="25" y="185" font-weight="700" font-size="13" fill="var(--text)">Warp Execution Threads (SIMT Lockstep Access):</text>
+        <g class="warp-lane-threads" transform="translate(25, 205)">
+          ${Array.from({length: 16}, (_, i) => `
+            <circle class="lane-circle" data-lane="${i}" cx="${i * 46.5 + 21}" cy="22" r="17" fill="var(--lime-soft)" stroke="var(--lime)" stroke-width="2"/>
+            <text x="${i * 46.5 + 21}" y="26" text-anchor="middle" font-size="10" font-weight="700" fill="var(--lime)">T${i}</text>
+          `).join('')}
         </g>
       </g>
+
+      <!-- Shared Memory View (Hidden by default) -->
+      <g class="coalesce-shared-view" style="display:none;" transform="translate(25, 20)">
+        <text x="0" y="20" font-weight="700" font-size="14" fill="var(--lime)">Shared Memory 16-Bank Structure (4 Bytes / Bank):</text>
+        <g class="shared-banks-grid" transform="translate(0, 35)">
+          ${Array.from({length: 16}, (_, b) => `
+            <g class="bank-col" data-bank="${b}" transform="translate(${b * 46.5}, 0)">
+              <rect x="0" y="0" width="42" height="190" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5" rx="4"/>
+              <text x="21" y="20" text-anchor="middle" font-size="9" font-weight="800" fill="var(--muted)">Bank ${b}</text>
+              <rect class="bank-cell cell-0" x="4" y="32" width="34" height="30" rx="3" fill="var(--cyan-soft)" stroke="var(--cyan)" stroke-width="1"/>
+              <text x="21" y="51" text-anchor="middle" font-size="9" font-weight="700">W${b}</text>
+              <rect class="bank-cell cell-1" x="4" y="68" width="34" height="30" rx="3" fill="var(--paper)" stroke="var(--line)" stroke-width="1"/>
+              <text x="21" y="87" text-anchor="middle" font-size="9" fill="var(--muted)">W${b + 16}</text>
+              <rect class="bank-cell cell-2" x="4" y="104" width="34" height="30" rx="3" fill="var(--paper)" stroke="var(--line)" stroke-width="1"/>
+              <text x="21" y="123" text-anchor="middle" font-size="9" fill="var(--muted)">W${b + 32}</text>
+              <rect class="bank-cell cell-3" x="4" y="140" width="34" height="30" rx="3" fill="var(--paper)" stroke="var(--line)" stroke-width="1"/>
+              <text x="21" y="159" text-anchor="middle" font-size="9" fill="var(--muted)">W${b + 48}</text>
+            </g>
+          `).join('')}
+        </g>
+      </g>
+
+      <!-- Live Bus Telemetry Panel -->
+      <g transform="translate(25, 290)">
+        <rect x="0" y="0" width="750" height="150" fill="var(--paper)" stroke="var(--line)" stroke-width="1.5" rx="8"/>
+        <text x="20" y="28" font-weight="800" font-size="13" fill="var(--cyan)">Memory Bus Controller Telemetry</text>
+
+        <!-- Metric 1: Transactions -->
+        <g transform="translate(20, 45)">
+          <rect x="0" y="0" width="220" height="85" fill="var(--surface)" stroke="var(--line)" rx="6"/>
+          <text x="15" y="24" font-size="11" fill="var(--muted)">Bus Transactions / Warp:</text>
+          <text x="15" y="55" font-size="22" font-weight="800" fill="var(--lime)" data-metric-tx>1 Transaction</text>
+          <text x="15" y="75" font-size="10" fill="var(--muted)" data-metric-tx-note>100% Coalesced (128-byte payload)</text>
+        </g>
+
+        <!-- Metric 2: Effective Bandwidth -->
+        <g transform="translate(260, 45)">
+          <rect x="0" y="0" width="220" height="85" fill="var(--surface)" stroke="var(--line)" rx="6"/>
+          <text x="15" y="24" font-size="11" fill="var(--muted)">Effective Bandwidth:</text>
+          <text x="15" y="55" font-size="22" font-weight="800" fill="var(--cyan)" data-metric-bw>900 GB/s</text>
+          <text x="15" y="75" font-size="10" fill="var(--muted)" data-metric-bw-note>Theoretical HBM2 peak saturated</text>
+        </g>
+
+        <!-- Metric 3: Bus Efficiency -->
+        <g transform="translate(500, 45)">
+          <rect x="0" y="0" width="230" height="85" fill="var(--surface)" stroke="var(--line)" rx="6"/>
+          <text x="15" y="24" font-size="11" fill="var(--muted)">Memory Bus Efficiency:</text>
+          <text x="15" y="55" font-size="22" font-weight="800" fill="var(--lime)" data-metric-eff>100.0%</text>
+          <text x="15" y="75" font-size="10" fill="var(--muted)" data-metric-eff-note>Zero wasted bus bytes</text>
+        </g>
+      </g>
+
+      <defs>
+        <marker id="arrow-coalesce-lime" markerWidth="8" markerHeight="8" refX="5" refY="4" orient="auto">
+          <polygon points="0 0, 8 4, 0 8" fill="var(--lime)"/>
+        </marker>
+        <marker id="arrow-coalesce-pink" markerWidth="8" markerHeight="8" refX="5" refY="4" orient="auto">
+          <polygon points="0 0, 8 4, 0 8" fill="var(--pink)"/>
+        </marker>
+      </defs>
     </svg>
+
     <div class="diagram-insight" data-coalesce-insight>
-      <strong>Memory Coalescing:</strong> When consecutive threads in a warp access consecutive memory addresses, the GPU combines requests into a single memory transaction (coalesced). Strided or random access patterns cause multiple transactions, drastically reducing bandwidth utilization.
+      <strong>Memory Coalescing Principle:</strong> When consecutive threads in a warp access contiguous 4-byte or 8-byte global memory words (stride=1), the GPU memory controller combines all 32 requests into a <strong>single 128-byte cache line transaction</strong>. Strided access (e.g. stride=16) fragments the requests into 16 separate transactions, wasting 93.75% of memory bus bandwidth!
     </div>
   </div>`;
 }
 
-// Unit 3, Topic 3: GPU Profiling Metrics
+// Unit 3, Topic 3: GPU Performance Profiling & Roofline Model Sandbox
 export function diagramGpuProfiling() {
   return `<div class="interactive-diagram" data-diagram="gpu-profiling">
     <div class="diagram-header">
-      <h4>GPU Performance Profiling: Roofline Model</h4>
-      <p class="diagram-subtitle">Operational Intensity vs Achieved Performance</p>
+      <div>
+        <h4>GPU Performance Profiling: Interactive Roofline Sandbox</h4>
+        <p class="diagram-subtitle">Real-time arithmetic intensity tuning, ceiling boundaries, and kernel bottleneck diagnostics</p>
+      </div>
+      <div class="diagram-controls">
+        <button type="button" class="button small primary" data-roofline-preset="saxpy">SAXPY</button>
+        <button type="button" class="button small" data-roofline-preset="stencil">2D Stencil</button>
+        <button type="button" class="button small" data-roofline-preset="spmv">SpMV</button>
+        <button type="button" class="button small" data-roofline-preset="fft">1D FFT</button>
+        <button type="button" class="button small" data-roofline-preset="gemm">GEMM FP32</button>
+        <button type="button" class="button small" data-roofline-preset="tensor">Tensor FP16</button>
+      </div>
     </div>
-    <svg viewBox="0 0 800 500" class="diagram-svg">
-      <!-- Axes -->
-      <line x1="80" y1="50" x2="80" y2="420" stroke="var(--line)" stroke-width="2"/>
-      <line x1="80" y1="420" x2="750" y2="420" stroke="var(--line)" stroke-width="2"/>
-      
+
+    <!-- Real-Time Intensity Slider & Presets -->
+    <div class="diagram-toolbar" style="display:flex; flex-wrap:wrap; gap:1.25rem; align-items:center; background:var(--paper); padding:0.85rem 1rem; border-radius:10px; margin-bottom:1rem; border:1px solid var(--line);">
+      <div style="display:flex; align-items:center; gap:0.75rem; flex:1; min-width:280px;">
+        <label style="font-size:0.85rem; font-weight:700; color:var(--text);">Operational Intensity (<span style="color:var(--cyan);">I</span>):</label>
+        <input type="range" min="-1" max="2" value="-0.6" step="0.05" data-roofline-slider style="flex:1; cursor:pointer;" />
+        <span class="badge" data-roofline-intensity-display style="background:var(--cyan-soft); color:var(--cyan); font-weight:800; min-width:85px; text-align:center;">0.25 FLOP/B</span>
+      </div>
+      <div style="display:flex; gap:0.6rem; align-items:center;">
+        <span class="badge" data-roofline-regime-badge style="background:var(--pink-soft); color:var(--pink); font-weight:800; text-transform:uppercase;">Memory Bound</span>
+        <span class="badge" data-roofline-flops-badge style="background:var(--lime-soft); color:var(--lime); font-weight:800;">0.23 TFLOPS</span>
+      </div>
+    </div>
+
+    <svg viewBox="0 0 800 480" class="diagram-svg" data-roofline-svg>
+      <!-- Background Grid -->
+      <rect x="70" y="30" width="700" height="360" fill="var(--surface)" rx="8" />
+
+      <!-- Horizontal Grid Lines (Log Scale: 0.1, 1, 10, 20 TFLOPS) -->
+      <line x1="70" y1="390" x2="770" y2="390" stroke="var(--line)" stroke-width="1.5"/>
+      <line x1="70" y1="310" x2="770" y2="310" stroke="var(--line)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="70" y1="210" x2="770" y2="210" stroke="var(--line)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="70" y1="90" x2="770" y2="90" stroke="var(--line)" stroke-width="1" stroke-dasharray="3,3"/>
+
+      <!-- Vertical Grid Lines (Log Scale Intensity: 0.1, 1, 10, 100 FLOP/Byte) -->
+      <line x1="70" y1="30" x2="70" y2="390" stroke="var(--line)" stroke-width="1.5"/>
+      <line x1="240" y1="30" x2="240" y2="390" stroke="var(--line)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="430" y1="30" x2="430" y2="390" stroke="var(--line)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="620" y1="30" x2="620" y2="390" stroke="var(--line)" stroke-width="1" stroke-dasharray="3,3"/>
+
       <!-- Axis Labels -->
-      <text x="30" y="200" class="axis-label" transform="rotate(-90 30 200)">Performance (TFLOP/s)</text>
-      <text x="400" y="460" text-anchor="middle" class="axis-label">Operational Intensity (FLOP/Byte)</text>
-      
-      <!-- Y-axis ticks -->
-      <text x="70" y="425" text-anchor="end" font-size="11">0</text>
-      <text x="70" y="325" text-anchor="end" font-size="11">5</text>
-      <text x="70" y="225" text-anchor="end" font-size="11">10</text>
-      <text x="70" y="125" text-anchor="end" font-size="11">15</text>
-      <text x="70" y="65" text-anchor="end" font-size="11">20</text>
-      
-      <!-- X-axis ticks -->
-      <text x="80" y="440" text-anchor="middle" font-size="11">0.1</text>
-      <text x="200" y="440" text-anchor="middle" font-size="11">1</text>
-      <text x="350" y="440" text-anchor="middle" font-size="11">10</text>
-      <text x="550" y="440" text-anchor="middle" font-size="11">100</text>
-      <text x="750" y="440" text-anchor="middle" font-size="11">1000</text>
-      
-      <!-- Memory Bandwidth Bound (Sloped Line) -->
-      <line x1="80" y1="420" x2="350" y2="120" stroke="var(--pink)" stroke-width="3" stroke-dasharray="8"/>
-      <text x="180" y="290" fill="var(--pink)" font-size="12" font-weight="600" transform="rotate(-35 180 290)">Memory Bound</text>
-      <text x="140" y="340" fill="var(--pink)" font-size="10">(900 GB/s)</text>
-      
-      <!-- Compute Bound (Flat Line) -->
-      <line x1="350" y1="120" x2="750" y2="120" stroke="var(--cyan)" stroke-width="3"/>
-      <text x="550" y="110" fill="var(--cyan)" font-size="12" font-weight="600">Compute Bound (20 TFLOP/s Peak)</text>
-      
-      <!-- Ridge Point -->
-      <circle cx="350" cy="120" r="6" fill="var(--orange)" stroke="var(--orange)" stroke-width="2"/>
-      <text x="360" y="100" fill="var(--orange)" font-size="11" font-weight="700">Ridge Point</text>
-      <text x="360" y="115" fill="var(--orange)" font-size="9">(I = 10 FLOP/Byte)</text>
-      
-      <!-- Sample Kernels -->
-      <g class="sample-kernels">
-        <!-- SAXPY (memory-bound) -->
-        <circle cx="150" cy="350" r="8" fill="var(--lime)" opacity="0.8"/>
-        <text x="160" y="355" font-size="11" fill="var(--lime)" font-weight="600">SAXPY</text>
-        <text x="160" y="368" font-size="9" fill="var(--muted)">(I=0.5)</text>
-        
-        <!-- GEMM (compute-bound) -->
-        <circle cx="550" cy="125" r="8" fill="var(--lime)" opacity="0.8"/>
-        <text x="560" y="130" font-size="11" fill="var(--lime)" font-weight="600">GEMM</text>
-        <text x="560" y="143" font-size="9" fill="var(--muted)">(I=100)</text>
-        
-        <!-- FFT (balanced) -->
-        <circle cx="320" cy="200" r="8" fill="var(--orange)" opacity="0.8"/>
-        <text x="330" y="205" font-size="11" fill="var(--orange)" font-weight="600">FFT</text>
-        <text x="330" y="218" font-size="9" fill="var(--muted)">(I=5)</text>
+      <text x="25" y="210" text-anchor="middle" font-size="12" font-weight="700" fill="var(--muted)" transform="rotate(-90 25 210)">Attained Performance (TFLOP/s)</text>
+      <text x="420" y="425" text-anchor="middle" font-size="12" font-weight="700" fill="var(--muted)">Operational Intensity I (FLOPs / Byte)</text>
+
+      <!-- Tick Labels Y-axis -->
+      <text x="60" y="394" text-anchor="end" font-size="11" fill="var(--muted)">0.1</text>
+      <text x="60" y="314" text-anchor="end" font-size="11" fill="var(--muted)">1.0</text>
+      <text x="60" y="214" text-anchor="end" font-size="11" fill="var(--muted)">5.0</text>
+      <text x="60" y="94" text-anchor="end" font-size="11" font-weight="700" fill="var(--cyan)">20.0</text>
+
+      <!-- Tick Labels X-axis -->
+      <text x="70" y="408" text-anchor="middle" font-size="11" fill="var(--muted)">0.1</text>
+      <text x="240" y="408" text-anchor="middle" font-size="11" fill="var(--muted)">1.0</text>
+      <text x="430" y="408" text-anchor="middle" font-size="11" fill="var(--muted)">10.0</text>
+      <text x="620" y="408" text-anchor="middle" font-size="11" fill="var(--muted)">100.0</text>
+
+      <!-- Memory Bandwidth Ceiling Line (Sloped: 900 GB/s) -->
+      <path d="M 70 390 L 510 90" stroke="var(--pink)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <text x="260" y="235" fill="var(--pink)" font-size="12" font-weight="800" transform="rotate(-30 260 235)">DRAM Bandwidth: 900 GB/s</text>
+
+      <!-- Compute Peak Ceiling Line (Flat: 20 TFLOPS) -->
+      <line x1="510" y1="90" x2="770" y2="90" stroke="var(--cyan)" stroke-width="3.5" stroke-linecap="round"/>
+      <text x="640" y="78" text-anchor="middle" fill="var(--cyan)" font-size="12" font-weight="800">Peak Compute: 20 TFLOP/s</text>
+
+      <!-- Ridge Point (I = 22.2 FLOP/Byte) -->
+      <circle cx="510" cy="90" r="7" fill="var(--orange)" stroke="white" stroke-width="2"/>
+      <text x="510" y="65" text-anchor="middle" fill="var(--orange)" font-size="11" font-weight="800">Ridge Point (I = 22.2)</text>
+
+      <!-- Preset Kernel Markers on Curve -->
+      <g class="roofline-markers">
+        <circle cx="120" cy="355" r="5" fill="var(--muted)" /><text x="130" y="358" font-size="9" fill="var(--muted)">SAXPY</text>
+        <circle cx="260" cy="275" r="5" fill="var(--muted)" /><text x="270" y="278" font-size="9" fill="var(--muted)">Stencil</text>
+        <circle cx="310" cy="235" r="5" fill="var(--muted)" /><text x="320" y="238" font-size="9" fill="var(--muted)">SpMV</text>
+        <circle cx="400" cy="170" r="5" fill="var(--muted)" /><text x="410" y="173" font-size="9" fill="var(--muted)">1D FFT</text>
+        <circle cx="530" cy="90" r="5" fill="var(--muted)" /><text x="540" y="110" font-size="9" fill="var(--muted)">GEMM</text>
+        <circle cx="680" cy="90" r="5" fill="var(--muted)" /><text x="690" y="110" font-size="9" fill="var(--muted)">Tensor Core</text>
       </g>
-      
-      <!-- Info Box -->
-      <rect x="500" y="200" width="240" height="140" fill="var(--surface)" stroke="var(--line)" stroke-width="2" rx="8"/>
-      <text x="520" y="225" font-weight="bold" font-size="13">Optimization Strategy:</text>
-      <text x="515" y="250" font-size="11" fill="var(--pink)">• Memory-Bound:</text>
-      <text x="525" y="265" font-size="10" fill="var(--muted)">Improve coalescing, use shared mem</text>
-      <text x="515" y="290" font-size="11" fill="var(--cyan)">• Compute-Bound:</text>
-      <text x="525" y="305" font-size="10" fill="var(--muted)">Increase occupancy, reduce divergence</text>
-      <text x="515" y="325" font-size="11" fill="var(--orange)">• Balanced:</text>
-      <text x="525" y="340" font-size="10" fill="var(--muted)">Optimize both compute & memory</text>
+
+      <!-- Dynamic Operating Point Marker & Axis Projections -->
+      <g class="operating-point-group" data-op-group>
+        <line x1="120" y1="355" x2="120" y2="390" stroke="var(--cyan)" stroke-width="1.8" stroke-dasharray="4,4" data-op-x-proj />
+        <line x1="70" y1="355" x2="120" y2="355" stroke="var(--cyan)" stroke-width="1.8" stroke-dasharray="4,4" data-op-y-proj />
+        <circle cx="120" cy="355" r="14" fill="none" stroke="var(--cyan)" stroke-width="2" opacity="0.6" class="ping-circle" data-op-ping />
+        <circle cx="120" cy="355" r="8" fill="var(--cyan)" stroke="white" stroke-width="2" data-op-dot />
+      </g>
     </svg>
-    <div class="diagram-insight">
-      <strong>Roofline Model:</strong> Plots achieved performance vs operational intensity. Kernels below the memory bandwidth line are memory-bound (improve data access). Kernels below the compute ceiling are compute-bound (improve arithmetic intensity). Profiling tools like Nsight Compute map your kernel onto this model.
+
+    <!-- Diagnostics & Actionable Optimization Plan -->
+    <div class="diagram-insight" data-roofline-insight>
+      <strong>Kernel Diagnosis:</strong> Currently operating at <strong>0.25 FLOP/Byte</strong> in the <strong>Memory-Bound Regime</strong>. Attained performance is strictly throttled by the 900 GB/s memory bus. <em>Optimization Prescription:</em> Apply Shared Memory Tiling (Topic 3.2), fuse consecutive elementwise operations, and maximize register reuse to push operational intensity past the Ridge Point (22.2 FLOP/Byte).
     </div>
   </div>`;
 }
 
-// Unit 3, Topic 4: Cloud HPC Deployment
+// Unit 3, Topic 4: Cloud HPC Deployment & Scaling Interconnects
 export function diagramCloudHpc() {
   return `<div class="interactive-diagram" data-diagram="cloud-hpc">
     <div class="diagram-header">
-      <h4>Cloud HPC Deployment: Scaling GPU Workloads</h4>
+      <div>
+        <h4>Cloud HPC Architecture: Multi-GPU &amp; Interconnect Scaling</h4>
+        <p class="diagram-subtitle">Compare PCIe Gen4, NVLink 3.0 mesh, and InfiniBand HDR/NDR fabrics for distributed AI &amp; HPC</p>
+      </div>
       <div class="diagram-controls">
-        <button class="button small primary" data-cloud-tier="single">Single GPU</button>
-        <button class="button small" data-cloud-tier="multi">Multi-GPU Node</button>
-        <button class="button small" data-cloud-tier="cluster">GPU Cluster</button>
+        <button type="button" class="button small primary" data-cloud-tier="single">Single GPU (PCIe)</button>
+        <button type="button" class="button small" data-cloud-tier="multi">Multi-GPU (NVLink)</button>
+        <button type="button" class="button small" data-cloud-tier="cluster">Cluster (InfiniBand)</button>
+        <button type="button" class="button small" data-cloud-action="traffic">▶ Animate Interconnect</button>
       </div>
     </div>
-    <svg viewBox="0 0 800 500" class="diagram-svg">
-      <!-- Cloud Infrastructure Layers -->
+
+    <!-- Workload Profile Selector Toolbar -->
+    <div class="diagram-toolbar" style="display:flex; flex-wrap:wrap; gap:1.25rem; align-items:center; background:var(--paper); padding:0.85rem 1rem; border-radius:10px; margin-bottom:1rem; border:1px solid var(--line);">
+      <div style="display:flex; align-items:center; gap:0.5rem;">
+        <label style="font-size:0.85rem; font-weight:700; color:var(--text);">Distributed Workload:</label>
+        <button type="button" class="button small primary" data-cloud-workload="resnet">ResNet-50 (Data Parallel)</button>
+        <button type="button" class="button small" data-cloud-workload="llama8b">Llama-3 8B (Pipeline)</button>
+        <button type="button" class="button small" data-cloud-workload="llama70b">Llama-3 70B (Megatron 3D)</button>
+        <button type="button" class="button small" data-cloud-workload="climate">Climate HPC (Domain Decomp)</button>
+      </div>
+      <div style="margin-left:auto; display:flex; gap:0.75rem; align-items:center;">
+        <span class="badge" data-cloud-badge-vram style="background:var(--cyan-soft); color:var(--cyan); font-weight:700;">40 GB VRAM</span>
+        <span class="badge" data-cloud-badge-eff style="background:var(--lime-soft); color:var(--lime); font-weight:700;">100% Efficiency</span>
+      </div>
+    </div>
+
+    <svg viewBox="0 0 800 480" class="diagram-svg" data-cloud-svg>
+      <!-- Infrastructure Diagram Canvas -->
       
-      <!-- Layer 1: Single GPU Instance -->
-      <g class="tier-single">
-        <rect x="50" y="50" width="220" height="180" fill="var(--cyan-soft)" stroke="var(--cyan)" stroke-width="3" rx="10"/>
-        <text x="160" y="80" text-anchor="middle" font-weight="bold" font-size="15" fill="var(--cyan)">Single GPU Instance</text>
+      <!-- Tier 1: Single Node PCIe (Left) -->
+      <g class="tier-card tier-single" data-tier-box="single" transform="translate(25, 30)">
+        <rect x="0" y="0" width="230" height="250" fill="var(--cyan-soft)" stroke="var(--cyan)" stroke-width="2.5" rx="10" />
+        <text x="115" y="28" text-anchor="middle" font-weight="800" font-size="13" fill="var(--cyan)">Single GPU Instance</text>
         
-        <!-- GPU Card -->
-        <rect x="80" y="100" width="160" height="70" fill="var(--lime-soft)" stroke="var(--lime)" stroke-width="2" rx="6"/>
-        <text x="160" y="125" text-anchor="middle" font-size="12" font-weight="600">NVIDIA A100</text>
-        <text x="160" y="145" text-anchor="middle" font-size="10" fill="var(--muted)">40 GB VRAM</text>
-        <text x="160" y="160" text-anchor="middle" font-size="10" fill="var(--muted)">19.5 TFLOPS (FP32)</text>
-        
-        <text x="160" y="195" text-anchor="middle" font-size="11" fill="var(--muted)">Cost: ~$3/hour</text>
-        <text x="160" y="215" text-anchor="middle" font-size="11" font-weight="600" fill="var(--cyan)">Use Case: Training, Inference</text>
+        <!-- CPU Host Box -->
+        <rect x="25" y="48" width="180" height="50" rx="6" fill="var(--surface)" stroke="var(--line)"/>
+        <text x="115" y="70" text-anchor="middle" font-size="11" font-weight="700">Host CPU + 64GB RAM</text>
+        <text x="115" y="86" text-anchor="middle" font-size="9" fill="var(--muted)">PyTorch / CUDA Driver</text>
+
+        <!-- PCIe Bus Channel -->
+        <line x1="115" y1="98" x2="115" y2="135" stroke="var(--cyan)" stroke-width="4" stroke-dasharray="6,4" class="pcie-traffic-line"/>
+        <text x="125" y="120" font-size="9" font-weight="700" fill="var(--cyan)">PCIe 4.0 (64 GB/s)</text>
+
+        <!-- GPU Box -->
+        <rect x="25" y="135" width="180" height="65" rx="6" fill="var(--lime-soft)" stroke="var(--lime)" stroke-width="1.8"/>
+        <text x="115" y="158" text-anchor="middle" font-size="12" font-weight="800" fill="var(--lime)">NVIDIA A100 SXM</text>
+        <text x="115" y="174" text-anchor="middle" font-size="10" fill="var(--muted)">40 GB HBM2e | 19.5 TFLOPS</text>
+        <text x="115" y="189" text-anchor="middle" font-size="9" font-weight="700" fill="var(--cyan)">Zero Interconnect Overhead</text>
+
+        <text x="115" y="230" text-anchor="middle" font-size="10" fill="var(--muted)">Best for: Prototyping &amp; Fine-Tuning</text>
       </g>
-      
-      <!-- Layer 2: Multi-GPU Node -->
-      <g class="tier-multi" opacity="0.5">
-        <rect x="300" y="50" width="220" height="180" fill="var(--lime-soft)" stroke="var(--lime)" stroke-width="3" rx="10"/>
-        <text x="410" y="80" text-anchor="middle" font-weight="bold" font-size="15" fill="var(--lime)">Multi-GPU Node</text>
-        
-        <!-- 8 GPUs -->
-        ${Array.from({length: 4}, (_, i) => `
-          <rect x="${320 + (i % 2) * 85}" y="${110 + Math.floor(i / 2) * 45}" width="70" height="35" fill="var(--orange-soft)" stroke="var(--orange)" stroke-width="1.5" rx="4"/>
-          <text x="${355 + (i % 2) * 85}" y="${132 + Math.floor(i / 2) * 45}" text-anchor="middle" font-size="9">GPU ${i}</text>
-        `).join('')}
-        
-        <text x="410" y="195" text-anchor="middle" font-size="11" fill="var(--muted)">8x A100 (NVLink)</text>
-        <text x="410" y="215" text-anchor="middle" font-size="11" font-weight="600" fill="var(--lime)">Use Case: Large Model Training</text>
+
+      <!-- Tier 2: 8x GPU NVLink Node (Middle) -->
+      <g class="tier-card tier-multi" data-tier-box="multi" transform="translate(280, 30)" opacity="0.45">
+        <rect x="0" y="0" width="230" height="250" fill="var(--lime-soft)" stroke="var(--lime)" stroke-width="2" rx="10" />
+        <text x="115" y="28" text-anchor="middle" font-weight="800" font-size="13" fill="var(--lime)">Multi-GPU Node (8x A100)</text>
+
+        <!-- 8 GPU Mesh Grid -->
+        <g transform="translate(20, 48)">
+          ${Array.from({length: 8}, (_, i) => {
+            const x = (i % 4) * 48;
+            const y = Math.floor(i / 4) * 45;
+            return `<rect x="${x}" y="${y}" width="42" height="36" rx="4" fill="var(--surface)" stroke="var(--lime)" stroke-width="1.2"/>
+            <text x="${x + 21}" y="${y + 22}" text-anchor="middle" font-size="9" font-weight="700">GPU ${i}</text>`;
+          }).join('')}
+        </g>
+
+        <!-- NVSwitch Crossbar Fabric -->
+        <rect x="20" y="150" width="190" height="42" rx="5" fill="var(--orange-soft)" stroke="var(--orange)" stroke-width="1.5"/>
+        <text x="115" y="168" text-anchor="middle" font-size="10" font-weight="800" fill="var(--orange)">NVSwitch Fabric: 600 GB/s</text>
+        <text x="115" y="182" text-anchor="middle" font-size="8" fill="var(--muted)">Full All-to-All Bisection Bandwidth</text>
+
+        <text x="115" y="215" text-anchor="middle" font-size="11" font-weight="700" fill="var(--lime)">Total VRAM: 320 GB HBM2</text>
+        <text x="115" y="232" text-anchor="middle" font-size="9" fill="var(--muted)">Best for: 7B-70B LLM Training</text>
       </g>
-      
-      <!-- Layer 3: GPU Cluster -->
-      <g class="tier-cluster" opacity="0.3">
-        <rect x="550" y="50" width="220" height="180" fill="var(--pink-soft)" stroke="var(--pink)" stroke-width="3" rx="10"/>
-        <text x="660" y="80" text-anchor="middle" font-weight="bold" font-size="15" fill="var(--pink)">GPU Cluster</text>
-        
-        <!-- Multiple Nodes -->
-        ${Array.from({length: 6}, (_, i) => `
-          <rect x="${570 + (i % 3) * 65}" y="${100 + Math.floor(i / 3) * 50}" width="55" height="40" fill="var(--cyan-soft)" stroke="var(--cyan)" stroke-width="1.5" rx="4"/>
-          <text x="${597.5 + (i % 3) * 65}" y="${123 + Math.floor(i / 3) * 50}" text-anchor="middle" font-size="8">Node ${i}</text>
-        `).join('')}
-        
-        <text x="660" y="195" text-anchor="middle" font-size="11" fill="var(--muted)">256+ GPUs (Infiniband)</text>
-        <text x="660" y="215" text-anchor="middle" font-size="11" font-weight="600" fill="var(--pink)">Use Case: Supercomputing</text>
+
+      <!-- Tier 3: GPU Cluster with InfiniBand Fabric (Right) -->
+      <g class="tier-card tier-cluster" data-tier-box="cluster" transform="translate(535, 30)" opacity="0.45">
+        <rect x="0" y="0" width="240" height="250" fill="var(--pink-soft)" stroke="var(--pink)" stroke-width="2" rx="10" />
+        <text x="120" y="28" text-anchor="middle" font-weight="800" font-size="13" fill="var(--pink)">Cloud Cluster (32 Nodes)</text>
+
+        <!-- 4 Rack Nodes Illustrated -->
+        <g transform="translate(20, 48)">
+          <rect x="0" y="0" width="95" height="42" rx="4" fill="var(--surface)" stroke="var(--pink)" stroke-width="1"/>
+          <text x="47" y="24" text-anchor="middle" font-size="9" font-weight="700">Rack Node 1</text>
+          
+          <rect x="105" y="0" width="95" height="42" rx="4" fill="var(--surface)" stroke="var(--pink)" stroke-width="1"/>
+          <text x="152" y="24" text-anchor="middle" font-size="9" font-weight="700">Rack Node 2</text>
+
+          <rect x="0" y="48" width="95" height="42" rx="4" fill="var(--surface)" stroke="var(--pink)" stroke-width="1"/>
+          <text x="47" y="72" text-anchor="middle" font-size="9" font-weight="700">Rack Node 3</text>
+
+          <rect x="105" y="48" width="95" height="42" rx="4" fill="var(--surface)" stroke="var(--pink)" stroke-width="1"/>
+          <text x="152" y="72" text-anchor="middle" font-size="9" font-weight="700">Rack Node 4</text>
+        </g>
+
+        <!-- InfiniBand Spine/Leaf Fabric -->
+        <rect x="20" y="150" width="200" height="42" rx="5" fill="var(--cyan-soft)" stroke="var(--cyan)" stroke-width="1.5"/>
+        <text x="120" y="168" text-anchor="middle" font-size="10" font-weight="800" fill="var(--cyan)">InfiniBand HDR / NDR 400G</text>
+        <text x="120" y="182" text-anchor="middle" font-size="8" fill="var(--muted)">GPUDirect RDMA (1.2 &mu;s Latency)</text>
+
+        <text x="120" y="215" text-anchor="middle" font-size="11" font-weight="700" fill="var(--pink)">256 GPUs | 10.2 TB VRAM</text>
+        <text x="120" y="232" text-anchor="middle" font-size="9" fill="var(--muted)">Best for: Frontier AI &amp; Supercomputing</text>
       </g>
-      
-      <!-- Communication Bandwidth -->
-      <g transform="translate(50, 260)">
-        <rect x="0" y="0" width="700" height="160" fill="var(--paper)" stroke="var(--line)" stroke-width="2" rx="8"/>
-        <text x="10" y="25" font-weight="bold" font-size="14">Communication Bandwidth:</text>
-        
-        <text x="20" y="50" font-size="12" fill="var(--cyan)" font-weight="600">PCIe Gen 4:</text>
-        <text x="30" y="68" font-size="11" fill="var(--muted)">• 64 GB/s per GPU (to CPU)</text>
-        <text x="30" y="83" font-size="11" fill="var(--muted)">• Bottleneck for CPU-GPU data transfer</text>
-        
-        <text x="20" y="108" font-size="12" fill="var(--lime)" font-weight="600">NVLink 3.0:</text>
-        <text x="30" y="126" font-size="11" fill="var(--muted)">• 600 GB/s between GPUs (per GPU pair)</text>
-        <text x="30" y="141" font-size="11" fill="var(--muted)">• Enables efficient multi-GPU training</text>
-        
-        <text x="380" y="50" font-size="12" fill="var(--pink)" font-weight="600">Infiniband HDR:</text>
-        <text x="390" y="68" font-size="11" fill="var(--muted)">• 200 Gb/s between nodes</text>
-        <text x="390" y="83" font-size="11" fill="var(--muted)">• Low latency (~1-2 μs)</text>
-        
-        <text x="380" y="108" font-size="12" fill="var(--orange)" font-weight="600">Scaling Challenge:</text>
-        <text x="390" y="126" font-size="11" fill="var(--muted)">• Communication overhead increases</text>
-        <text x="390" y="141" font-size="11" fill="var(--muted)">• Need distributed training frameworks</text>
+
+      <!-- Scaling Telemetry HUD -->
+      <g transform="translate(25, 305)">
+        <rect x="0" y="0" width="750" height="150" fill="var(--paper)" stroke="var(--line)" stroke-width="1.5" rx="8"/>
+        <text x="20" y="28" font-weight="800" font-size="13" fill="var(--cyan)">Distributed Scaling Performance Telemetry</text>
+
+        <g transform="translate(20, 45)">
+          <rect x="0" y="0" width="220" height="85" fill="var(--surface)" stroke="var(--line)" rx="6"/>
+          <text x="15" y="24" font-size="11" fill="var(--muted)">Total Sustained Compute:</text>
+          <text x="15" y="55" font-size="20" font-weight="800" fill="var(--lime)" data-cloud-metric-compute>19.5 TFLOPS</text>
+          <text x="15" y="75" font-size="10" fill="var(--muted)" data-cloud-metric-compute-note>1&times; Single GPU peak</text>
+        </g>
+
+        <g transform="translate(260, 45)">
+          <rect x="0" y="0" width="220" height="85" fill="var(--surface)" stroke="var(--line)" rx="6"/>
+          <text x="15" y="24" font-size="11" fill="var(--muted)">Interconnect Bandwidth:</text>
+          <text x="15" y="55" font-size="20" font-weight="800" fill="var(--cyan)" data-cloud-metric-bw>64 GB/s (PCIe 4.0)</text>
+          <text x="15" y="75" font-size="10" fill="var(--muted)" data-cloud-metric-bw-note>Host CPU &lt;-&gt; GPU bridge</text>
+        </g>
+
+        <g transform="translate(500, 45)">
+          <rect x="0" y="0" width="230" height="85" fill="var(--surface)" stroke="var(--line)" rx="6"/>
+          <text x="15" y="24" font-size="11" fill="var(--muted)">Scaling Efficiency:</text>
+          <text x="15" y="55" font-size="20" font-weight="800" fill="var(--lime)" data-cloud-metric-eff>100% Ideal</text>
+          <text x="15" y="75" font-size="10" fill="var(--muted)" data-cloud-metric-eff-note>Comm overhead: 0.0%</text>
+        </g>
       </g>
     </svg>
+
     <div class="diagram-insight" data-cloud-insight>
-      <strong>Cloud HPC Scaling:</strong> Single GPUs handle most workloads. Multi-GPU nodes (NVLink) enable large model training. GPU clusters (Infiniband) tackle supercomputing problems. Key challenge: minimize communication overhead as you scale.
+      <strong>Interconnect Hierarchy:</strong> In modern GPU supercomputing, performance is governed by interconnect bandwidth: <strong>PCIe 4.0/5.0</strong> (64-128 GB/s) serves host-device loading; <strong>NVLink 3.0/4.0</strong> (600-900 GB/s) allows all-to-all GPU communication inside a node; and <strong>InfiniBand / RoCE</strong> (200-400 Gbps with GPUDirect RDMA) enables zero-copy cluster scaling for foundation models.
     </div>
   </div>`;
 }
