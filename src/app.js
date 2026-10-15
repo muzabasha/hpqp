@@ -361,9 +361,77 @@ function home(_, app) {
 function unit(_, app, unitId) {
   const unitData = course.units.find((u) => u.id === unitId) || course.units[0];
   const topics = getUnitTopics(unitId);
-  app.innerHTML = `<div class="unit-header"><div><div class="eyebrow">Unit ${String(unitId).padStart(2, '0')} / Integrated learning path</div><h1>${unitData.title}</h1><p>${unitData.description}</p></div><div class="unit-meter"><strong>${state.completed.filter((k) => k.startsWith(`topic-${unitId}-`)).length} / ${topics.length}</strong><span>topics explored</span><div class="progress-track"><i style="width:${(state.completed.filter((k) => k.startsWith(`topic-${unitId}-`)).length / topics.length) * 100}%"></i></div></div></div>
-  <div class="section-heading"><div><div class="eyebrow">Topic sequence</div><h2>Build the mental model</h2></div><p>Concept → model → experiment → reflection</p></div>
-  <div class="topic-list">${topics.map((t, i) => { const key = `topic-${unitId}-${t.id}`; const done = state.completed.includes(key); return `<article class="topic-row${done ? ' completed' : ''}"><span class="topic-number">${String(i + 1).padStart(2, '0')}</span><div><h3>${esc(t.title)}</h3><p>${esc(t.description).slice(0, 120)}…</p></div><a class="button" href="#/unit/${unitId}/topic/${t.id}">${done ? 'Review' : 'Explore'} →</a></article>`; }).join('')}</div>`;
+  const completedCount = state.completed.filter((k) => k.startsWith(`topic-${unitId}-`)).length;
+  const pct = Math.round((completedCount / topics.length) * 100);
+
+  const unitLabs = LAB_CATALOG.filter(l => l.unit === unitId);
+  const firstLabId = unitLabs[0]?.id || 'hpc-throughput';
+
+  app.innerHTML = `<div class="unit-header">
+    <div>
+      <div class="eyebrow">Unit ${String(unitId).padStart(2, '0')} / Integrated learning path</div>
+      <h1>${esc(unitData.title)}</h1>
+      <p class="lede">${esc(unitData.description)}</p>
+    </div>
+    <div class="unit-meter">
+      <strong>${completedCount} / ${topics.length}</strong>
+      <span>topics explored (${pct}%)</span>
+      <div class="progress-track"><i style="width:${pct}%"></i></div>
+    </div>
+  </div>
+
+  <div class="grid unit-features-grid" style="margin-bottom:2rem;">
+    <article class="card">
+      <div class="eyebrow">Hands-On Practice</div>
+      <h3>${unitLabs.length} Virtual Simulators</h3>
+      <p>Interactive laboratory experiments with real-time telemetry and parameter controls designed for Unit ${unitId}.</p>
+      <div style="margin-top:0.75rem;"><a class="button primary" href="#/lab/${firstLabId}">Launch Unit ${unitId} Labs ↗</a></div>
+    </article>
+    <article class="card">
+      <div class="eyebrow">TRL-4 Engineering</div>
+      <h3>15 Open-Ended Projects</h3>
+      <p>Student proof-of-concept projects with step-by-step instructions and rubrics for Unit ${unitId}.</p>
+      <div style="margin-top:0.75rem;"><a class="button" href="#/projects?unit=${unitId}">Unit ${unitId} Projects 🚀</a></div>
+    </article>
+    <article class="card">
+      <div class="eyebrow">Exams & Scenarios</div>
+      <h3>20 Critical Thinking Questions</h3>
+      <p>10-mark scenario exam questions with model answers and scoring breakdown for Unit ${unitId}.</p>
+      <div style="margin-top:0.75rem;"><a class="button" href="#/questions?unit=${unitId}">Unit ${unitId} Question Bank 📝</a></div>
+    </article>
+  </div>
+
+  <div class="section-heading">
+    <div>
+      <div class="eyebrow">Topic Sequence</div>
+      <h2>Build the Mental Model</h2>
+    </div>
+    <p>Concept → Storyboard → Model → Experiment → Reflection</p>
+  </div>
+
+  <div class="topic-list">
+    ${topics.map((t, i) => {
+      const key = `topic-${unitId}-${t.id}`;
+      const done = state.completed.includes(key);
+      return `<article class="topic-row${done ? ' completed' : ''}">
+        <span class="topic-number">${String(i + 1).padStart(2, '0')}</span>
+        <div>
+          <h3>${esc(t.title)}</h3>
+          <p>${esc(t.description).slice(0, 140)}…</p>
+          <div class="topic-badges" style="margin-top:0.4rem; display:flex; gap:0.4rem; flex-wrap:wrap;">
+            <span class="meta-tag" style="font-size:0.75rem;">🎨 Storyboard</span>
+            <span class="meta-tag" style="font-size:0.75rem;">🔮 Interactive Visual</span>
+            <span class="meta-tag" style="font-size:0.75rem;">💡 5 MCQs</span>
+            <span class="meta-tag" style="font-size:0.75rem;">🧪 Lab Simulator</span>
+          </div>
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <a class="button ${done ? '' : 'primary'}" href="#/unit/${unitId}/topic/${t.id}">${done ? 'Review' : 'Explore'} →</a>
+          <a class="button" href="#/lab/${t.labType || firstLabId}" title="Direct to Lab">Lab ↗</a>
+        </div>
+      </article>`;
+    }).join('')}
+  </div>`;
 }
 
 function roadmap(_, app) {
@@ -393,11 +461,15 @@ function standaloneLabPage(path, app) {
 }
 
 function projectsPage(path, app) {
-  app.innerHTML = renderProjectsView('all');
+  const m = path.match(/projects\?unit=(\d+)/);
+  const activeUnit = m ? m[1] : 'all';
+  app.innerHTML = renderProjectsView(activeUnit);
 }
 
 function questionsPage(path, app) {
-  app.innerHTML = renderCriticalQuestionsView('all');
+  const m = path.match(/questions\?unit=(\d+)/);
+  const activeUnit = m ? m[1] : 'all';
+  app.innerHTML = renderCriticalQuestionsView(activeUnit);
 }
 
 function notFound(_, app) {
@@ -409,8 +481,8 @@ route(/^\/roadmap$/, roadmap);
 route(/^\/syllabus$/, syllabus);
 route(/^\/resources$/, resources);
 route(/^\/assessment$/, assessment);
-route(/^\/projects$/, projectsPage);
-route(/^\/questions$/, questionsPage);
+route(/^\/projects(?:\?.*)?$/, projectsPage);
+route(/^\/questions(?:\?.*)?$/, questionsPage);
 route(/^\/unit\/(\d+)\/topic\/(\d+)$/, (path, app) => {
   const m = path.match(/unit\/(\d+)\/topic\/(\d+)/);
   topicPage(path, app, Number(m[1]), Number(m[2]));
@@ -460,6 +532,17 @@ function scheduleUpdate(fn) {
 document.addEventListener('click', (e) => {
   // Early return if no relevant target
   if (!e.target) return;
+
+  const scrollTarget = e.target.closest('[data-scroll-to]');
+  if (scrollTarget) {
+    e.preventDefault();
+    const id = scrollTarget.dataset.scrollTo;
+    const targetEl = document.getElementById(id);
+    if (targetEl) {
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    return;
+  }
   
   // Use event delegation efficiently - check specific areas first
   const action = e.target.closest('[data-action]');
@@ -552,7 +635,10 @@ document.addEventListener('click', (e) => {
   if (projBtn) {
     scheduleUpdate(() => {
       const main = document.getElementById('app');
-      if (main) main.innerHTML = renderProjectsView(projBtn.dataset.projectUnit);
+      if (main) {
+        main.innerHTML = renderProjectsView(projBtn.dataset.projectUnit);
+        if (globalThis.MathJax?.typesetPromise) globalThis.MathJax.typesetPromise([main]).catch(() => {});
+      }
     });
     return;
   }
@@ -562,7 +648,10 @@ document.addEventListener('click', (e) => {
   if (qBtn) {
     scheduleUpdate(() => {
       const main = document.getElementById('app');
-      if (main) main.innerHTML = renderCriticalQuestionsView(qBtn.dataset.questionUnit);
+      if (main) {
+        main.innerHTML = renderCriticalQuestionsView(qBtn.dataset.questionUnit);
+        if (globalThis.MathJax?.typesetPromise) globalThis.MathJax.typesetPromise([main]).catch(() => {});
+      }
     });
     return;
   }
@@ -641,6 +730,52 @@ document.addEventListener('click', (e) => {
   const scheduleSelect = e.target.closest('[data-schedule-select]');
   if (scheduleSelect) {
     scheduleUpdate(() => handleScheduleSelect(scheduleSelect.dataset.scheduleSelect));
+    return;
+  }
+
+  // Unit 1 Cluster Diagram Interactions
+  const clusterMode = e.target.closest('[data-cluster-mode]');
+  if (clusterMode) {
+    scheduleUpdate(() => handleClusterMode(clusterMode.dataset.clusterMode));
+    return;
+  }
+
+  // Unit 3 Cloud HPC Diagram Interactions
+  const cloudTier = e.target.closest('[data-cloud-tier]');
+  if (cloudTier) {
+    scheduleUpdate(() => handleCloudTier(cloudTier.dataset.cloudTier));
+    return;
+  }
+
+  // Unit 4 Quantum Gate Diagram Interactions
+  const qgateType = e.target.closest('[data-qgate-type]');
+  if (qgateType) {
+    scheduleUpdate(() => handleQGateType(qgateType.dataset.qgateType));
+    return;
+  }
+
+  // Unit 4 Grover Step Diagram Interactions
+  const groverStep = e.target.closest('[data-grover-step]');
+  if (groverStep) {
+    scheduleUpdate(() => handleGroverStep(groverStep.dataset.groverStep));
+    return;
+  }
+
+  // Unit 4 VQE Phase Diagram Interactions
+  const vqePhase = e.target.closest('[data-vqe-phase]');
+  if (vqePhase) {
+    scheduleUpdate(() => handleVqePhase(vqePhase.dataset.vqePhase));
+    return;
+  }
+
+  // Lab Comparison Actions
+  if (action && action.dataset.action === 'add-comparison-snapshot') {
+    if (typeof window.addComparisonSnapshot === 'function') window.addComparisonSnapshot();
+    return;
+  }
+
+  if (action && action.dataset.action === 'close-comparison') {
+    document.querySelector('.comparison-mode-panel')?.classList.remove('active');
     return;
   }
 
@@ -2184,23 +2319,10 @@ if (state.presentationMode) {
 }
 
 document.documentElement.dataset.theme = state.theme;
-startRouter();
 updateProgress();
 
-// Initialize video player after router
+// Initialize video player
 setTimeout(initVideoPlayer, 100);
-
-es
-
-// Listen for Amdahl slider input
-document.addEventListener('input', (e) => {
-  if (e.target.matches('[data-amdahl-slider]')) {
-    updateAmdahlCurve();
-  }
-});
-
-// Initialize Amdahl curve on page load
-setTimeout(updateAmdahlCurve, 100);
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
@@ -2689,6 +2811,226 @@ function handleBlochState(state) {
     insight.innerHTML = insights[state];
   }
 }
+
+// Unit 1 (TOP500 Cluster) Diagram Handler
+function handleClusterMode(mode) {
+  document.querySelectorAll('[data-cluster-mode]').forEach(btn => btn.classList.remove('primary'));
+  document.querySelector(`[data-cluster-mode="${mode}"]`)?.classList.add('primary');
+
+  const diagram = document.querySelector('[data-diagram="top500-cluster"]');
+  if (!diagram) return;
+
+  const metric1 = diagram.querySelector('[data-cluster-metric-1]');
+  const sub1 = diagram.querySelector('[data-cluster-sub-1]');
+  const metric2 = diagram.querySelector('[data-cluster-metric-2]');
+  const sub2 = diagram.querySelector('[data-cluster-sub-2]');
+  const metric3 = diagram.querySelector('[data-cluster-metric-3]');
+  const sub3 = diagram.querySelector('[data-cluster-sub-3]');
+  const insight = diagram.querySelector('[data-cluster-insight]');
+
+  if (mode === 'arch') {
+    if (metric1) metric1.textContent = 'Rack & Blade Hierarchy';
+    if (sub1) sub1.textContent = 'Dual EPYC CPUs + 4× MI250X / H100 GPUs';
+    if (metric2) metric2.textContent = 'Fabric Interconnect';
+    if (sub2) sub2.textContent = 'Slingshot-11 400 Gbps Dragonfly Topology';
+    if (metric3) metric3.textContent = 'Cooling Loop';
+    if (sub3) sub3.textContent = 'Direct Liquid Cooled (Warm-water loop)';
+    if (insight) insight.innerHTML = '<strong>Cluster Hierarchy:</strong> Modern supercomputers organize thousands of compute nodes into standardized racks. Each blade node combines host multi-core CPUs with dense GPU accelerators connected via high-radix fabric (e.g. Slingshot-11, InfiniBand NDR).';
+  } else if (mode === 'linpack') {
+    if (metric1) metric1.textContent = '1.194 EFLOPS (Frontier)';
+    if (sub1) sub1.textContent = 'LINPACK High-Performance Rmax sustained';
+    if (metric2) metric2.textContent = '1.685 EFLOPS (Rpeak)';
+    if (sub2) sub2.textContent = 'Theoretical Peak Flops capability';
+    if (metric3) metric3.textContent = '70.8% Efficiency';
+    if (sub3) sub3.textContent = 'HPL sustained benchmark efficiency ratio';
+    if (insight) insight.innerHTML = '<strong>LINPACK Benchmark (TOP500):</strong> Measures dense linear algebra performance (Ax = b). Rmax represents sustained GFLOPS/EFLOPS, while Rpeak is theoretical peak compute. The efficiency ratio (Rmax/Rpeak) measures hardware and communication scaling.';
+  } else if (mode === 'green500') {
+    if (metric1) metric1.textContent = '52.5 GFLOPS / Watt';
+    if (sub1) sub1.textContent = 'Frontier / Frontier-TDS Green500 metric';
+    if (metric2) metric2.textContent = 'PUE = 1.03';
+    if (sub2) sub2.textContent = 'Power Usage Effectiveness (Industry best)';
+    if (metric3) metric3.textContent = '21.1 MW Total Power';
+    if (sub3) sub3.textContent = 'Complete system power at full LINPACK load';
+    if (insight) insight.innerHTML = '<strong>Green500 Energy Efficiency:</strong> Ranks systems by performance per watt (GFLOPS/W). Direct-to-chip liquid cooling removes 95%+ of heat without mechanical chillers, driving PUE down near the ideal 1.0 limit.';
+  }
+}
+
+// Unit 3 (Cloud HPC) Diagram Handler
+function handleCloudTier(tier) {
+  document.querySelectorAll('[data-cloud-tier]').forEach(btn => btn.classList.remove('primary'));
+  document.querySelector(`[data-cloud-tier="${tier}"]`)?.classList.add('primary');
+
+  const diagram = document.querySelector('[data-diagram="cloud-hpc"]');
+  if (!diagram) return;
+
+  const single = diagram.querySelector('.tier-single');
+  const multi = diagram.querySelector('.tier-multi');
+  const cluster = diagram.querySelector('.tier-cluster');
+
+  if (single) single.style.opacity = tier === 'single' ? '1' : '0.4';
+  if (multi) multi.style.opacity = tier === 'multi' ? '1' : '0.4';
+  if (cluster) cluster.style.opacity = tier === 'cluster' ? '1' : '0.4';
+
+  const insights = {
+    'single': '<strong>Single GPU Instance:</strong> Ideal for rapid prototyping, smaller deep learning models, and algorithm development. Access via PCIe bus (32-64 GB/s). Low cost (~$1-3/hr), zero cluster orchestration overhead.',
+    'multi': '<strong>Multi-GPU Node (NVLink):</strong> 4-8 GPUs interconnected via high-bandwidth NVLink/NVSwitch (600-900 GB/s bidirectional). Essential for multi-GPU training, large batch inference, and model parallelism with unified memory.',
+    'cluster': '<strong>Cloud GPU Cluster:</strong> Multi-node distributed cluster scaling across 256+ GPUs connected via 400 Gbps InfiniBand/RoCE with GPUDirect RDMA. Utilizes Slurm or Kubernetes for orchestration of foundation models and HPC simulations.'
+  };
+
+  const insightEl = diagram.querySelector('[data-cloud-insight]');
+  if (insightEl) insightEl.innerHTML = insights[tier] || '';
+}
+
+// Unit 4 (Quantum Gates) Diagram Handler
+function handleQGateType(type) {
+  document.querySelectorAll('[data-qgate-type]').forEach(btn => btn.classList.remove('primary'));
+  document.querySelector(`[data-qgate-type="${type}"]`)?.classList.add('primary');
+
+  const diagram = document.querySelector('[data-diagram="quantum-gates"]');
+  if (!diagram) return;
+
+  diagram.querySelectorAll('.qgate-card').forEach(card => {
+    card.style.opacity = card.dataset.gateCard === type ? '1' : '0.4';
+  });
+
+  const matrixEl = diagram.querySelector('[data-qgate-matrix]');
+  const actionEl = diagram.querySelector('[data-qgate-action]');
+  const physicsEl = diagram.querySelector('[data-qgate-physics]');
+  const insightEl = diagram.querySelector('[data-qgate-insight]');
+
+  const gateData = {
+    'h': {
+      matrix: 'H = 1/√2 [ [1,  1], [1, -1] ]',
+      action: 'Action: Rotates |0⟩ into equal superposition (|+⟩ = (|0⟩ + |1⟩)/√2)',
+      physics: 'Bloch Sphere: 180° rotation about the (X+Z)/√2 axis',
+      insight: '<strong>Hadamard (H) Gate:</strong> Fundamental building block of quantum computing. Creates equal superposition from basis states: H|0⟩ = |+⟩ and H|1⟩ = |-⟩. Applying H twice returns the state (H² = I).'
+    },
+    'x': {
+      matrix: 'X = [ [0, 1], [1, 0] ]',
+      action: 'Action: Flips |0⟩ ↔ |1⟩ (Quantum NOT gate)',
+      physics: 'Bloch Sphere: 180° rotation about the X axis',
+      insight: '<strong>Pauli-X Gate:</strong> Classical bit-flip equivalent. Flips amplitudes: X(α|0⟩ + β|1⟩) = β|0⟩ + α|1⟩.'
+    },
+    'z': {
+      matrix: 'Z = [ [1, 0], [0, -1] ]',
+      action: 'Action: Phase flip: Leaves |0⟩ unchanged, flips phase of |1⟩ to -|1⟩',
+      physics: 'Bloch Sphere: 180° rotation about the Z axis',
+      insight: '<strong>Pauli-Z Gate:</strong> Quantum phase flip gate. Crucial for constructive and destructive interference in quantum algorithms (e.g. Grover oracle).'
+    },
+    's': {
+      matrix: 'S = [ [1, 0], [0, i] ] (Phase π/2)',
+      action: 'Action: Multiplies |1⟩ component by i (90° phase shift)',
+      physics: 'Bloch Sphere: 90° rotation about the Z axis (S² = Z)',
+      insight: '<strong>Phase (S) Gate:</strong> Quarter-turn phase rotation (π/2). Together with Hadamard and CNOT, generates the Clifford group for quantum error correction.'
+    },
+    't': {
+      matrix: 'T = [ [1, 0], [0, e^(iπ/4)] ] (Phase π/4)',
+      action: 'Action: Multiplies |1⟩ component by e^(iπ/4) (45° phase shift)',
+      physics: 'Bloch Sphere: 45° rotation about the Z axis (T² = S)',
+      insight: '<strong>T Gate (π/4 Gate):</strong> Non-Clifford gate. Adding the T gate to Clifford gates creates a universal set of quantum gates capable of approximating any unitary operation.'
+    }
+  };
+
+  const d = gateData[type] || gateData['h'];
+  if (matrixEl) matrixEl.textContent = d.matrix;
+  if (actionEl) actionEl.textContent = d.action;
+  if (physicsEl) physicsEl.textContent = d.physics;
+  if (insightEl) insightEl.innerHTML = d.insight;
+}
+
+// Unit 4 (Grover Step) Diagram Handler
+function handleGroverStep(step) {
+  document.querySelectorAll('[data-grover-step]').forEach(btn => btn.classList.remove('primary'));
+  document.querySelector(`[data-grover-step="${step}"]`)?.classList.add('primary');
+
+  const diagram = document.querySelector('[data-diagram="quantum-algorithms"]');
+  if (!diagram) return;
+
+  diagram.querySelectorAll('.grover-box').forEach(box => {
+    box.style.opacity = box.dataset.groverBox === step ? '1' : '0.4';
+  });
+
+  const b0 = diagram.querySelector('[data-grover-bar-0]');
+  const b1 = diagram.querySelector('[data-grover-bar-1]');
+  const b2 = diagram.querySelector('[data-grover-bar-2]');
+  const b3 = diagram.querySelector('[data-grover-bar-3]');
+  const insightEl = diagram.querySelector('[data-grover-insight]');
+
+  if (step === '1') {
+    if (b0) { b0.setAttribute('height', '50'); b0.setAttribute('y', '30'); }
+    if (b1) { b1.setAttribute('height', '50'); b1.setAttribute('y', '30'); }
+    if (b2) { b2.setAttribute('height', '50'); b2.setAttribute('y', '30'); }
+    if (b3) { b3.setAttribute('height', '50'); b3.setAttribute('y', '30'); }
+    if (insightEl) insightEl.innerHTML = '<strong>Step 1 (Superposition):</strong> Apply Hadamard gates H⊗n to initialize all 4 basis states in equal superposition (|ψ⟩ = 1/2(|00⟩ + |01⟩ + |10⟩ + |11⟩)). Each item has equal 25% measurement probability.';
+  } else if (step === '2') {
+    if (b0) { b0.setAttribute('height', '50'); b0.setAttribute('y', '30'); }
+    if (b1) { b1.setAttribute('height', '50'); b1.setAttribute('y', '30'); }
+    if (b2) { b2.setAttribute('height', '50'); b2.setAttribute('y', '80'); }
+    if (b3) { b3.setAttribute('height', '50'); b3.setAttribute('y', '30'); }
+    if (insightEl) insightEl.innerHTML = '<strong>Step 2 (Oracle Phase Flip):</strong> The quantum oracle recognizes target item |10⟩ and flips its phase from +0.5 to -0.5. The amplitudes of non-target items remain unchanged.';
+  } else if (step === '3') {
+    if (b0) { b0.setAttribute('height', '5'); b0.setAttribute('y', '75'); }
+    if (b1) { b1.setAttribute('height', '5'); b1.setAttribute('y', '75'); }
+    if (b2) { b2.setAttribute('height', '80'); b2.setAttribute('y', '0'); }
+    if (b3) { b3.setAttribute('height', '5'); b3.setAttribute('y', '75'); }
+    if (insightEl) insightEl.innerHTML = '<strong>Step 3 (Diffusion Operator):</strong> Inversion about the mean reflects all amplitudes about the average. Because target |10⟩ was negative, it reflects upward to amplitude 1.0 (100% probability), while non-targets drop to 0!';
+  } else if (step === '4') {
+    if (insightEl) insightEl.innerHTML = '<strong>Step 4 (Measurement):</strong> Measuring the quantum register yields target state |10⟩ with near 100% certainty in O(√N) iterations instead of O(N) classical steps.';
+  }
+}
+
+// Unit 4 (VQE Phase) Diagram Handler
+function handleVqePhase(phase) {
+  document.querySelectorAll('[data-vqe-phase]').forEach(btn => btn.classList.remove('primary'));
+  document.querySelector(`[data-vqe-phase="${phase}"]`)?.classList.add('primary');
+
+  const diagram = document.querySelector('[data-diagram="vqe-circuit"]');
+  if (!diagram) return;
+
+  diagram.querySelectorAll('.vqe-box').forEach(box => {
+    box.style.opacity = box.dataset.vqeBox === phase ? '1' : '0.4';
+  });
+
+  const insightEl = diagram.querySelector('[data-vqe-insight]');
+  const insights = {
+    'ansatz': '<strong>Phase 1 (Quantum State Preparation):</strong> A parameterized quantum circuit prepares trial wave function |ψ(θ)⟩ using single-qubit rotations Ry(θ) and CNOT entanglers. Shallow circuits avoid decoherence on noisy NISQ hardware.',
+    'measure': '<strong>Phase 2 (Hamiltonian Measurement):</strong> The quantum device measures expectation values ⟨H⟩ = ⟨ψ(θ)|H|ψ(θ)⟩ decomposed into Pauli string terms for the molecule (e.g. H₂ bond length).',
+    'classical': '<strong>Phase 3 (Classical Optimization):</strong> A classical computer runs a gradient-free optimizer (COBYLA, SPSA) to adjust θ and minimize the energy ⟨H⟩. By the variational principle, ⟨H⟩ ≥ E₀, so the minimum is the exact ground state.'
+  };
+
+  if (insightEl) insightEl.innerHTML = insights[phase] || '';
+}
+
+// Lab Comparison Snapshot Handler
+window.addComparisonSnapshot = function() {
+  const container = document.getElementById('comparison-snapshots');
+  if (!container) return;
+
+  const currentLab = window.location.hash.split('/')[2] || 'hpc-throughput';
+  const inputs = Array.from(document.querySelectorAll('.lab-panel input, .lab-panel select')).map(el => {
+    const label = el.closest('.control')?.querySelector('label')?.textContent?.split('\n')[0] || el.id;
+    return `<li><strong>${label}:</strong> ${el.value}</li>`;
+  }).join('');
+
+  const results = Array.from(document.querySelectorAll('.result strong')).map(el => {
+    const label = el.nextElementSibling?.textContent || '';
+    return `<span class="meta-tag"><strong>${el.textContent}</strong> ${label}</span>`;
+  }).join(' ');
+
+  const card = document.createElement('div');
+  card.className = 'comparison-snapshot-card';
+  card.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+      <strong style="color:var(--cyan);">Snapshot #${container.children.length + 1} (${currentLab})</strong>
+      <button class="icon-button" style="padding:2px 6px;" data-action="remove-snapshot">✕</button>
+    </div>
+    <div style="font-size:0.85rem; margin-bottom:0.5rem;">${results}</div>
+    <details style="font-size:0.8rem;"><summary>Parameters</summary><ul>${inputs}</ul></details>
+  `;
+  card.querySelector('[data-action="remove-snapshot"]')?.addEventListener('click', () => card.remove());
+  container.appendChild(card);
+  toast('✓ Comparison snapshot recorded!');
+};
 
 // MCQ Handler Functions
 function handleMCQAnswer(optionElement) {

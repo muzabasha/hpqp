@@ -4509,3 +4509,227 @@ input[type="range"] {
 [data-theme="dark"] .explanation-modal {
   background: rgba(0, 0, 0, 0.85);
 }
+
+/* Lesson Quick Nav Pill Bar */
+.lesson-quick-nav {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 0.6rem 0;
+  margin: 0 -0.5rem 1.5rem -0.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.quick-nav-pills {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.25rem 0.5rem;
+  scrollbar-width: thin;
+}
+
+.quick-nav-pills::-webkit-scrollbar {
+  height: 4px;
+}
+
+.quick-nav-pills::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 2px;
+}
+
+.quick-nav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.quick-nav-pill:hover {
+  border-color: var(--cyan);
+  background: var(--cyan-soft);
+  color: var(--cyan);
+  transform: translateY(-1px);
+}
+
+.quick-nav-pill:active {
+  transform: translateY(0);
+}
+
+/* Cartoon Storyboard Visual Learning */
+.cartoon-storyboard-container {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-top: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.storyboard-header {
+  margin-bottom: 1.5rem;
+}
+
+.storyboard-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: var(--cyan-soft);
+  color: var(--cyan);
+  border: 1px solid color-mix(in srgb, var(--cyan) 30%, transparent);
+  margin-bottom: 0.5rem;
+}
+
+.cartoon-panels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.cartoon-panel-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.cartoon-panel-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--cyan);
+}
+
+.cartoon-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.9rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.8rem;
+}
+
+.scene-num {
+  font-weight: 700;
+  color: var(--cyan);
+}
+
+.scene-avatar {
+  font-size: 1.1rem;
+}
+
+.scene-tag {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.cartoon-visual-box {
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--surface) 60%, var(--paper));
+  min-height: 160px;
+}
+
+.cartoon-visual-box svg {
+  max-width: 100%;
+  height: auto;
+  max-height: 200px;
+  display: block;
+}
+
+.cartoon-card-body {
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 0.4rem;
+}
+
+.scene-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.scene-caption {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.scene-concept {
+  margin-top: auto;
+  padding: 0.5rem 0.65rem;
+  background: var(--cyan-soft);
+  border-radius: 6px;
+  font-size: 0.78rem;
+  color: var(--ink);
+  border-left: 3px solid var(--cyan);
+  line-height: 1.4;
+}
+
+.text-story-accordion {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+.text-story-accordion summary {
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--cyan);
+}
+
+/* Comparison Snapshots */
+.comparison-snapshot-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+#comparison-snapshots {
+  margin-top: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.saved-configs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  max-height: 350px;
+  overflow-y: auto;
+}
+

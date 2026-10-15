@@ -120,7 +120,7 @@ export const LAB_CATALOG = [
 ];
 
 export function renderLabHub(currentType = 'hpc-throughput') {
-  const currentLab = LAB_CATALOG.find(l => l.id === currentType);
+  const currentLab = LAB_CATALOG.find(l => l.id === currentType) || LAB_CATALOG[0];
   const unitLabs = LAB_CATALOG.filter(l => l.unit === currentLab.unit);
   
   return `<div class="lab-hub-header">

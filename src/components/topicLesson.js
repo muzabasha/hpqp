@@ -13,6 +13,7 @@ function getDiagramForTopic(unitId, topicId) {
     '1-2': 'flynn-taxonomy',
     '1-3': 'memory-hierarchy',
     '1-4': 'amdahl-law',
+    '1-5': 'top500-cluster',
     '2-1': 'openmp-scheduling',
     '2-2': 'mpi-collective',
     '2-3': 'race-deadlock',
@@ -29,14 +30,31 @@ function getDiagramForTopic(unitId, topicId) {
   const key = `${unitId}-${topicId}`;
   const diagramId = diagramMap[key];
   if (diagramId && DIAGRAM_REGISTRY[diagramId]) {
-    return DIAGRAM_REGISTRY[diagramId]();
+    return `<div id="sec-diagram">${DIAGRAM_REGISTRY[diagramId]()}</div>`;
   }
   return '';
 }
 
+function renderLessonQuickNav() {
+  return `<nav class="lesson-quick-nav" aria-label="Lesson Section Navigation">
+    <div class="quick-nav-pills">
+      <button type="button" class="quick-nav-pill" data-scroll-to="sec-prereq"><span>🎯</span> 1. Prerequisites</button>
+      <button type="button" class="quick-nav-pill" data-scroll-to="sec-story"><span>🎨</span> 2. Storyboard</button>
+      <button type="button" class="quick-nav-pill" data-scroll-to="sec-diagram"><span>🔮</span> 3. Interactive Visual</button>
+      <button type="button" class="quick-nav-pill" data-scroll-to="sec-math"><span>📐</span> 4. Math Model</button>
+      <button type="button" class="quick-nav-pill" data-scroll-to="sec-activity"><span>🧪</span> 5. Activities</button>
+      <button type="button" class="quick-nav-pill" data-scroll-to="sec-project"><span>🚀</span> 6. Project</button>
+      <button type="button" class="quick-nav-pill" data-scroll-to="sec-questions"><span>📝</span> 7. Model 2-Marks</button>
+      <button type="button" class="quick-nav-pill" data-scroll-to="sec-quiz"><span>💡</span> 8. Practice MCQ</button>
+      <button type="button" class="quick-nav-pill" data-scroll-to="sec-lab"><span>💻</span> 9. Virtual Lab</button>
+      <button type="button" class="quick-nav-pill" data-scroll-to="sec-synthesis"><span>🏁</span> 10. Synthesis</button>
+    </div>
+  </nav>`;
+}
+
 function renderSection1(t, unitId, topicId) {
   const next = topicId < (getUnitTopics(unitId).length) ? topicId + 1 : null;
-  return `<section class="lesson-section"><div class="section-heading"><div><div class="eyebrow">Section 1</div><h2>Prepare the ground</h2></div><p>Prerequisites, dependencies, and next steps</p></div>
+  return `<section id="sec-prereq" class="lesson-section"><div class="section-heading"><div><div class="eyebrow">Section 1</div><h2>Prepare the ground</h2></div><p>Prerequisites, dependencies, and next steps</p></div>
   <div class="prereq-grid"><div class="prereq-card"><h4>Prerequisites</h4>${list(t.prerequisites)}</div><div class="prereq-card"><h4>Future dependencies</h4>${list(t.dependencies)}</div><div class="prereq-card"><h4>Preparation for next topic</h4><p>${esc(t.preparationPlan)}</p></div></div></section>`;
 }
 
@@ -82,7 +100,7 @@ function renderSection2(t) {
     <div class="story-container"><p class="story-lead">${esc(t.story)}</p></div>
   `;
 
-  return `<section class="lesson-section story-section">
+  return `<section id="sec-story" class="lesson-section story-section">
     <div class="section-heading">
       <div>
         <div class="eyebrow">Section 2</div>
@@ -107,12 +125,12 @@ function renderSection2(t) {
 function renderInteractiveDiagram(unitId, topicId) {
   const diagram = getDiagramForTopic(unitId, topicId);
   if (!diagram) return '';
-  return `<section class="lesson-section"><div class="section-heading"><div><div class="eyebrow">Interactive Visual</div><h2>Explore the concept visually</h2></div><p>Interactive diagram with animations and real-time controls</p></div>${diagram}</section>`;
+  return `<section id="sec-diagram" class="lesson-section"><div class="section-heading"><div><div class="eyebrow">Interactive Visual</div><h2>Explore the concept visually</h2></div><p>Interactive diagram with animations and real-time controls</p></div>${diagram}</section>`;
 }
 
 function renderSection3(t) {
   const eqs = t.equations || [];
-  return `<section class="lesson-section"><div class="section-heading"><div><div class="eyebrow">Section 3</div><h2>Mathematical modelling</h2></div><p>Equation, simulation, decision</p></div>
+  return `<section id="sec-math" class="lesson-section"><div class="section-heading"><div><div class="eyebrow">Section 3</div><h2>Mathematical modelling</h2></div><p>Equation, simulation, decision</p></div>
   <div class="math-intro"><div class="math-why"><h4>Why model it?</h4><p><strong>Need:</strong> ${esc(t.mathNeed)}</p><p><strong>Motivation:</strong> ${esc(t.mathMotivation)}</p></div>
   <div class="math-challenges"><h4>Challenges</h4><div class="challenge-grid">${(t.realWorldChallenges || []).map((c) => `<div class="challenge-card real"><span class="challenge-icon">🌍</span><p>${esc(c)}</p></div>`).join('')}${(t.technicalChallenges || []).map((c) => `<div class="challenge-card tech"><span class="challenge-icon">⚙</span><p>${esc(c)}</p></div>`).join('')}</div></div></div>
   <div class="equations-container">${eqs.map((eq) => `<div class="equation-block"><div class="equation-name">${esc(eq.name)}</div><div class="equation-render">\\(${eq.latex}\\)</div><div class="equation-details"><div class="eq-row"><strong>Symbols:</strong> ${esc(eq.symbols)}</div><div class="eq-row"><strong>Meaning:</strong> ${esc(eq.meaning)}</div><div class="eq-row"><strong>Why needed:</strong> ${esc(eq.whyNeeded)}</div><div class="eq-row"><strong>Interpretation:</strong> ${esc(eq.interpretation)}</div></div></div>`).join('')}</div>
@@ -121,14 +139,14 @@ function renderSection3(t) {
 }
 
 function renderSection4(t) {
-  return `<section class="lesson-section"><div class="section-heading"><div><div class="eyebrow">Section 4</div><h2>Activity-based learning</h2></div><p>Four levels, one progression.</p></div>
+  return `<section id="sec-activity" class="lesson-section"><div class="section-heading"><div><div class="eyebrow">Section 4</div><h2>Activity-based learning</h2></div><p>Four levels, one progression.</p></div>
   <div class="activities-container">${(t.activities || []).map((a) => `<div class="activity-card level-${a.level}"><div class="activity-header"><div class="eyebrow">Level ${a.level} — ${esc(a.levelName)}</div><h3>${esc(a.objective)}</h3></div><div class="activity-body"><div class="activity-col"><h4>Instructions</h4><p>${esc(a.instructions)}</p><h4>Inputs</h4><p>${esc(a.inputs)}</p><h4>Expected outputs</h4><p>${esc(a.expectedOutputs)}</p></div><div class="activity-col"><h4>Assessment rubric</h4><p>${esc(a.rubric)}</p><h4>Learning outcomes</h4><p>${esc(a.learningOutcomes)}</p><div class="activity-meta"><span class="meta-tag">⏱ ${esc(a.time)}</span><span class="meta-tag">📋 ${esc(a.materials)}</span></div></div></div></div>`).join('')}</div></section>`;
 }
 
 function renderSection5(t) {
   const timeline = t.projectTimeline || [];
   const risks = t.projectRisks || [];
-  return `<section class="lesson-section"><div class="section-heading"><div><div class="eyebrow">Section 5</div><h2>Project-based learning</h2></div><p>From classroom model to TRL 3 demonstration.</p></div>
+  return `<section id="sec-project" class="lesson-section"><div class="section-heading"><div><div class="eyebrow">Section 5</div><h2>Project-based learning</h2></div><p>From classroom model to TRL 3 demonstration.</p></div>
   <div class="project-grid"><div class="project-col"><h4>Scope</h4><p>${esc(t.projectScope)}</p><h4>Feasibility</h4><p>${esc(t.projectFeasibility)}</p><h4>Methodology</h4><p>${esc(t.projectMethodology)}</p><h4>TRL Level</h4><p>${esc(t.projectTRL)}</p><h4>Budget</h4><p>${esc(t.projectBudget)}</p></div>
   <div class="project-col"><h4>Objectives</h4>${list(t.projectObjectives)}<h4>Outcomes</h4>${list(t.projectOutcomes)}<h4>Team roles</h4>${list(t.projectRoles)}</div></div>
   <div class="gantt-chart" aria-label="Project timeline"><div class="gantt-header">Timeline</div><div class="gantt-bars">${timeline.map((m, i) => `<div class="gantt-bar" style="--bar-index:${i}"><span class="gantt-label">${esc(m.milestone)}</span><span class="gantt-duration">${esc(m.duration)}</span><span class="gantt-deliverable">${esc(m.deliverable)}</span></div>`).join('')}</div></div>
@@ -136,19 +154,19 @@ function renderSection5(t) {
 }
 
 function renderSection6(t) {
-  return `<section class="lesson-section"><div class="section-heading"><div><div class="eyebrow">Section 6</div><h2>Model 2-mark questions</h2></div><p>Recall, calculate, apply, solve.</p></div>
+  return `<section id="sec-questions" class="lesson-section"><div class="section-heading"><div><div class="eyebrow">Section 6</div><h2>Model 2-mark questions</h2></div><p>Recall, calculate, apply, solve.</p></div>
   <div class="question-grid">${(t.questions || []).map((q) => `<div class="question-card type-${q.type}"><div class="question-type-badge">${esc(q.type)}</div><h4 class="question-text">${esc(q.question)}</h4><details class="answer-reveal"><summary>Show answer</summary><div class="answer-content"><p class="answer-text"><strong>Answer:</strong> ${esc(q.answer)}</p><p class="explanation-text">${esc(q.explanation)}</p><div class="answer-meta"><div class="common-mistakes"><strong>Common mistakes:</strong> ${esc(q.commonMistakes)}</div><div class="tip"><strong>Tip:</strong> ${esc(q.tip)}</div></div></div></details></div>`).join('')}</div></section>`;
 }
 
 function renderSection7(t, unitId, topicId) {
-  return `<section class="lesson-section"><div class="section-heading"><div><div class="eyebrow">Section 7 · NEP 2020</div><h2>Learn by doing</h2></div><p>Experiment → observe → analyze → compare → reflect → evaluate</p></div>
+  return `<section id="sec-lab" class="lesson-section"><div class="section-heading"><div><div class="eyebrow">Section 7 · NEP 2020</div><h2>Learn by doing</h2></div><p>Experiment → observe → analyze → compare → reflect → evaluate</p></div>
   <p>Use the virtual laboratory below as a guided simulation. Reset before a new trial, change one parameter at a time, pause your reasoning before reading the feedback, and compare at least two runs.</p>
   <div class="lab-steps"><span>1. Experiment</span><span>2. Observe</span><span>3. Analyze</span><span>4. Compare</span><span>5. Reflect</span><span>6. Evaluate</span></div>
   ${renderLab(t.labType || 'speedup')}</section>`;
 }
 
 function renderEndSection(t, unitId, topicId) {
-  return `<section class="lesson-section end-section"><div class="section-heading"><div><div class="eyebrow">Topic synthesis</div><h2>Carry the idea forward</h2></div></div>
+  return `<section id="sec-synthesis" class="lesson-section end-section"><div class="section-heading"><div><div class="eyebrow">Topic synthesis</div><h2>Carry the idea forward</h2></div></div>
   <div class="end-grid"><div class="end-card insights"><h4>Key Insights</h4>${list(t.keyInsights)}</div><div class="end-card pros"><h4>Advantages</h4>${list(t.advantages)}</div><div class="end-card cons"><h4>Disadvantages</h4>${list(t.disadvantages)}</div></div>
   <div class="end-grid"><div class="end-card"><h4>Possible Improvements</h4>${list(t.improvements)}</div><div class="end-card"><h4>Future Scope</h4><p>${esc(t.futureScope)}</p></div></div>
   <div class="end-grid three-col"><div class="end-card"><h4>Industrial Applications</h4>${list(t.industrialApplications)}</div><div class="end-card"><h4>Research Opportunities</h4>${list(t.researchOpportunities)}</div><div class="end-card"><h4>Career Relevance</h4>${list(t.careerRelevance)}</div></div>
@@ -161,6 +179,7 @@ export function renderTopicLesson(unitId, topicId) {
   const total = getUnitTopics(unitId).length;
   return `<div class="lesson-header"><div class="eyebrow">Unit ${unitId} / Topic ${String(topicId).padStart(2, '0')} / Complete lesson</div><h1>${esc(t.title)}</h1><p class="lede">${esc(t.description)}</p></div>
   <div class="lesson-nav"><a class="button" href="#/unit/${unitId}">← Unit map</a><span>Topic ${topicId} of ${total}</span><a class="button" href="#/unit/${unitId}/topic/${Math.min(topicId + 1, total)}">Next topic →</a></div>
+  ${renderLessonQuickNav()}
   ${renderSection1(t, unitId, topicId)}
   ${renderSection2(t)}
   ${renderInteractiveDiagram(unitId, topicId)}

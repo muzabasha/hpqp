@@ -5,7 +5,7 @@ export function renderInteractiveMCQ(topicId, unitId = 1) {
   const mcqs = MCQ_DATABASE[`${unitId}-${topicId}`] || [];
   if (mcqs.length === 0) return '';
 
-  return `<section class="lesson-section mcq-section">
+  return `<section id="sec-quiz" class="lesson-section mcq-section">
     <div class="section-heading">
       <div>
         <div class="eyebrow">Interactive Assessment</div>
@@ -397,7 +397,7 @@ const MCQ_DATABASE = {
         "lastprivate(var)"
       ],
       correctIndex: 2,
-      explanation: "firstprivate(var) creates a private copy for each thread AND initializes it with the value var had before entering the parallel region. private(var) creates uninitialized copies."
+      explanation: "firstprivate(var) creates a private copy for each thread AND initializes it with the value the variable had before entering the parallel region. private(var) creates uninitialized copies."
     },
     {
       question: "A parallel loop shows 95% efficiency on 4 threads but only 60% on 16 threads. What is the MOST likely cause?",

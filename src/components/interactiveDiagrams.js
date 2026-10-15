@@ -296,12 +296,114 @@ export function diagramAmdahlLaw() {
   </div>`;
 }
 
+// Unit 1, Topic 5: TOP500, Green500, and Cluster Architecture
+export function diagramTop500Cluster() {
+  return `<div class="interactive-diagram" data-diagram="top500-cluster">
+    <div class="diagram-header">
+      <h4>TOP500 & Green500 Supercomputing Cluster Architecture</h4>
+      <div class="diagram-controls">
+        <button class="button small primary" data-cluster-mode="arch">Cluster Hierarchy</button>
+        <button class="button small" data-cluster-mode="linpack">LINPACK (Rmax/Rpeak)</button>
+        <button class="button small" data-cluster-mode="green500">Green500 PUE & Efficiency</button>
+      </div>
+    </div>
+    <svg viewBox="0 0 800 480" class="diagram-svg">
+      <!-- Cluster Facility Frame -->
+      <rect x="20" y="20" width="760" height="440" fill="var(--surface)" stroke="var(--cyan)" stroke-width="2" rx="12"/>
+      <text x="40" y="50" font-weight="bold" font-size="16" fill="var(--cyan)">HPC Data Center / Supercomputer Cluster Fabric</text>
+
+      <!-- Rack 1 -->
+      <g class="cluster-rack" data-rack="1" transform="translate(40, 70)">
+        <rect x="0" y="0" width="130" height="260" fill="var(--surface-sunken)" stroke="var(--line)" stroke-width="2" rx="8"/>
+        <text x="65" y="25" text-anchor="middle" font-size="12" font-weight="bold" fill="var(--ink)">Rack 01</text>
+        ${[0, 1, 2, 3].map((b) => `
+          <g transform="translate(10, ${40 + b * 50})">
+            <rect x="0" y="0" width="110" height="40" fill="var(--cyan-soft)" stroke="var(--cyan)" stroke-width="1.5" rx="4"/>
+            <text x="55" y="18" text-anchor="middle" font-size="10" font-weight="600">Blade Node ${b + 1}</text>
+            <text x="55" y="32" text-anchor="middle" font-size="8" fill="var(--muted)">2x CPU + 4x GPU</text>
+          </g>
+        `).join('')}
+      </g>
+
+      <!-- Rack 2 -->
+      <g class="cluster-rack" data-rack="2" transform="translate(190, 70)">
+        <rect x="0" y="0" width="130" height="260" fill="var(--surface-sunken)" stroke="var(--line)" stroke-width="2" rx="8"/>
+        <text x="65" y="25" text-anchor="middle" font-size="12" font-weight="bold" fill="var(--ink)">Rack 02</text>
+        ${[0, 1, 2, 3].map((b) => `
+          <g transform="translate(10, ${40 + b * 50})">
+            <rect x="0" y="0" width="110" height="40" fill="var(--lime-soft)" stroke="var(--lime)" stroke-width="1.5" rx="4"/>
+            <text x="55" y="18" text-anchor="middle" font-size="10" font-weight="600">Blade Node ${b + 5}</text>
+            <text x="55" y="32" text-anchor="middle" font-size="8" fill="var(--muted)">2x CPU + 4x GPU</text>
+          </g>
+        `).join('')}
+      </g>
+
+      <!-- Compute Node Breakdown (Zoomed Inspection) -->
+      <g transform="translate(340, 70)">
+        <rect x="0" y="0" width="420" height="260" fill="var(--surface)" stroke="var(--orange)" stroke-width="2" rx="8"/>
+        <text x="210" y="25" text-anchor="middle" font-weight="bold" font-size="14" fill="var(--orange)">Compute Node Architecture Breakdown</text>
+
+        <!-- Host Dual-Socket CPUs -->
+        <rect x="20" y="45" width="180" height="55" fill="var(--cyan-soft)" stroke="var(--cyan)" stroke-width="1.5" rx="6"/>
+        <text x="110" y="68" text-anchor="middle" font-size="11" font-weight="bold">Dual Host CPUs</text>
+        <text x="110" y="86" text-anchor="middle" font-size="9" fill="var(--muted)">2× AMD EPYC / Intel Xeon (128 Cores)</text>
+
+        <!-- High-Speed Interconnect -->
+        <rect x="220" y="45" width="180" height="55" fill="var(--pink-soft)" stroke="var(--pink)" stroke-width="1.5" rx="6"/>
+        <text x="310" y="68" text-anchor="middle" font-size="11" font-weight="bold">Fabric Interconnect</text>
+        <text x="310" y="86" text-anchor="middle" font-size="9" fill="var(--muted)">400 Gbps InfiniBand / Slingshot</text>
+
+        <!-- GPU Accelerators -->
+        <text x="210" y="125" text-anchor="middle" font-size="11" font-weight="bold" fill="var(--lime)">Accelerated GPUs (Direct Liquid Cooled)</text>
+        ${[0, 1, 2, 3].map((g) => `
+          <g transform="translate(${25 + g * 95}, 135)">
+            <rect x="0" y="0" width="85" height="55" fill="var(--lime-soft)" stroke="var(--lime)" stroke-width="1.5" rx="4"/>
+            <text x="42.5" y="24" text-anchor="middle" font-size="10" font-weight="bold">GPU ${g}</text>
+            <text x="42.5" y="40" text-anchor="middle" font-size="8" fill="var(--muted)">A100 / MI250X</text>
+          </g>
+        `).join('')}
+
+        <!-- Liquid Cooling Pipes -->
+        <path d="M 15 210 L 405 210" stroke="var(--cyan)" stroke-width="4" stroke-dasharray="6,4"/>
+        <text x="210" y="235" text-anchor="middle" font-size="10" fill="var(--cyan)" font-weight="600">Direct-to-Chip Chilled Liquid Loop (PUE = 1.03)</text>
+      </g>
+
+      <!-- Dynamic Metrics & Insights Panel -->
+      <g transform="translate(40, 350)">
+        <rect x="0" y="0" width="720" height="90" fill="var(--surface-sunken)" stroke="var(--line)" stroke-width="1.5" rx="8"/>
+        
+        <g transform="translate(30, 25)">
+          <text x="0" y="0" font-size="11" fill="var(--muted)">TOP500 Metric (LINPACK Rmax):</text>
+          <text x="0" y="25" font-size="16" font-weight="bold" fill="var(--cyan)" data-cluster-metric-1>1.194 EFLOPS (Frontier #1)</text>
+          <text x="0" y="45" font-size="10" fill="var(--muted)" data-cluster-sub-1>HPL benchmark actual sustained performance</text>
+        </g>
+
+        <g transform="translate(290, 25)">
+          <text x="0" y="0" font-size="11" fill="var(--muted)">Theoretical Peak (Rpeak):</text>
+          <text x="0" y="25" font-size="16" font-weight="bold" fill="var(--lime)" data-cluster-metric-2>1.685 EFLOPS</text>
+          <text x="0" y="45" font-size="10" fill="var(--muted)" data-cluster-sub-2>Efficiency Rmax / Rpeak = 70.8%</text>
+        </g>
+
+        <g transform="translate(530, 25)">
+          <text x="0" y="0" font-size="11" fill="var(--muted)">Green500 Power Efficiency:</text>
+          <text x="0" y="25" font-size="16" font-weight="bold" fill="var(--orange)" data-cluster-metric-3>52.5 GFLOPS / Watt</text>
+          <text x="0" y="45" font-size="10" fill="var(--muted)" data-cluster-sub-3>PUE: 1.03 | Direct Warm-Water Cooled</text>
+        </g>
+      </g>
+    </svg>
+    <div class="diagram-insight" data-cluster-insight>
+      <strong>TOP500 vs Green500:</strong> TOP500 ranks clusters by raw sustained LINPACK performance (Rmax in PFLOPS/EFLOPS). Green500 ranks them by energy efficiency (GFLOPS/Watt). Exascale systems rely on GPU accelerators and liquid cooling to keep facility Power Usage Effectiveness (PUE) below 1.10.
+    </div>
+  </div>`;
+}
+
 // Export all diagram rendering functions
 export const DIAGRAM_REGISTRY = {
   'parallel-processing': diagramParallelProcessing,
   'flynn-taxonomy': diagramFlynnTaxonomy,
   'memory-hierarchy': diagramMemoryHierarchy,
   'amdahl-law': diagramAmdahlLaw,
+  'top500-cluster': diagramTop500Cluster,
   'openmp-scheduling': diagramOpenMPScheduling,
   'mpi-collective': diagramMPICollective,
   'race-deadlock': diagramRaceDeadlock,
@@ -981,7 +1083,12 @@ export function diagramQubitBloch() {
   return `<div class="interactive-diagram" data-diagram="qubit-bloch">
     <div class="diagram-header">
       <h4>Qubit State: Bloch Sphere Representation</h4>
-      <p class="diagram-subtitle">Visualizing superposition states</p>
+      <div class="diagram-controls">
+        <button class="button small primary" data-bloch-state="|0⟩">|0⟩ Ground</button>
+        <button class="button small" data-bloch-state="|1⟩">|1⟩ Excited</button>
+        <button class="button small" data-bloch-state="|+⟩">|+⟩ Superposition</button>
+        <button class="button small" data-bloch-state="|-⟩">|-⟩ Phase -1</button>
+      </div>
     </div>
     <svg viewBox="0 0 800 500" class="diagram-svg">
       <ellipse cx="400" cy="250" rx="180" ry="180" fill="var(--cyan-soft)" opacity="0.2" stroke="var(--cyan)" stroke-width="2"/>
@@ -993,13 +1100,14 @@ export function diagramQubitBloch() {
       <circle cx="400" cy="90" r="8" fill="var(--pink)"/>
       <text x="405" y="55" text-anchor="middle" font-size="16" font-weight="700" fill="var(--cyan)">|0⟩</text>
       <text x="405" y="450" text-anchor="middle" font-size="16" font-weight="700" fill="var(--cyan)">|1⟩</text>
-      <rect x="50" y="30" width="200" height="140" fill="var(--surface)" stroke="var(--line)" stroke-width="2" rx="8"/>
-      <text x="150" y="60" text-anchor="middle" font-weight="bold" font-size="13">Qubit State</text>
-      <text x="150" y="90" text-anchor="middle" font-size="16" font-weight="700" fill="var(--pink)">|ψ⟩ = α|0⟩ + β|1⟩</text>
-      <text x="150" y="120" text-anchor="middle" font-size="11" fill="var(--muted)">|α|² + |β|² = 1</text>
+      <rect x="50" y="30" width="220" height="150" fill="var(--surface)" stroke="var(--line)" stroke-width="2" rx="8"/>
+      <text x="160" y="60" text-anchor="middle" font-weight="bold" font-size="13">Active Qubit State</text>
+      <text x="160" y="90" text-anchor="middle" font-size="16" font-weight="700" fill="var(--pink)" data-state-label>|0⟩</text>
+      <text x="160" y="115" text-anchor="middle" font-size="13" font-weight="600" fill="var(--cyan)" data-state-eq>α=1, β=0</text>
+      <text x="160" y="145" text-anchor="middle" font-size="11" fill="var(--muted)">|α|² + |β|² = 1 (100% |0⟩)</text>
     </svg>
-    <div class="diagram-insight">
-      <strong>Bloch Sphere:</strong> Every single-qubit state maps to a point on a sphere surface. North pole = |0⟩, South pole = |1⟩. Superposition states lie between poles.
+    <div class="diagram-insight" data-bloch-insight>
+      <strong>|0⟩ State:</strong> North pole of Bloch sphere. Pure computational basis state. Measurement always yields 0.
     </div>
   </div>`;
 }
@@ -1007,42 +1115,57 @@ export function diagramQubitBloch() {
 export function diagramQuantumGates() {
   return `<div class="interactive-diagram" data-diagram="quantum-gates">
     <div class="diagram-header">
-      <h4>Single-Qubit Quantum Gates</h4>
-      <p class="diagram-subtitle">Unitary transformations on the Bloch sphere</p>
+      <h4>Single-Qubit Quantum Gates Simulator</h4>
+      <div class="diagram-controls">
+        <button class="button small primary" data-qgate-type="h">Hadamard (H)</button>
+        <button class="button small" data-qgate-type="x">Pauli-X (NOT)</button>
+        <button class="button small" data-qgate-type="z">Pauli-Z (Phase)</button>
+        <button class="button small" data-qgate-type="s">Phase S (π/2)</button>
+        <button class="button small" data-qgate-type="t">T Gate (π/4)</button>
+      </div>
     </div>
     <svg viewBox="0 0 800 500" class="diagram-svg">
-      <text x="50" y="40" font-weight="bold" font-size="18" fill="var(--cyan)">Common Quantum Gates</text>
-      <g transform="translate(50, 70)">
+      <text x="50" y="40" font-weight="bold" font-size="18" fill="var(--cyan)">Standard Universal Quantum Gate Library</text>
+      <g transform="translate(50, 70)" class="qgate-card" data-gate-card="h">
         <rect x="0" y="0" width="160" height="100" fill="var(--cyan-soft)" stroke="var(--cyan)" stroke-width="2" rx="8"/>
         <text x="80" y="30" text-anchor="middle" font-weight="bold" font-size="16">Hadamard (H)</text>
         <text x="80" y="55" text-anchor="middle" font-size="11" fill="var(--muted)">Creates superposition</text>
         <text x="80" y="75" text-anchor="middle" font-size="10" font-family="monospace">H|0⟩ = |+⟩</text>
         <text x="80" y="90" text-anchor="middle" font-size="10" font-family="monospace">H|1⟩ = |-⟩</text>
       </g>
-      <g transform="translate(240, 70)">
+      <g transform="translate(240, 70)" class="qgate-card" data-gate-card="x">
         <rect x="0" y="0" width="160" height="100" fill="var(--lime-soft)" stroke="var(--lime)" stroke-width="2" rx="8"/>
         <text x="80" y="30" text-anchor="middle" font-weight="bold" font-size="16">Pauli-X</text>
         <text x="80" y="55" text-anchor="middle" font-size="11" fill="var(--muted)">Bit flip (NOT gate)</text>
         <text x="80" y="75" text-anchor="middle" font-size="10" font-family="monospace">X|0⟩ = |1⟩</text>
         <text x="80" y="90" text-anchor="middle" font-size="10" font-family="monospace">X|1⟩ = |0⟩</text>
       </g>
-      <g transform="translate(430, 70)">
+      <g transform="translate(430, 70)" class="qgate-card" data-gate-card="z">
         <rect x="0" y="0" width="160" height="100" fill="var(--orange-soft)" stroke="var(--orange)" stroke-width="2" rx="8"/>
         <text x="80" y="30" text-anchor="middle" font-weight="bold" font-size="16">Pauli-Z</text>
         <text x="80" y="55" text-anchor="middle" font-size="11" fill="var(--muted)">Phase flip</text>
         <text x="80" y="75" text-anchor="middle" font-size="10" font-family="monospace">Z|0⟩ = |0⟩</text>
         <text x="80" y="90" text-anchor="middle" font-size="10" font-family="monospace">Z|1⟩ = -|1⟩</text>
       </g>
-      <g transform="translate(620, 70)">
+      <g transform="translate(620, 70)" class="qgate-card" data-gate-card="s">
         <rect x="0" y="0" width="160" height="100" fill="var(--pink-soft)" stroke="var(--pink)" stroke-width="2" rx="8"/>
-        <text x="80" y="30" text-anchor="middle" font-weight="bold" font-size="16">CNOT</text>
-        <text x="80" y="55" text-anchor="middle" font-size="11" fill="var(--muted)">2-qubit entangling</text>
-        <text x="80" y="75" text-anchor="middle" font-size="10" font-family="monospace">Control + Target</text>
-        <text x="80" y="90" text-anchor="middle" font-size="10" font-family="monospace">Creates entanglement</text>
+        <text x="80" y="30" text-anchor="middle" font-weight="bold" font-size="16">Phase S / T</text>
+        <text x="80" y="55" text-anchor="middle" font-size="11" fill="var(--muted)">Arbitrary Z rotation</text>
+        <text x="80" y="75" text-anchor="middle" font-size="10" font-family="monospace">S = diag(1, i)</text>
+        <text x="80" y="90" text-anchor="middle" font-size="10" font-family="monospace">T = diag(1, e^iπ/4)</text>
+      </g>
+
+      <!-- Matrix Representation Display Box -->
+      <g transform="translate(50, 200)">
+        <rect x="0" y="0" width="730" height="160" fill="var(--surface-sunken)" stroke="var(--line)" stroke-width="2" rx="8"/>
+        <text x="365" y="35" text-anchor="middle" font-weight="bold" font-size="14" fill="var(--cyan)">Unitary Transformation Matrix &amp; Circuit Effect</text>
+        <text x="365" y="70" text-anchor="middle" font-family="monospace" font-size="15" fill="var(--ink)" data-qgate-matrix>H = 1/√2 [ [1,  1], [1, -1] ]</text>
+        <text x="365" y="105" text-anchor="middle" font-size="13" fill="var(--lime)" data-qgate-action>Action: Rotates |0⟩ into equal superposition (|+⟩ = (|0⟩ + |1⟩)/√2)</text>
+        <text x="365" y="135" text-anchor="middle" font-size="11" fill="var(--muted)" data-qgate-physics>Bloch Sphere: 180° rotation about the (X+Z)/√2 axis</text>
       </g>
     </svg>
-    <div class="diagram-insight">
-      <strong>Quantum Gates:</strong> Unitary matrices that transform qubit states. Hadamard creates superposition, Pauli gates flip bits/phases, CNOT entangles qubits.
+    <div class="diagram-insight" data-qgate-insight>
+      <strong>Hadamard (H) Gate:</strong> Creates equal superposition: H|0⟩ = (|0⟩ + |1⟩)/√2 and H|1⟩ = (|0⟩ - |1⟩)/√2. Represents a 180° rotation around the (X+Z)/√2 axis on the Bloch sphere.
     </div>
   </div>`;
 }
@@ -1051,48 +1174,74 @@ export function diagramQuantumGates() {
 export function diagramQuantumAlgorithms() {
   return `<div class="interactive-diagram" data-diagram="quantum-algorithms">
     <div class="diagram-header">
-      <h4>Quantum Algorithm: Grover Search</h4>
-      <p class="diagram-subtitle">Quadratic speedup for unstructured search</p>
+      <h4>Quantum Algorithm: Grover Search Execution Flow</h4>
+      <div class="diagram-controls">
+        <button class="button small primary" data-grover-step="1">Step 1: Superposition</button>
+        <button class="button small" data-grover-step="2">Step 2: Oracle Phase Flip</button>
+        <button class="button small" data-grover-step="3">Step 3: Diffusion (Inversion)</button>
+        <button class="button small" data-grover-step="4">Step 4: Measurement</button>
+      </div>
     </div>
     <svg viewBox="0 0 800 450" class="diagram-svg">
-      <text x="400" y="35" text-anchor="middle" font-weight="bold" font-size="18" fill="var(--cyan)">Grover's Algorithm Steps</text>
-      <g transform="translate(50, 60)">
+      <text x="400" y="35" text-anchor="middle" font-weight="bold" font-size="18" fill="var(--cyan)">Grover's Amplitude Amplification Pipeline</text>
+      <g transform="translate(50, 60)" class="grover-box" data-grover-box="1">
         <rect x="0" y="0" width="150" height="80" fill="var(--cyan-soft)" stroke="var(--cyan)" stroke-width="2" rx="8"/>
         <text x="75" y="25" text-anchor="middle" font-weight="bold" font-size="13">1. Initialize</text>
         <text x="75" y="45" text-anchor="middle" font-size="10" fill="var(--muted)">Apply H⊗n</text>
         <text x="75" y="65" text-anchor="middle" font-size="10" fill="var(--muted)">Equal superposition</text>
       </g>
       <path d="M 200 100 L 240 100" stroke="var(--line)" stroke-width="2" marker-end="url(#arrow-cyan)"/>
-      <g transform="translate(240, 60)">
+      <g transform="translate(240, 60)" class="grover-box" data-grover-box="2">
         <rect x="0" y="0" width="150" height="80" fill="var(--lime-soft)" stroke="var(--lime)" stroke-width="2" rx="8"/>
         <text x="75" y="25" text-anchor="middle" font-weight="bold" font-size="13">2. Oracle</text>
         <text x="75" y="45" text-anchor="middle" font-size="10" fill="var(--muted)">Mark target</text>
-        <text x="75" y="65" text-anchor="middle" font-size="10" fill="var(--muted)">Phase flip</text>
+        <text x="75" y="65" text-anchor="middle" font-size="10" fill="var(--muted)">Phase flip (-1)</text>
       </g>
       <path d="M 390 100 L 430 100" stroke="var(--line)" stroke-width="2" marker-end="url(#arrow-cyan)"/>
-      <g transform="translate(430, 60)">
+      <g transform="translate(430, 60)" class="grover-box" data-grover-box="3">
         <rect x="0" y="0" width="150" height="80" fill="var(--orange-soft)" stroke="var(--orange)" stroke-width="2" rx="8"/>
         <text x="75" y="25" text-anchor="middle" font-weight="bold" font-size="13">3. Diffusion</text>
         <text x="75" y="45" text-anchor="middle" font-size="10" fill="var(--muted)">Amplify amplitude</text>
         <text x="75" y="65" text-anchor="middle" font-size="10" fill="var(--muted)">Inversion about avg</text>
       </g>
       <path d="M 580 100 L 620 100" stroke="var(--line)" stroke-width="2" marker-end="url(#arrow-cyan)"/>
-      <g transform="translate(620, 60)">
+      <g transform="translate(620, 60)" class="grover-box" data-grover-box="4">
         <rect x="0" y="0" width="150" height="80" fill="var(--pink-soft)" stroke="var(--pink)" stroke-width="2" rx="8"/>
         <text x="75" y="25" text-anchor="middle" font-weight="bold" font-size="13">4. Measure</text>
         <text x="75" y="45" text-anchor="middle" font-size="10" fill="var(--muted)">High probability</text>
-        <text x="75" y="65" text-anchor="middle" font-size="10" fill="var(--muted)">Find target</text>
+        <text x="75" y="65" text-anchor="middle" font-size="10" fill="var(--muted)">Find target item</text>
       </g>
-      <text x="315" y="170" text-anchor="middle" font-style="italic" fill="var(--muted)">Repeat √N times</text>
+      <text x="315" y="170" text-anchor="middle" font-style="italic" fill="var(--muted)">Repeat √N times for optimal amplitude</text>
       <path d="M 430 145 Q 315 190 200 145" stroke="var(--orange)" stroke-width="2" stroke-dasharray="4" fill="none" marker-end="url(#arrow-orange)"/>
       <defs>
         <marker id="arrow-orange" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
           <polygon points="0 0, 10 5, 0 10" fill="var(--orange)"/>
         </marker>
       </defs>
+
+      <!-- Dynamic Grover State Visualizer -->
+      <g transform="translate(50, 210)">
+        <rect x="0" y="0" width="720" height="180" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5" rx="8"/>
+        <text x="360" y="30" text-anchor="middle" font-weight="bold" font-size="13" fill="var(--cyan)">Amplitude State Distribution (N = 4, target = |10⟩)</text>
+        
+        <!-- Bars for |00⟩, |01⟩, |10⟩, |11⟩ -->
+        <g transform="translate(80, 50)">
+          <rect x="0" y="30" width="100" height="50" fill="var(--cyan-soft)" stroke="var(--cyan)" rx="4" data-grover-bar-0/>
+          <text x="50" y="100" text-anchor="middle" font-size="11">|00⟩: 0.50</text>
+          
+          <rect x="140" y="30" width="100" height="50" fill="var(--cyan-soft)" stroke="var(--cyan)" rx="4" data-grover-bar-1/>
+          <text x="190" y="100" text-anchor="middle" font-size="11">|01⟩: 0.50</text>
+          
+          <rect x="280" y="30" width="100" height="50" fill="var(--pink-soft)" stroke="var(--pink)" stroke-width="2" rx="4" data-grover-bar-2/>
+          <text x="330" y="100" text-anchor="middle" font-size="11" font-weight="bold" fill="var(--pink)">|10⟩: 0.50 ★</text>
+          
+          <rect x="420" y="30" width="100" height="50" fill="var(--cyan-soft)" stroke="var(--cyan)" rx="4" data-grover-bar-3/>
+          <text x="470" y="100" text-anchor="middle" font-size="11">|11⟩: 0.50</text>
+        </g>
+      </g>
     </svg>
-    <div class="diagram-insight">
-      <strong>Grover's Algorithm:</strong> Searches N items in O(√N) time vs O(N) classically. Oracle marks target, diffusion amplifies its amplitude through √N iterations.
+    <div class="diagram-insight" data-grover-insight>
+      <strong>Step 1 (Superposition):</strong> Apply Hadamard gates H⊗n to initialize all N = 2ⁿ basis states in an equal superposition with amplitude 1/√N.
     </div>
   </div>`;
 }
@@ -1100,39 +1249,49 @@ export function diagramQuantumAlgorithms() {
 export function diagramVqeCircuit() {
   return `<div class="interactive-diagram" data-diagram="vqe-circuit">
     <div class="diagram-header">
-      <h4>Variational Quantum Eigensolver (VQE)</h4>
-      <p class="diagram-subtitle">Hybrid quantum-classical algorithm</p>
+      <h4>Variational Quantum Eigensolver (VQE) Hybrid Loop</h4>
+      <div class="diagram-controls">
+        <button class="button small primary" data-vqe-phase="ansatz">Phase 1: Quantum Ansatz |ψ(θ)⟩</button>
+        <button class="button small" data-vqe-phase="measure">Phase 2: Measure Hamiltonian ⟨H⟩</button>
+        <button class="button small" data-vqe-phase="classical">Phase 3: Classical Optimization</button>
+      </div>
     </div>
     <svg viewBox="0 0 800 450" class="diagram-svg">
       <rect x="50" y="50" width="700" height="350" fill="var(--surface)" stroke="var(--cyan)" stroke-width="2" rx="12"/>
-      <text x="400" y="85" text-anchor="middle" font-weight="bold" font-size="16" fill="var(--cyan)">VQE Workflow</text>
-      <g transform="translate(100, 120)">
+      <text x="400" y="85" text-anchor="middle" font-weight="bold" font-size="16" fill="var(--cyan)">VQE NISQ Hybrid Quantum-Classical Feedback Loop</text>
+      
+      <g transform="translate(100, 120)" class="vqe-box" data-vqe-box="ansatz">
         <rect x="0" y="0" width="180" height="100" fill="var(--lime-soft)" stroke="var(--lime)" stroke-width="2" rx="8"/>
-        <text x="90" y="30" text-anchor="middle" font-weight="bold" font-size="13">Quantum Device</text>
+        <text x="90" y="30" text-anchor="middle" font-weight="bold" font-size="13">1. Quantum Device</text>
         <text x="90" y="50" text-anchor="middle" font-size="10" fill="var(--muted)">Prepare ansatz state</text>
-        <text x="90" y="70" text-anchor="middle" font-size="10" fill="var(--muted)">|ψ(θ)⟩</text>
-        <text x="90" y="90" text-anchor="middle" font-size="10" fill="var(--muted)">Measure ⟨H⟩</text>
+        <text x="90" y="70" text-anchor="middle" font-size="11" font-weight="bold" fill="var(--cyan)">|ψ(θ)⟩ = U(θ)|0⟩</text>
+        <text x="90" y="90" text-anchor="middle" font-size="10" fill="var(--muted)">Parameterized rotation gates</text>
       </g>
+      
       <path d="M 280 170 L 350 170" stroke="var(--line)" stroke-width="2" marker-end="url(#arrow-cyan)"/>
       <text x="315" y="165" text-anchor="middle" font-size="10" fill="var(--muted)">Energy E(θ)</text>
-      <g transform="translate(350, 120)">
+      
+      <g transform="translate(350, 120)" class="vqe-box" data-vqe-box="classical">
         <rect x="0" y="0" width="180" height="100" fill="var(--orange-soft)" stroke="var(--orange)" stroke-width="2" rx="8"/>
-        <text x="90" y="30" text-anchor="middle" font-weight="bold" font-size="13">Classical Computer</text>
+        <text x="90" y="30" text-anchor="middle" font-weight="bold" font-size="13">2. Classical Computer</text>
         <text x="90" y="55" text-anchor="middle" font-size="10" fill="var(--muted)">Optimizer updates θ</text>
-        <text x="90" y="75" text-anchor="middle" font-size="10" fill="var(--muted)">Minimize E(θ)</text>
-        <text x="90" y="95" text-anchor="middle" font-size="10" fill="var(--muted)">(gradient descent)</text>
+        <text x="90" y="75" text-anchor="middle" font-size="11" font-weight="bold" fill="var(--orange)">Minimize ⟨ψ(θ)|H|ψ(θ)⟩</text>
+        <text x="90" y="95" text-anchor="middle" font-size="10" fill="var(--muted)">(COBYLA, SPSA, GD)</text>
       </g>
+      
       <path d="M 440 220 Q 440 280 200 280 Q 200 240 100 220" stroke="var(--line)" stroke-width="2" stroke-dasharray="4" marker-end="url(#arrow-cyan)"/>
-      <text x="270" y="300" text-anchor="middle" font-size="10" fill="var(--muted)">New parameters θ</text>
-      <g transform="translate(560, 120)">
+      <text x="270" y="300" text-anchor="middle" font-size="10" fill="var(--muted)">New parameters θ (Feedback Loop)</text>
+      
+      <g transform="translate(560, 120)" class="vqe-box" data-vqe-box="result">
         <rect x="0" y="0" width="160" height="100" fill="var(--pink-soft)" stroke="var(--pink)" stroke-width="2" rx="8"/>
-        <text x="80" y="30" text-anchor="middle" font-weight="bold" font-size="13">Result</text>
+        <text x="80" y="30" text-anchor="middle" font-weight="bold" font-size="13">3. Final Convergence</text>
         <text x="80" y="55" text-anchor="middle" font-size="10" fill="var(--muted)">Ground state energy</text>
-        <text x="80" y="75" text-anchor="middle" font-size="10" fill="var(--muted)">E₀ ≈ min E(θ)</text>
+        <text x="80" y="75" text-anchor="middle" font-size="12" font-weight="bold" fill="var(--pink)">E₀ ≈ min E(θ)</text>
+        <text x="80" y="90" text-anchor="middle" font-size="9" fill="var(--muted)">Molecular ground energy</text>
       </g>
     </svg>
-    <div class="diagram-insight">
-      <strong>VQE:</strong> Hybrid algorithm for finding molecular ground states. Quantum device prepares trial states, classical optimizer minimizes energy. Used in quantum chemistry simulations.
+    <div class="diagram-insight" data-vqe-insight>
+      <strong>Phase 1 (Quantum Device):</strong> Parameterized circuit generates trial state |ψ(θ)⟩ using rotation gates and entangling layers (ansatz).
     </div>
   </div>`;
 }

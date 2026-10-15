@@ -8,6 +8,7 @@ export function startRouter() {
     pendingRender = requestAnimationFrame(() => {
       setTimeout(() => {
         const path = window.location.hash.slice(1) || '/';
+        if (path.startsWith('sec-')) return;
         const match = routes.find(({ pattern }) => pattern.test(path));
         const app = document.querySelector('#app');
         if (!match) { window.location.hash = '#/'; return; }
@@ -26,7 +27,26 @@ export function startRouter() {
           }
         }
         if (app) app.focus({ preventScroll: true });
-        document.querySelectorAll('.side-link').forEach((link) => link.classList.toggle('active', link.getAttribute('href') === `#${path}`));
+        const cleanPath = path.split('?')[0];
+        const pathParts = cleanPath.split('/').filter(Boolean);
+        const rootSection = pathParts[0] || '';
+        const subSection = pathParts[1] || '';
+        document.querySelectorAll('.side-link').forEach((link) => {
+          const href = (link.getAttribute('href') || '').replace(/^#/, '').split('?')[0];
+          let isActive = false;
+          if (href === cleanPath) {
+            isActive = true;
+          } else if (rootSection === 'unit' && href === `/unit/${subSection}`) {
+            isActive = true;
+          } else if (rootSection === 'lab' && href.startsWith('/lab')) {
+            isActive = true;
+          } else if (rootSection === 'projects' && href.startsWith('/projects')) {
+            isActive = true;
+          } else if (rootSection === 'questions' && href.startsWith('/questions')) {
+            isActive = true;
+          }
+          link.classList.toggle('active', isActive);
+        });
         window.scrollTo({ top: 0, behavior: 'instant' });
       }, 0);
     });
